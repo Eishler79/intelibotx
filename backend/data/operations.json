@@ -1,0 +1,20 @@
+[
+  {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "stake": 20.0,
+    "action": "short",
+    "reason": "Score bajo, se\u00f1ales bajistas predominantes",
+    "timestamp": "2025-07-03T16:41:04.617095",
+    "status": "executed_sell"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "stake": 20.0,
+    "action": "short",
+    "reason": "Score bajo, se\u00f1ales bajistas predominantes",
+    "timestamp": "2025-07-03T17:05:55.726877",
+    "status": "executed_sell"
+  }
+]
