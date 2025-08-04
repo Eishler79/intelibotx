@@ -1,6 +1,6 @@
 // src/services/api.ts
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://intelibotx-api.up.railway.app";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export async function fetchBots() {
   const res = await fetch(`${BASE_URL}/api/bots`);
