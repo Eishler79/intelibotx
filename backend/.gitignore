@@ -1,0 +1,43 @@
+# Entornos virtuales
+venv/
+.env
+
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Archivos de logs
+*.log
+logs/
+*.sqlite3
+
+# Archivos de configuración del sistema operativo
+.DS_Store
+
+# Archivos del editor
+.vscode/
+.idea/
+
+# Archivos de cache
+.cache/
+*.egg-info/
+
+# Archivos del sistema
+Thumbs.db
+ehthumbs.db
+
+# Archivos del despliegue
+*.db
+*.bak
+*.tmp
+
+# Tests temporales
+htmlcov/
+.tox/
+.coverage
+pytest_cache/
+
+# Archivos de despliegue en plataformas como Vercel o Railway
+.vercel/
+.railway/

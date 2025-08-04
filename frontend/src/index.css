@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilo base para el cuerpo del dashboard */
+body {
+  @apply bg-neo-background text-neo-textMain font-sans;
+}

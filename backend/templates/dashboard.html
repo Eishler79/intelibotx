@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SmartTrade Dashboard</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f8f8f8; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-bottom: 30px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ccc; }
+        th { background: #333; color: white; }
+        tr:hover { background: #f1f1f1; }
+        h2 { color: #333; margin-top: 40px; }
+        .card {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🧠 Inteligencia de Noticias (últimas señales)</h2>
+    {% for news in news_list %}
+    <div class="card">
+        <strong>⚡ {{ news.title }}</strong><br>
+        Símbolo: {{ news.symbol }}<br>
+        Fuente: {{ news.source }}
+    </div>
+    {% endfor %}
+
+    <h2>📅 Calendario Económico</h2>
+    {% for event in economic_events %}
+    <div class="card">
+        <strong>{{ event.title }}</strong><br>
+        Fecha: {{ event.date }}<br>
+        Impacto: <b>{{ event.impact }}</b>
+    </div>
+    {% endfor %}
+
+    <h2>🧭 Resumen por Par</h2>
+    <table>
+        <tr>
+            <th>Par</th>
+            <th>Acción</th>
+            <th>Estado</th>
+            <th>Stake</th>
+            <th>Última Ejecución</th>
+        </tr>
+        {% for row in summary %}
+        <tr>
+            <td>{{ row.symbol }}</td>
+            <td>{{ row.action }}</td>
+            <td>{{ row.status }}</td>
+            <td>${{ "%.2f"|format(row.stake) }}</td>
+            <td>{{ row.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>SmartTrade - Operaciones Ejecutadas</h2>
+    {% if operations %}
+    <table>
+        <tr>
+            <th>Timestamp</th>
+            <th>Par</th>
+            <th>Temporalidad</th>
+            <th>Stake</th>
+            <th>Acción</th>
+            <th>Motivo</th>
+            <th>Estado</th>
+        </tr>
+        {% for op in operations %}
+        <tr>
+            <td>{{ op.timestamp }}</td>
+            <td>{{ op.symbol }}</td>
+            <td>{{ op.interval }}</td>
+            <td>${{ "%.2f"|format(op.stake) }}</td>
+            <td>{{ op.action }}</td>
+            <td>{{ op.reason }}</td>
+            <td>{{ op.status }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <p>No hay operaciones registradas aún.</p>
+    {% endif %}
+
+</body>
+</html>
