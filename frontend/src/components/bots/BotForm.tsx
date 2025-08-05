@@ -37,14 +37,13 @@ export const BotForm: React.FC<Props> = ({ onClose }) => {
   const handleSubmit = async () => {
     await createBot({
       symbol,
+      interval: "1h",                    // ✅ AGREGADO: valor por defecto
+      stake: parseFloat(capitalInicial), // ✅ CORREGIDO: capital_inicial → stake
       strategy,
-      account_type: accountType,
-      capital_inicial: parseFloat(capitalInicial),
       take_profit: parseFloat(takeProfit),
       stop_loss: parseFloat(stopLoss),
-      trailing_tp: parseFloat(trailingTP),
-      dca_ordenes: parseInt(dcaOrdenes),
-      dca_desviacion: parseFloat(dcaDesviacion),
+      dca_levels: parseInt(dcaOrdenes),  // ✅ CORREGIDO: dca_ordenes → dca_levels
+      active: true,                      // ✅ AGREGADO: valor por defecto
     });
     onClose();
   };
