@@ -25,7 +25,7 @@ ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
 - APIs completamente validadas y funcionales
 - Sistema listo para deployment limpio
 
-🎯 OBJETIVO ACTUALIZADO: Sistema completamente validado, listo para ETAPA 2 (robustez)
+🎯 OBJETIVO ACTUALIZADO: Sistema en producción funcionando, iniciando ETAPA 2A (Bots IA Inteligentes)
 
 ===============================================================================
                             ETAPA 1 - FIXES CRÍTICOS
@@ -99,36 +99,63 @@ ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
 - ✅ Sistema completamente validado y funcional
 
 ===============================================================================
-                          ETAPA 2 - BOT ENGINE CORE
-                             STATUS: ⏳ PENDIENTE  
-                             DURACIÓN: 2-3 días
-                             PRIORIDAD: 🤖 ALTA
+                        ETAPA 2A - BOTS IA INTELIGENTES
+                             STATUS: 🚀 INICIANDO  
+                             DURACIÓN: 4-5 días
+                             PRIORIDAD: 🧠 MÁXIMA
+                             OBJETIVO: Superior a 3Commas
 ===============================================================================
 
-🔧 MOTOR DE EJECUCIÓN DE BOTS:
+🧠 INTERFAZ AVANZADA DE BOTS IA - SUPERIOR A 3COMMAS:
 
-2.1 CREAR BOT ENGINE FUNCIONAL
-    📍 Archivo: intelibotx-api/services/bot_engine.py (nuevo)
-    🎯 Objetivo: Motor que ejecute bots con datos test
+2A.1 DASHBOARD AVANZADO CON MÉTRICAS PROFESIONALES
+    📍 Archivo: frontend/src/pages/BotsAdvanced.jsx (nuevo)
+    🎯 Objetivo: Dashboard profesional con visualizaciones
     ✅ Funcionalidad:
-        - Leer configuración bot desde DB
-        - Ejecutar análisis técnico (usar analytics/ existente)
-        - Simular decisiones compra/venta
-        - Calcular métricas: PnL, winrate, drawdown
-        - Guardar resultados en DB
+        - Grid de bots con métricas avanzadas
+        - Performance cards con Sharpe, Sortino, Calmar
+        - Gráficos de equity curve en tiempo real
+        - Control dinámico de parámetros
+        - Estados visuales (RUNNING, PAUSED, ERROR)
     ⏱️ Tiempo: 1.5 días
-    🧪 Test: Bot creado puede ejecutarse y generar métricas
+    🧪 Test: Dashboard muestra métricas profesionales
 
-2.2 SISTEMA ESTADOS DE BOTS
-    📍 Archivo: models/bot_config.py (actualizar)
-    🎯 Objetivo: Tracking de estados bot
-    ✅ Estados: STOPPED, RUNNING, ERROR, PAUSED
+2A.2 INTEGRACIÓN TRADINGVIEW CHARTS
+    📍 Archivo: frontend/src/components/TradingViewWidget.jsx (nuevo)
+    🎯 Objetivo: Charts profesionales integrados
     ✅ Funcionalidad:
-        - API endpoints para start/stop bot
-        - Persistencia estado en DB
-        - UI refleja estado actual
-    ⏱️ Tiempo: 4 horas
-    🧪 Test: Estado bot se actualiza correctamente API/UI
+        - Widget TradingView embedded
+        - Sincronización con bot activo
+        - Indicators overlay automático
+        - Multi-timeframe support
+        - Análisis técnico visual
+    ⏱️ Tiempo: 1 día
+    🧪 Test: Charts se muestran correctamente integrados
+
+2A.3 SISTEMA DE CONTROL DINÁMICO DE PARÁMETROS
+    📍 Archivo: frontend/src/components/BotControlPanel.jsx (nuevo)
+    🎯 Objetivo: Control en tiempo real de parámetros
+    ✅ Funcionalidad:
+        - Sliders para TP/SL dinámicos
+        - Risk management controls
+        - Position sizing automático
+        - Market condition adaptation
+        - Real-time parameter updates
+    ⏱️ Tiempo: 1 día
+    🧪 Test: Parámetros se actualizan en tiempo real
+
+2A.4 MÉTRICAS AVANZADAS Y PERFORMANCE ANALYTICS
+    📍 Archivo: frontend/src/components/AdvancedMetrics.jsx (nuevo)
+    🎯 Objetivo: Métricas profesionales de trading
+    ✅ Funcionalidad:
+        - Sharpe Ratio calculation
+        - Sortino Ratio analysis
+        - Maximum Drawdown tracking
+        - Calmar Ratio computation
+        - Win Rate & Profit Factor
+        - Risk-adjusted returns
+    ⏱️ Tiempo: 1 día
+    🧪 Test: Métricas se calculan correctamente
 
 2.3 BACKTEST REAL CON DATOS HISTÓRICOS
     📍 Archivo: services/backtest_service.py (mejorar existente)
@@ -152,11 +179,14 @@ ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
     ⏱️ Tiempo: 6 horas
     🧪 Test: Dashboard muestra datos reales del backtest
 
-📊 DELIVERABLES ETAPA 2:
-- ✅ Bots ejecutables con datos test
-- ✅ Métricas reales calculadas
-- ✅ Estados de bot funcionales
-- ✅ Dashboard informativo
+📊 DELIVERABLES ETAPA 2A - BOTS IA INTELIGENTES:
+- ✅ Dashboard avanzado superior a 3Commas
+- ✅ TradingView charts integrados profesionalmente
+- ✅ Control dinámico de parámetros en tiempo real
+- ✅ Métricas avanzadas (Sharpe, Sortino, Calmar)
+- ✅ Visualizaciones interactivas de performance
+- ✅ Sistema de estados inteligente
+- ✅ Interfaz responsive y profesional
 
 ===============================================================================
                         ETAPA 3 - INTEGRATION & POLISH
@@ -252,25 +282,26 @@ ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
                               CRONOGRAMA TOTAL
 ===============================================================================
 
-📅 DÍA 1: ETAPA 1 - Fixes Críticos (Completa)
-📅 DÍA 2-3: ETAPA 2.1-2.2 - Bot Engine + Estados  
-📅 DÍA 4: ETAPA 2.3-2.4 - Backtest + Dashboard
-📅 DÍA 5: ETAPA 3.1-3.2 - WebSocket + Error Handling
-📅 DÍA 6: ETAPA 3.3-3.4 - Testing + Documentación
+📅 DÍA 1-4: ETAPA 1 - Fixes Críticos + Deployment (✅ Completa)
+📅 DÍA 5: ETAPA 2A.1 - Dashboard Avanzado con Métricas
+📅 DÍA 6: ETAPA 2A.2 - TradingView Charts Integration
+📅 DÍA 7: ETAPA 2A.3 - Control Dinámico de Parámetros  
+📅 DÍA 8: ETAPA 2A.4 - Métricas Avanzadas + Polish
+📅 DÍA 9: Testing + Optimización + Deploy
 
-TOTAL: 6 días de desarrollo efectivo
+TOTAL ETAPA 2A: 5 días de desarrollo (Bots IA Inteligentes)
 
 ===============================================================================
                               PUNTO DE INICIO
 ===============================================================================
 
-🚀 INICIO CONFIRMADO: ETAPA 1 - FIXES CRÍTICOS
+🚀 INICIO CONFIRMADO: ETAPA 2A - BOTS IA INTELIGENTES
 
-📍 PRIMER TASK: Arreglar importaciones rotas en routes/bots.py
-📂 ARCHIVO: /Users/eduardguzman/Documents/TRADING/Aplicación Trading Avanzado/intelibotx-api/routes/bots.py
-🎯 OBJETIVO: Resolver import evaluate_strategy que no existe
+📍 PRIMER TASK: Dashboard Avanzado con Métricas Profesionales
+📂 ARCHIVO: /Users/eduardguzman/Documents/TRADING/INTELIBOTX/frontend/src/pages/BotsAdvanced.jsx
+🎯 OBJETIVO: Crear interfaz superior a 3Commas con métricas avanzadas
 
-⏰ SIGUIENTE ACCIÓN: Ejecutar plan con confirmación de comandos
+⏰ SIGUIENTE ACCIÓN: Implementar dashboard con visualizaciones profesionales
 
 ===============================================================================
                                   NOTAS
