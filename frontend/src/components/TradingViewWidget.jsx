@@ -18,7 +18,6 @@ const TradingViewWidget = memo(({ symbol = "BTCUSDT", interval = "15m", theme = 
       "locale": "es",
       "enable_publishing": false,
       "allow_symbol_change": true,
-      "calendar": false,
       "support_host": "https://www.tradingview.com",
       "container_id": "tradingview_advanced_chart",
       "studies": [
