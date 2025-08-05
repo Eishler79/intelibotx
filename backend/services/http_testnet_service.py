@@ -11,7 +11,7 @@ import requests
 load_dotenv()
 
 API_KEY = os.getenv("BINANCE_TESTNET_API_KEY")
-API_SECRET = os.getenv("BINANCE_TESTNET_SECRET_KEY")
+API_SECRET = os.getenv("BINANCE_TESTNET_API_SECRET")
 BASE_URL = "https://testnet.binance.vision"
 
 async def create_testnet_order(symbol: str, side: str, quantity: str, price: str):

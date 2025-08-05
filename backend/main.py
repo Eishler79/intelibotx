@@ -48,7 +48,7 @@ templates = Jinja2Templates(directory="templates")
 app.include_router(bots.router)  # 📈 SmartTrade + Backtest (incluye /api/ en las rutas)
 app.include_router(smart_trade_router, prefix="/api")
 app.include_router(symbols_router, prefix="/api")
-app.include_router(testnet_router, prefix="/testnet")
+app.include_router(testnet_router)  # Las rutas ya incluyen /testnet/
 app.include_router(bot_routes.router)  # 🤖 Gestión de bots (CRUD)
 
 @app.get("/")
