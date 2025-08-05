@@ -165,14 +165,35 @@ class BacktestBot:
 
 # ✅ Función auxiliar externa (usada en endpoint o pruebas)
 def run_backtest_and_plot(symbol: str):
-    df = pd.read_csv(f"data/{symbol.lower().replace('/', '_')}_15m.csv")
+    # ✅ Intenta cargar datos específicos del símbolo, con fallback a BTCUSDT
+    symbol_file = f"data/{symbol.lower().replace('/', '_')}_15m.csv"
+    fallback_file = "data/btcusdt_15m.csv"
+    
+    try:
+        df = pd.read_csv(symbol_file)
+        print(f"✅ Usando datos específicos para {symbol}")
+    except FileNotFoundError:
+        try:
+            df = pd.read_csv(fallback_file)
+            print(f"⚠️ Archivo {symbol_file} no encontrado. Usando datos de BTCUSDT como ejemplo para {symbol}")
+        except FileNotFoundError:
+            raise FileNotFoundError(f"No se encontraron datos para {symbol} ni datos de fallback")
+    
     bot = BacktestBot(df, symbol=symbol, capital=1000.0)
     bot.run_backtest()
     return bot.plot_trades(return_html=True)
 
 # ✅ Nueva función: ejecución con lógica real (puntos de entrada/salida)
 def run_backtest_and_extract_trades(symbol: str):
-    df = pd.read_csv(f"data/{symbol.lower().replace('/', '_')}_15m.csv")
+    # ✅ Intenta cargar datos específicos del símbolo, con fallback a BTCUSDT
+    symbol_file = f"data/{symbol.lower().replace('/', '_')}_15m.csv"
+    fallback_file = "data/btcusdt_15m.csv"
+    
+    try:
+        df = pd.read_csv(symbol_file)
+    except FileNotFoundError:
+        df = pd.read_csv(fallback_file)
+    
     bot = BacktestBot(df, symbol=symbol, capital=1000.0)
     trades = bot.run_backtest()
     return trades
