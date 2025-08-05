@@ -54,18 +54,33 @@ def run_smart_trade(symbol: str):
             # 🧠 Cargar datos históricos para análisis
             try:
                 # Usar datos de BTCUSDT con fallback
-                df = pd.read_csv("data/btcusdt_15m.csv")
-                if "timestamp" not in df.columns and "time" in df.columns:
-                    df = df.rename(columns={"time": "timestamp"})
+                import os
+                csv_path = os.path.join(os.path.dirname(__file__), "..", "data", "btcusdt_15m.csv")
                 
-                # Ejecutar evaluación real de estrategia
-                evaluator = StrategyEvaluator(df)
-                signals = evaluator.evaluate()
+                if os.path.exists(csv_path):
+                    df = pd.read_csv(csv_path)
+                    if "timestamp" not in df.columns and "time" in df.columns:
+                        df = df.rename(columns={"time": "timestamp"})
+                    
+                    # Ejecutar evaluación real de estrategia
+                    evaluator = StrategyEvaluator(df)
+                    signals = evaluator.evaluate()
+                else:
+                    # Fallback si no hay datos históricos
+                    signals = {
+                        "signal": "HOLD",
+                        "confidence": 0.5,
+                        "reason": "No historical data available",
+                        "indicators": {}
+                    }
             except Exception as e:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Error al evaluar estrategia: {str(e)}"
-                )
+                # Fallback si falla la evaluación
+                signals = {
+                    "signal": "ERROR",
+                    "confidence": 0.0,
+                    "reason": f"Strategy evaluation failed: {str(e)}",
+                    "indicators": {}
+                }
 
         # 📤 Respuesta con resultado completo
         return {

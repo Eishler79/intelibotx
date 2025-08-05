@@ -4,13 +4,17 @@ from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 import os
 
+from db.database import create_db_and_tables
+
+# Inicializar database primero
+create_db_and_tables()
+
+# Luego importar routes
 from routes import bots
 from routes.smart_trade_routes import router as smart_trade_router
 from routes.available_symbols import router as symbols_router
 from routes.testnet import router as testnet_router
 from routes import bot_routes
-from db.database import create_db_and_tables
-create_db_and_tables()
 
 # Clase de sesión para SmartTrade (se mantiene)
 class SmartTradeSession:
