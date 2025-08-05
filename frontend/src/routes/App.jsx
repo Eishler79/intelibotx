@@ -8,8 +8,9 @@ import SmartTrade from "../pages/SmartTrade";
 import SmartIntelligence from "../pages/SmartIntelligence";
 import Portfolio from "../pages/Portfolio";
 import Bots from "../pages/Bots";
+import BotsAdvanced from "../pages/BotsAdvanced";
 import Layout from "../components/Layout";
-import BacktestViewer from "../pages/BacktestViewer"; // 👈 Nuevo import
+import BacktestViewer from "../pages/BacktestViewer";
 
 const App = () => {
   return (
@@ -22,7 +23,8 @@ const App = () => {
           <Route path="/intelligence" element={<SmartIntelligence />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/bots" element={<Bots />} />
-          <Route path="/backtest-viewer" element={<BacktestViewer symbol="BTCUSDT" />} /> {/* 👈 Nueva ruta */}
+          <Route path="/bots-advanced" element={<BotsAdvanced />} />
+          <Route path="/backtest-viewer" element={<BacktestViewer symbol="BTCUSDT" />} />
         </Route>
       </Routes>
     </Router>
