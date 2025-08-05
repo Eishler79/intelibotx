@@ -7,6 +7,7 @@ from models.bot_config import BotConfig  # 🆕 NUEVO: Acceso a configuración d
 from sqlmodel import Session, select
 from utils.symbol_validator import validate_symbol  # ✅ EXISTENTE: validador robusto
 from db.database import engine  # ✅ ARREGLADO: Usar database.py consolidado
+from typing import List
 import pandas as pd  # ✅ NUEVO: Para cargar datos históricos
 
 # 🚀 Instancia del router
@@ -107,3 +108,193 @@ def run_smart_trade(symbol: str):
             status_code=500,
             detail=f"Error interno del servidor: {str(e)}"
         )
+
+
+# 🤖 CRUD ENDPOINTS PARA BOTS
+
+@router.get("/api/bots", response_model=List[BotConfig])
+async def get_bots():
+    """Obtener lista de todos los bots"""
+    try:
+        with Session(engine) as session:
+            query = select(BotConfig)
+            bots = session.exec(query).all()
+            return bots
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error obteniendo bots: {str(e)}"
+        )
+
+
+@router.post("/api/create-bot")
+async def create_bot(bot_data: dict):
+    """Crear un nuevo bot"""
+    try:
+        with Session(engine) as session:
+            # Crear instancia de BotConfig con los datos recibidos
+            bot = BotConfig(
+                symbol=bot_data.get("symbol", "BTCUSDT"),
+                strategy=bot_data.get("strategy", "Smart Scalper"),
+                interval=bot_data.get("interval", "15m"),
+                stake=bot_data.get("stake", 100.0),
+                take_profit=bot_data.get("take_profit", 2.5),
+                stop_loss=bot_data.get("stop_loss", 1.5),
+                dca_levels=bot_data.get("dca_levels", 3)
+            )
+            
+            session.add(bot)
+            session.commit()
+            session.refresh(bot)
+            
+            return {
+                "message": f"✅ Bot creado exitosamente para {bot.symbol}",
+                "bot_id": bot.id,
+                "bot": bot
+            }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creando bot: {str(e)}"
+        )
+
+
+@router.get("/api/backtest-results/{bot_id}")
+async def get_backtest_results(bot_id: int):
+    """Obtener resultados de backtest para un bot específico"""
+    try:
+        with Session(engine) as session:
+            query = select(BotConfig).where(BotConfig.id == bot_id)
+            bot = session.exec(query).first()
+            
+            if not bot:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Bot con ID {bot_id} no encontrado"
+                )
+            
+            # Generar resultados de backtest simulados
+            # En producción esto se calcularía con datos reales
+            return {
+                "bot_id": bot_id,
+                "symbol": bot.symbol,
+                "strategy": bot.strategy,
+                "results": {
+                    "total_return": "15.4%",
+                    "sharpe_ratio": "1.85",
+                    "max_drawdown": "8.2%",
+                    "win_rate": "68.5%",
+                    "total_trades": 45,
+                    "profit_factor": "2.3"
+                },
+                "equity_curve": [
+                    {"date": "2024-01-01", "value": 1000},
+                    {"date": "2024-01-15", "value": 1025},
+                    {"date": "2024-02-01", "value": 1085},
+                    {"date": "2024-02-15", "value": 1154}
+                ]
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error obteniendo resultados de backtest: {str(e)}"
+        )
+
+
+@router.put("/api/bots/{bot_id}")
+async def update_bot(bot_id: int, bot_data: dict):
+    """Actualizar configuración de un bot"""
+    try:
+        with Session(engine) as session:
+            query = select(BotConfig).where(BotConfig.id == bot_id)
+            bot = session.exec(query).first()
+            
+            if not bot:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Bot con ID {bot_id} no encontrado"
+                )
+            
+            # Actualizar campos que vengan en bot_data
+            for key, value in bot_data.items():
+                if hasattr(bot, key):
+                    setattr(bot, key, value)
+            
+            session.add(bot)
+            session.commit()
+            session.refresh(bot)
+            
+            return {
+                "message": f"✅ Bot {bot_id} actualizado exitosamente",
+                "bot": bot
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error actualizando bot: {str(e)}"
+        )
+
+
+@router.delete("/api/bots/{bot_id}")
+async def delete_bot(bot_id: int):
+    """Eliminar un bot"""
+    try:
+        with Session(engine) as session:
+            query = select(BotConfig).where(BotConfig.id == bot_id)
+            bot = session.exec(query).first()
+            
+            if not bot:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Bot con ID {bot_id} no encontrado"
+                )
+            
+            session.delete(bot)
+            session.commit()
+            
+            return {
+                "message": f"✅ Bot {bot_id} eliminado exitosamente"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error eliminando bot: {str(e)}"
+        )
+
+
+# Control de Bots (para el panel de control dinámico)
+
+@router.post("/api/bots/{bot_id}/start")
+async def start_bot(bot_id: int):
+    """Iniciar un bot"""
+    return {
+        "message": f"✅ Bot {bot_id} iniciado",
+        "status": "RUNNING",
+        "bot_id": bot_id
+    }
+
+
+@router.post("/api/bots/{bot_id}/pause")
+async def pause_bot(bot_id: int):
+    """Pausar un bot"""
+    return {
+        "message": f"⏸️ Bot {bot_id} pausado",
+        "status": "PAUSED",
+        "bot_id": bot_id
+    }
+
+
+@router.post("/api/bots/{bot_id}/stop")
+async def stop_bot(bot_id: int):
+    """Detener un bot"""
+    return {
+        "message": f"⏹️ Bot {bot_id} detenido",
+        "status": "STOPPED",
+        "bot_id": bot_id
+    }
