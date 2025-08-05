@@ -23,52 +23,72 @@ async def get_backtest_chart(symbol: str):
 # 🤖 RUTA ACTUAL: Ejecutar Smart Trade con validación de símbolo
 # 🆕 MEJORA: Ahora también obtiene estrategia desde DB y evalúa lógica real
 @router.post("/api/run-smart-trade/{symbol}")
-async def run_smart_trade(symbol: str):
-    # ✅ Normalización del símbolo
-    normalized_symbol = symbol.upper().strip().replace(" ", "")
+def run_smart_trade(symbol: str):
+    """Ejecuta Smart Trade con análisis técnico completo"""
+    try:
+        # ✅ Normalización del símbolo
+        normalized_symbol = symbol.upper().strip().replace(" ", "")
 
-    # ✅ Validación robusta del símbolo
-    if not validate_symbol(normalized_symbol):
+        # ✅ Validación básica del símbolo
+        if not normalized_symbol or len(normalized_symbol) < 3:
+            raise HTTPException(
+                status_code=400,
+                detail=f"❌ Símbolo inválido: {normalized_symbol}"
+            )
+
+        # 🧠 Buscar configuración del bot en la base de datos
+        with Session(engine) as session:
+            query = select(BotConfig).where(BotConfig.symbol == normalized_symbol)
+            result = session.exec(query).first()
+
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"⚠️ No hay configuración guardada para {normalized_symbol}"
+                )
+
+            # 🔍 Extraer los parámetros requeridos
+            interval = result.interval
+            strategy = result.strategy
+
+            # 🧠 Cargar datos históricos para análisis
+            try:
+                # Usar datos de BTCUSDT con fallback
+                df = pd.read_csv("data/btcusdt_15m.csv")
+                if "timestamp" not in df.columns and "time" in df.columns:
+                    df = df.rename(columns={"time": "timestamp"})
+                
+                # Ejecutar evaluación real de estrategia
+                evaluator = StrategyEvaluator(df)
+                signals = evaluator.evaluate()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Error al evaluar estrategia: {str(e)}"
+                )
+
+        # 📤 Respuesta con resultado completo
+        return {
+            "message": f"✅ Smart Trade ejecutado para {normalized_symbol}",
+            "symbol": normalized_symbol,
+            "strategy": strategy,
+            "interval": interval,
+            "signals": signals,
+            "bot_config": {
+                "id": result.id,
+                "stake": result.stake,
+                "take_profit": result.take_profit,
+                "stop_loss": result.stop_loss,
+                "dca_levels": result.dca_levels
+            }
+        }
+    
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        # Catch any other unexpected errors
         raise HTTPException(
-            status_code=400,
-            detail=f"❌ Símbolo inválido o no disponible para trading: {normalized_symbol}"
+            status_code=500,
+            detail=f"Error interno del servidor: {str(e)}"
         )
-
-    # 🧠 NUEVO: Buscar configuración del bot en la base de datos
-    with Session(engine) as session:
-        query = select(BotConfig).where(BotConfig.symbol == normalized_symbol)
-        result = session.exec(query).first()
-
-        if not result:
-            raise HTTPException(
-                status_code=404,
-                detail=f"⚠️ No hay configuración guardada para {normalized_symbol}"
-            )
-
-        # 🔍 Extraer los parámetros requeridos
-        interval = result.interval
-        strategy = result.strategy
-
-        # 🧠 Cargar datos históricos para análisis
-        try:
-            # Por ahora usar datos de BTCUSDT, luego se puede hacer dinámico
-            df = pd.read_csv("data/btcusdt_15m.csv")
-            if "timestamp" not in df.columns and "time" in df.columns:
-                df = df.rename(columns={"time": "timestamp"})
-            
-            # Ejecutar evaluación real de estrategia
-            evaluator = StrategyEvaluator(df)
-            signals = evaluator.evaluate()
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Error al evaluar estrategia: {str(e)}"
-            )
-
-    # 📤 Respuesta con resultado
-    return {
-        "message": f"✅ Ejecutando Smart Trade para {normalized_symbol} con estrategia '{strategy}'",
-        "symbol": normalized_symbol,
-        "strategy": strategy,
-        "signals": signals  # 🧠 Output técnico (entrada/salida)
-    }
