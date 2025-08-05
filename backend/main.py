@@ -1,74 +1,84 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 import os
 
-# Inicializar database al startup
-
-# Luego importar routes
-from routes import bots
-from routes.smart_trade_routes import router as smart_trade_router
-from routes.available_symbols import router as symbols_router
-from routes.testnet import router as testnet_router
-from routes import bot_routes
-
-# Clase de sesión para SmartTrade (se mantiene)
-class SmartTradeSession:
-    def __init__(self):
-        self.sessions = {}
-
-    def create_session(self, user_id, symbol, config):
-        self.sessions[user_id] = {"symbol": symbol, "config": config}
-        return self.sessions[user_id]
-
-    def get_session(self, user_id):
-        return self.sessions.get(user_id)
-
-# Instancia global (se mantiene)
-smart_trade_session = SmartTradeSession()
-
-# Cargar .env
+# Cargar variables de entorno
 load_dotenv()
 
+# Crear aplicación FastAPI
 app = FastAPI(
     title="InteliBotX API",
     description="Sistema de trading inteligente con FastAPI",
     version="1.0.0"
 )
 
-@app.on_event("startup")
-async def startup_event():
-    """Inicializar base de datos al startup"""
-    try:
-        from db.database import create_db_and_tables
-        create_db_and_tables()
-        print("✅ Database initialized successfully")
-    except Exception as e:
-        print(f"⚠️ Database initialization warning: {e}")
-
-# Middleware CORS
+# Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Puedes restringir esto según sea necesario
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Templates
-templates = Jinja2Templates(directory="templates")
-
-# Rutas
-app.include_router(bots.router)  # 📈 SmartTrade + Backtest (incluye /api/ en las rutas)
-app.include_router(smart_trade_router, prefix="/api")
-app.include_router(symbols_router, prefix="/api")
-app.include_router(testnet_router)  # Las rutas ya incluyen /testnet/
-app.include_router(bot_routes.router)  # 🤖 Gestión de bots (CRUD)
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup"""
+    try:
+        # Import here to avoid circular imports
+        from sqlmodel import create_engine, SQLModel
+        from models.bot_config import BotConfig
+        
+        DATABASE_URL = "sqlite:///./bots.db"
+        engine = create_engine(DATABASE_URL, echo=False)
+        SQLModel.metadata.create_all(engine)
+        print("✅ Database initialized successfully")
+    except Exception as e:
+        print(f"⚠️ Database initialization warning: {e}")
 
 @app.get("/")
-def root():
-    return {"message": "InteliBotX API running ✅"}
+async def root():
+    """Health check endpoint"""
+    return {
+        "message": "InteliBotX API is running",
+        "version": "1.0.0",
+        "status": "healthy"
+    }
+
+@app.get("/api/health")
+async def health():
+    """Health check for monitoring"""
+    return {"status": "ok", "message": "API is running"}
+
+# Import routes only after app is created
+try:
+    from routes.bots import router as bots_router
+    app.include_router(bots_router)
+    print("✅ Bots routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load bots routes: {e}")
+
+try:
+    from routes.smart_trade_routes import router as smart_trade_router
+    app.include_router(smart_trade_router, prefix="/api")
+    print("✅ Smart trade routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load smart trade routes: {e}")
+
+try:
+    from routes.available_symbols import router as symbols_router
+    app.include_router(symbols_router, prefix="/api")
+    print("✅ Symbols routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load symbols routes: {e}")
+
+try:
+    from routes.testnet import router as testnet_router
+    app.include_router(testnet_router)
+    print("✅ Testnet routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load testnet routes: {e}")
 
 if __name__ == "__main__":
     import uvicorn
