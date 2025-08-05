@@ -4,10 +4,7 @@ from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 import os
 
-from db.database import create_db_and_tables
-
-# Inicializar database primero
-create_db_and_tables()
+# Inicializar database al startup
 
 # Luego importar routes
 from routes import bots
@@ -34,7 +31,21 @@ smart_trade_session = SmartTradeSession()
 # Cargar .env
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(
+    title="InteliBotX API",
+    description="Sistema de trading inteligente con FastAPI",
+    version="1.0.0"
+)
+
+@app.on_event("startup")
+async def startup_event():
+    """Inicializar base de datos al startup"""
+    try:
+        from db.database import create_db_and_tables
+        create_db_and_tables()
+        print("✅ Database initialized successfully")
+    except Exception as e:
+        print(f"⚠️ Database initialization warning: {e}")
 
 # Middleware CORS
 app.add_middleware(
