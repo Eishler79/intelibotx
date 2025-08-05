@@ -23,3 +23,14 @@ export async function runBacktest(botId: string) {
   if (!res.ok) throw new Error("Error al ejecutar backtest");
   return res.json();
 }
+
+export async function runSmartTrade(symbol: string) {
+  const res = await fetch(`${BASE_URL}/api/run-smart-trade/${symbol}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    }
+  });
+  if (!res.ok) throw new Error("Error al ejecutar SmartTrade");
+  return res.json();
+}
