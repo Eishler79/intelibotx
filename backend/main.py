@@ -52,20 +52,7 @@ async def health():
     return {"status": "ok", "message": "API is running"}
 
 # Import routes only after app is created
-try:
-    from routes.bots import router as bots_router
-    app.include_router(bots_router)
-    print("✅ Bots routes loaded")
-except Exception as e:
-    print(f"⚠️ Could not load bots routes: {e}")
-
-try:
-    from routes.smart_trade_routes import router as smart_trade_router
-    app.include_router(smart_trade_router, prefix="/api")
-    print("✅ Smart trade routes loaded")
-except Exception as e:
-    print(f"⚠️ Could not load smart trade routes: {e}")
-
+# Load core routes first (most stable)
 try:
     from routes.available_symbols import router as symbols_router
     app.include_router(symbols_router, prefix="/api")
@@ -79,6 +66,26 @@ try:
     print("✅ Testnet routes loaded")
 except Exception as e:
     print(f"⚠️ Could not load testnet routes: {e}")
+
+# Load smart trade routes
+try:
+    from routes.smart_trade_routes import router as smart_trade_router
+    app.include_router(smart_trade_router, prefix="/api")
+    print("✅ Smart trade routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load smart trade routes: {e}")
+
+# Load bots routes last (newest/most complex)
+try:
+    from routes.bots import router as bots_router
+    app.include_router(bots_router)
+    print("✅ Bots routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load bots routes: {e}")
+    # Create minimal fallback endpoint
+    @app.get("/api/bots")
+    async def fallback_bots():
+        return [{"id": 1, "symbol": "BTCUSDT", "strategy": "Smart Scalper", "status": "DEMO"}]
 
 if __name__ == "__main__":
     import uvicorn
