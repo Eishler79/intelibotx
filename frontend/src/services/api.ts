@@ -9,7 +9,7 @@ export async function fetchBots() {
 }
 
 export async function createBot(data: any) {
-  const res = await fetch(`${BASE_URL}/api/bots`, {
+  const res = await fetch(`${BASE_URL}/api/create-bot`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

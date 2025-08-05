@@ -1,0 +1,280 @@
+===============================================================================
+                    PLAN DE TRABAJO DETALLADO - INTELIBOTX
+                        CONSOLIDACIÓN CON PRIORIDAD BOTS
+===============================================================================
+
+FECHA CREACIÓN: 31-Julio-2025
+ESTRATEGIA: Enfoque pragmático incremental con test-first approach
+PRIORIDAD: Funcionalidad de Bots como frente principal
+ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
+
+===============================================================================
+                               ESTADO ACTUAL
+===============================================================================
+
+✅ ANÁLISIS COMPLETADO:
+- Backend: Arquitectura sólida con 11 issues críticos identificados
+- Frontend: Componentes bots desarrollados, integración parcial
+- Coherencia API/UI: Evaluada con gaps específicos documentados
+- Issues totales: 22 inconsistencias priorizadas
+
+🎯 OBJETIVO: Sistema de bots funcional con datos test, preparado para migración a datos reales
+
+===============================================================================
+                            ETAPA 1 - FIXES CRÍTICOS
+                              STATUS: ⏳ PENDIENTE
+                              DURACIÓN: 1 día
+                              PRIORIDAD: 🔴 CRÍTICA
+===============================================================================
+
+🔧 BACKEND CRITICAL FIXES:
+
+1.1 ARREGLAR IMPORTACIONES ROTAS [routes/bots.py]
+    📍 Archivo: intelibotx-api/routes/bots.py:12-15
+    ❌ Problema: from services.strategy_evaluator import evaluate_strategy  # NO EXISTE
+    ✅ Solución: Usar analytics/strategy_evaluator.py StrategyEvaluator.evaluate()
+    ⏱️ Tiempo: 30 min
+    🧪 Test: Verificar endpoints bots funcionan sin errores importación
+
+1.2 CONSOLIDAR DATABASE ENGINE 
+    📍 Archivos: db/database.py (completo) vs db/sqlite.py (solo engine)
+    ❌ Problema: routes/bots.py usa db.sqlite, main.py usa db.database
+    ✅ Solución: Migrar todo a db/database.py, eliminar db/sqlite.py
+    ⏱️ Tiempo: 45 min
+    🧪 Test: Verificar conexión DB desde main.py y routes/bots.py
+
+1.3 ELIMINAR STRATEGY_EVALUATOR DUPLICADO
+    📍 Archivos: services/strategy_evaluator.py vs analytics/strategy_evaluator.py
+    ❌ Problema: Función simple vs clase completa
+    ✅ Solución: Mantener analytics/, eliminar services/, actualizar imports
+    ⏱️ Tiempo: 20 min
+    🧪 Test: Importaciones funcionan correctamente
+
+1.4 LIMPIAR ARCHIVOS DUPLICADOS
+    📍 Archivo: intelligence/smart_trade_intelligence 2.py
+    ❌ Problema: Archivo duplicado confuso
+    ✅ Solución: Revisar diferencias, mantener el correcto, eliminar duplicado
+    ⏱️ Tiempo: 15 min
+    🧪 Test: Sin errores de importación en intelligence/
+
+🖥️ FRONTEND CRITICAL FIXES:
+
+1.5 IMPLEMENTAR PÁGINA BOTS.JSX
+    📍 Archivo: intelibotx-ui/src/pages/Bots.jsx
+    ❌ Problema: Solo contiene placeholder "Gestión de bots"
+    ✅ Solución: Usar components/bots/BotList.tsx + BotForm.tsx
+    ⏱️ Tiempo: 1 hora
+    🧪 Test: Página muestra lista de bots y formulario creación
+
+1.6 CONSOLIDAR SMARTTRADE DUPLICADO
+    📍 Archivos: pages/SmartTrade.jsx vs components/SmartTradePanel.tsx
+    ❌ Problema: Código casi idéntico, violando DRY
+    ✅ Solución: Página usa componente, eliminar lógica duplicada
+    ⏱️ Tiempo: 45 min
+    🧪 Test: SmartTrade funciona igual que antes
+
+1.7 CORREGIR URLs API FRONTEND
+    📍 Archivo: intelibotx-ui/src/services/api.ts
+    ❌ Problema: Algunos endpoints usan /api/ local en lugar de backend
+    ✅ Solución: Usar BASE_URL consistentemente para todos los endpoints
+    ⏱️ Tiempo: 30 min
+    🧪 Test: Todas las llamadas API van al backend Railway
+
+📊 DELIVERABLES ETAPA 1:
+- ✅ Backend sin errores de importación
+- ✅ Database engine unificado
+- ✅ Página Bots funcional con componentes existentes
+- ✅ APIs frontend apuntando al backend correcto
+- ✅ Sin archivos duplicados
+
+===============================================================================
+                          ETAPA 2 - BOT ENGINE CORE
+                             STATUS: ⏳ PENDIENTE  
+                             DURACIÓN: 2-3 días
+                             PRIORIDAD: 🤖 ALTA
+===============================================================================
+
+🔧 MOTOR DE EJECUCIÓN DE BOTS:
+
+2.1 CREAR BOT ENGINE FUNCIONAL
+    📍 Archivo: intelibotx-api/services/bot_engine.py (nuevo)
+    🎯 Objetivo: Motor que ejecute bots con datos test
+    ✅ Funcionalidad:
+        - Leer configuración bot desde DB
+        - Ejecutar análisis técnico (usar analytics/ existente)
+        - Simular decisiones compra/venta
+        - Calcular métricas: PnL, winrate, drawdown
+        - Guardar resultados en DB
+    ⏱️ Tiempo: 1.5 días
+    🧪 Test: Bot creado puede ejecutarse y generar métricas
+
+2.2 SISTEMA ESTADOS DE BOTS
+    📍 Archivo: models/bot_config.py (actualizar)
+    🎯 Objetivo: Tracking de estados bot
+    ✅ Estados: STOPPED, RUNNING, ERROR, PAUSED
+    ✅ Funcionalidad:
+        - API endpoints para start/stop bot
+        - Persistencia estado en DB
+        - UI refleja estado actual
+    ⏱️ Tiempo: 4 horas
+    🧪 Test: Estado bot se actualiza correctamente API/UI
+
+2.3 BACKTEST REAL CON DATOS HISTÓRICOS
+    📍 Archivo: services/backtest_service.py (mejorar existente)
+    🎯 Objetivo: Backtesting funcional con métricas reales
+    ✅ Funcionalidad:
+        - Usar data/btcusdt_15m.csv existente
+        - Aplicar strategy_evaluator real
+        - Calcular métricas: Sharpe, Max DD, Total Return
+        - Generar puntos entrada/salida
+    ⏱️ Tiempo: 1 día
+    🧪 Test: Backtest genera métricas realistas
+
+2.4 DASHBOARD BOTS CON MÉTRICAS
+    📍 Archivo: intelibotx-ui/src/components/bots/BotCard.tsx (mejorar)
+    🎯 Objetivo: Mostrar métricas reales calculadas
+    ✅ Funcionalidad:
+        - Gráfico equity curve
+        - Métricas numéricas: ROI, Win%, Sharpe
+        - Estado actual bot
+        - Botones start/stop funcionales
+    ⏱️ Tiempo: 6 horas
+    🧪 Test: Dashboard muestra datos reales del backtest
+
+📊 DELIVERABLES ETAPA 2:
+- ✅ Bots ejecutables con datos test
+- ✅ Métricas reales calculadas
+- ✅ Estados de bot funcionales
+- ✅ Dashboard informativo
+
+===============================================================================
+                        ETAPA 3 - INTEGRATION & POLISH
+                           STATUS: ⏳ PENDIENTE
+                           DURACIÓN: 1-2 días  
+                           PRIORIDAD: 🔗 MEDIA
+===============================================================================
+
+🔌 INTEGRACIÓN COMPLETA:
+
+3.1 WEBSOCKET BÁSICO PARA UPDATES
+    📍 Archivo: intelibotx-api/main.py (agregar WebSocket)
+    🎯 Objetivo: Updates tiempo real estado bots
+    ✅ Funcionalidad:
+        - WebSocket endpoint /ws/bots
+        - Notificar cambios estado bot
+        - Frontend suscribe a updates
+    ⏱️ Tiempo: 4 horas
+    🧪 Test: Estado bot se actualiza en tiempo real UI
+
+3.2 ERROR HANDLING ROBUSTO
+    📍 Archivos: api/ endpoints + frontend components
+    🎯 Objetivo: Manejo elegante de errores
+    ✅ Funcionalidad:
+        - Try/catch en todas las operaciones críticas
+        - Mensajes error informativos
+        - Recovery automático donde posible
+    ⏱️ Tiempo: 3 horas
+    🧪 Test: Sistema maneja errores sin crashes
+
+3.3 TESTING CON DATOS SIMULADOS
+    📍 Archivo: tests/ (crear estructura básica)
+    🎯 Objetivo: Tests automatizados funcionalidad core
+    ✅ Funcionalidad:
+        - Tests unitarios bot_engine
+        - Tests integración API bots
+        - Tests UI componentes bots
+    ⏱️ Tiempo: 4 horas
+    🧪 Test: Suite test pasa al 100%
+
+3.4 DOCUMENTACIÓN SISTEMA BOTS
+    📍 Archivo: docs/bots.md (nuevo)
+    🎯 Objetivo: Documentación clara funcionamiento
+    ✅ Contenido:
+        - Cómo crear un bot
+        - Cómo interpretar métricas
+        - Troubleshooting común
+    ⏱️ Tiempo: 2 horas
+    🧪 Test: Documentación precisa y útil
+
+📊 DELIVERABLES ETAPA 3:
+- ✅ Sistema robusto con error handling
+- ✅ Updates tiempo real
+- ✅ Tests automatizados básicos
+- ✅ Documentación completa
+
+===============================================================================
+                      ETAPA 4 - SMARTTRADE MAINTENANCE
+                         STATUS: ⏳ PENDIENTE
+                         DURACIÓN: Paralelo a otras etapas
+                         PRIORIDAD: 📈 BAJA
+===============================================================================
+
+🔧 MANTENIMIENTO SMARTTRADE:
+
+4.1 MANTENER FUNCIONALIDAD EXISTENTE
+    📍 Archivos: smarttrade/ (todos)
+    🎯 Objetivo: No romper funcionalidad actual
+    ✅ Acciones: Solo bugfixes críticos, sin nuevas features
+    ⏱️ Tiempo: Ad-hoc
+    🧪 Test: SmartTrade sigue funcionando
+
+4.2 MEJORAS MENORES UX
+    📍 Archivo: pages/SmartTrade.jsx
+    🎯 Objetivo: Polish UI existente
+    ✅ Funcionalidad: Mejorar responsive, loading states
+    ⏱️ Tiempo: 2 horas
+    🧪 Test: UX mejorada sin cambios funcionales
+
+4.3 INTEGRACIÓN ANALYTICS MEJORADA
+    📍 Archivo: services/smart_trade_service.py
+    🎯 Objetivo: Mejor uso analytics/ existente
+    ✅ Funcionalidad: Más indicadores, mejor scoring
+    ⏱️ Tiempo: 3 horas
+    🧪 Test: Señales SmartTrade más precisas
+
+📊 DELIVERABLES ETAPA 4:
+- ✅ SmartTrade estable y funcional
+- ✅ UX mejorada
+- ✅ Analytics integrados
+
+===============================================================================
+                              CRONOGRAMA TOTAL
+===============================================================================
+
+📅 DÍA 1: ETAPA 1 - Fixes Críticos (Completa)
+📅 DÍA 2-3: ETAPA 2.1-2.2 - Bot Engine + Estados  
+📅 DÍA 4: ETAPA 2.3-2.4 - Backtest + Dashboard
+📅 DÍA 5: ETAPA 3.1-3.2 - WebSocket + Error Handling
+📅 DÍA 6: ETAPA 3.3-3.4 - Testing + Documentación
+
+TOTAL: 6 días de desarrollo efectivo
+
+===============================================================================
+                              PUNTO DE INICIO
+===============================================================================
+
+🚀 INICIO CONFIRMADO: ETAPA 1 - FIXES CRÍTICOS
+
+📍 PRIMER TASK: Arreglar importaciones rotas en routes/bots.py
+📂 ARCHIVO: /Users/eduardguzman/Documents/TRADING/Aplicación Trading Avanzado/intelibotx-api/routes/bots.py
+🎯 OBJETIVO: Resolver import evaluate_strategy que no existe
+
+⏰ SIGUIENTE ACCIÓN: Ejecutar plan con confirmación de comandos
+
+===============================================================================
+                                  NOTAS
+===============================================================================
+
+✅ ENFOQUE: Test-first con datos simulados/históricos
+✅ ESTRUCTURA: Mantener separación intelibotx-api/ e intelibotx-ui/
+✅ PRIORIDAD: Bots como frente principal, SmartTrade en mantenimiento
+✅ CALIDAD: Cada etapa incluye testing y validación
+✅ DOCUMENTACIÓN: Actualizaciones continuas CLAUDE.md
+
+🔄 ITERACIÓN: Plan puede ajustarse según hallazgos durante desarrollo
+📝 TRACKING: Todo task con file paths, timeboxing y tests específicos
+🎯 OBJETIVO FINAL: Sistema bots completamente funcional con test data
+
+===============================================================================
+                                 FIN PLAN
+===============================================================================

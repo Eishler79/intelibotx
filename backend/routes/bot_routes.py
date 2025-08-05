@@ -15,6 +15,9 @@ class BotCreateRequest(BaseModel):
     interval: str
     stake: float
     strategy: str
+    take_profit: Optional[float] = 2.0
+    stop_loss: Optional[float] = 1.0
+    dca_levels: Optional[int] = 3
     active: Optional[bool] = True
 
 # ============================
