@@ -13,6 +13,9 @@ import pandas as pd  # ✅ NUEVO: Para cargar datos históricos
 # 🚀 Instancia del router
 router = APIRouter()
 
+# 🤖 Estado global de bots (en producción sería Redis o base de datos)
+bot_states = {}
+
 
 # 📈 RUTA ACTUAL: Gráfico de backtest (sin cambios)
 @router.get("/api/backtest-chart/{symbol}", response_class=HTMLResponse)

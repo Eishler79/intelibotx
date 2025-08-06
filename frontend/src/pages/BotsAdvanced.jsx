@@ -7,6 +7,7 @@ import TradingViewWidget from "@/components/TradingViewWidget";
 import BotControlPanel from "@/components/BotControlPanel";
 import AdvancedMetrics from "@/components/AdvancedMetrics";
 import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
+import LiveTradingFeed from "@/components/LiveTradingFeed";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -112,14 +113,179 @@ export default function BotsAdvanced() {
     console.log(`Bot ${botId} eliminado`);
   };
 
-  const handleToggleBotStatus = (botId, currentStatus) => {
+  const handleToggleBotStatus = async (botId, currentStatus) => {
     const newStatus = currentStatus === 'RUNNING' ? 'PAUSED' : 'RUNNING';
-    setBots(prevBots => 
-      prevBots.map(bot => 
-        bot.id === botId ? { ...bot, status: newStatus } : bot
-      )
-    );
-    console.log(`Bot ${botId} cambiado a ${newStatus}`);
+    const bot = bots.find(b => b.id === botId);
+    
+    try {
+      // Actualizar estado visualmente primero
+      setBots(prevBots => 
+        prevBots.map(bot => 
+          bot.id === botId ? { ...bot, status: newStatus } : bot
+        )
+      );
+
+      // Llamar al backend para cambiar estado real
+      const endpoint = newStatus === 'RUNNING' ? 'start' : 'pause';
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
+      
+      const response = await fetch(`${BASE_URL}/api/bots/${botId}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (newStatus === 'RUNNING') {
+          console.log(`🚀 ${result.message}`);
+          console.log(`📊 Bot ${bot?.symbol} - Estrategia: ${bot?.strategy}`);
+          startBotTrading(botId, bot);
+        } else {
+          console.log(`⏸️ ${result.message}`);
+          stopBotTrading(botId);
+        }
+      } else {
+        throw new Error(`Error del servidor: ${response.status}`);
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error cambiando estado del bot:`, error);
+      // Revertir cambio si hay error
+      setBots(prevBots => 
+        prevBots.map(bot => 
+          bot.id === botId ? { ...bot, status: currentStatus } : bot
+        )
+      );
+      
+      // Mostrar error al usuario
+      alert(`Error: No se pudo ${newStatus === 'RUNNING' ? 'iniciar' : 'pausar'} el bot. ${error.message}`);
+    }
+  };
+
+  // Sistema básico de trading automático (simulación inteligente)
+  const startBotTrading = (botId, bot) => {
+    if (!bot) {
+      bot = bots.find(b => b.id === botId);
+      if (!bot) return;
+    }
+    
+    console.log(`🤖 Iniciando motor de trading IA para ${bot.symbol}`);
+    console.log(`📊 Estrategia: ${bot.strategy}`);
+    console.log(`💰 Capital: $${bot.stake} USDT`);
+    console.log(`🎯 TP: ${bot.takeProfit}% | SL: ${bot.stopLoss}%`);
+    console.log(`⚡ Mercado: ${bot.marketType?.toUpperCase() || 'SPOT'}`);
+    
+    // Simular análisis y operaciones inteligentes
+    const strategies = {
+      'Smart Scalper': { frequency: 45000, winRate: 0.7, avgProfit: 8 },        // 45s
+      'Trend Hunter': { frequency: 120000, winRate: 0.65, avgProfit: 25 },       // 2min  
+      'Manipulation Detector': { frequency: 180000, winRate: 0.8, avgProfit: 40 }, // 3min
+      'News Sentiment': { frequency: 300000, winRate: 0.6, avgProfit: 60 },      // 5min
+      'Volatility Master': { frequency: 60000, winRate: 0.72, avgProfit: 15 }    // 1min
+    };
+    
+    const strategyConfig = strategies[bot.strategy] || strategies['Smart Scalper'];
+    
+    // Análisis inicial
+    console.log(`🔍 ${bot.strategy} analizando mercado ${bot.symbol}...`);
+    console.log(`📈 Parámetros: Frecuencia ${strategyConfig.frequency/1000}s | Win Rate ${(strategyConfig.winRate*100).toFixed(1)}%`);
+    
+    const interval = setInterval(() => {
+      // Probabilidad de trade basada en la estrategia
+      const tradeChance = bot.strategy === 'Smart Scalper' ? 0.4 : 0.25;
+      
+      if (Math.random() < tradeChance) {
+        const signals = getTradeSignals(bot.strategy);
+        const signal = signals[Math.floor(Math.random() * signals.length)];
+        
+        const tradeType = Math.random() > 0.5 ? 'BUY' : 'SELL';
+        const isWin = Math.random() < strategyConfig.winRate;
+        
+        let pnl;
+        if (isWin) {
+          pnl = (Math.random() * strategyConfig.avgProfit * 0.8) + (strategyConfig.avgProfit * 0.2);
+        } else {
+          pnl = -((Math.random() * strategyConfig.avgProfit * 0.4) + (strategyConfig.avgProfit * 0.1));
+        }
+        
+        const price = (Math.random() * 10000 + 45000).toFixed(2);
+        const quantity = ((bot.stake * (bot.riskPercentage || 1) / 100) / parseFloat(price)).toFixed(6);
+        
+        console.log(`🎯 SEÑAL: ${signal}`);
+        console.log(`📊 ${bot.symbol} ${tradeType} | Precio: $${price} | Cantidad: ${quantity}`);
+        console.log(`💰 PnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} USDT | ${((pnl/bot.stake)*100).toFixed(2)}%`);
+        console.log(`---`);
+      } else {
+        // Logs de análisis sin operación
+        const analysisLogs = [
+          `📊 Analizando ${bot.symbol} - Volatilidad dentro de rango`,
+          `🔍 Esperando señal de entrada - RSI neutral`,
+          `📈 Monitoreando resistencias clave`,
+          `⏳ Condiciones de mercado evaluándose`,
+          `🎯 Buscando setup de alta probabilidad`
+        ];
+        
+        if (Math.random() > 0.7) { // 30% chance de mostrar análisis
+          const log = analysisLogs[Math.floor(Math.random() * analysisLogs.length)];
+          console.log(`${log} [${bot.strategy}]`);
+        }
+      }
+    }, strategyConfig.frequency);
+    
+    // Guardar el interval para poder detenerlo
+    window.botIntervals = window.botIntervals || {};
+    window.botIntervals[botId] = interval;
+  };
+
+  // Señales específicas por estrategia
+  const getTradeSignals = (strategy) => {
+    const signals = {
+      'Smart Scalper': [
+        'RSI Oversold + Volume Spike',
+        'Bollinger Band Touch + Momentum',
+        'Support Bounce + MACD Divergence',
+        'EMA Crossover + Low Volatility'
+      ],
+      'Trend Hunter': [
+        'Breakout Above Resistance',
+        'Higher High Formation', 
+        'Moving Average Alignment',
+        'Volume Confirmation Trend'
+      ],
+      'Manipulation Detector': [
+        'Whale Movement Detected',
+        'Stop Hunt Pattern',
+        'Order Book Imbalance',
+        'Unusual Volume Activity'
+      ],
+      'News Sentiment': [
+        'Bullish News Impact',
+        'Market Sentiment Shift',
+        'Social Media Trend',
+        'Fundamental Analysis Signal'  
+      ],
+      'Volatility Master': [
+        'Volatility Expansion',
+        'ATR Breakout Signal',
+        'Implied Volatility Edge',
+        'Range Breakout Confirmed'
+      ]
+    };
+    
+    return signals[strategy] || signals['Smart Scalper'];
+  };
+
+  const stopBotTrading = (botId) => {
+    const bot = bots.find(b => b.id === botId);
+    console.log(`🛑 Deteniendo motor de trading para ${bot?.symbol}`);
+    
+    if (window.botIntervals && window.botIntervals[botId]) {
+      clearInterval(window.botIntervals[botId]);
+      delete window.botIntervals[botId];
+    }
   };
 
   const handleUpdateBot = async (botId, parameters) => {
@@ -268,20 +434,9 @@ export default function BotsAdvanced() {
           onToggleBotStatus={handleToggleBotStatus}
         />
 
-        {/* Sección de Operaciones Historial */}
+        {/* Sección de Trading en Vivo */}
         <div className="mt-8">
-          <Card className="bg-gray-900/50 border-gray-700/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-xl">📊 Historial de Operaciones</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-gray-800/50 rounded-lg p-6 text-center">
-                <Activity className="mx-auto mb-4 text-gray-400" size={48} />
-                <p className="text-gray-400 mb-2">Historial de operaciones en tiempo real</p>
-                <p className="text-sm text-gray-500">Las operaciones aparecerán cuando los bots estén activos</p>
-              </div>
-            </CardContent>
-          </Card>
+          <LiveTradingFeed bots={bots} />
         </div>
 
         {/* Grid de Bots - DEPRECADO, reemplazado por tabla profesional */}
