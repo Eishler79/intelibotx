@@ -16,8 +16,9 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route element={<Layout />}>
+          <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/smart-trade" element={<SmartTrade />} />
           <Route path="/intelligence" element={<SmartIntelligence />} />
