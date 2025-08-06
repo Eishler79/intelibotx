@@ -29,6 +29,7 @@ export default function BotsAdvanced() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedBotId, setSelectedBotId] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   
   const [newBotData, setNewBotData] = useState({
     symbol: 'BTCUSDT',
@@ -172,7 +173,8 @@ export default function BotsAdvanced() {
         });
         
         console.log('✅ Bot creado exitosamente:', result.message);
-        alert(`✅ ${result.message}`);
+        setSuccessMessage(`✅ ${result.message}`);
+        setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         const error = await response.json();
         throw new Error(error.detail || 'Error del servidor');
@@ -180,7 +182,8 @@ export default function BotsAdvanced() {
       
     } catch (error) {
       console.error('❌ Error creando bot:', error);
-      alert(`Error: ${error.message}`);
+      setSuccessMessage(`❌ Error: ${error.message}`);
+      setTimeout(() => setSuccessMessage(null), 5000);
     }
   };
 
@@ -709,7 +712,10 @@ export default function BotsAdvanced() {
                 {/* Take Profit */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Take Profit: {newBotData.takeProfit}%
+                    Take Profit: {newBotData.takeProfit}% 
+                    <span className="text-green-400 ml-2">
+                      (+${((newBotData.stake * newBotData.takeProfit) / 100).toFixed(2)} USDT)
+                    </span>
                   </label>
                   <input 
                     type="range"
@@ -725,7 +731,10 @@ export default function BotsAdvanced() {
                 {/* Stop Loss */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Stop Loss: {newBotData.stopLoss}%
+                    Stop Loss: {newBotData.stopLoss}% 
+                    <span className="text-red-400 ml-2">
+                      (-${((newBotData.stake * newBotData.stopLoss) / 100).toFixed(2)} USDT)
+                    </span>
                   </label>
                   <input 
                     type="range"
@@ -772,6 +781,32 @@ export default function BotsAdvanced() {
             }}
             onClose={() => setControlPanelBot(null)}
           />
+        )}
+
+        {/* Modal de Mensaje de Éxito/Error */}
+        {successMessage && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className={`px-6 py-4 rounded-lg shadow-lg backdrop-blur-sm ${
+              successMessage.includes('❌') 
+                ? 'bg-red-900/90 border border-red-500/50 text-red-100' 
+                : 'bg-green-900/90 border border-green-500/50 text-green-100'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className="text-lg">
+                  {successMessage.includes('❌') ? '❌' : '✅'}
+                </div>
+                <div className="font-medium">
+                  {successMessage.replace('❌ ', '').replace('✅ ', '')}
+                </div>
+                <button 
+                  onClick={() => setSuccessMessage(null)}
+                  className="ml-2 text-gray-300 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
