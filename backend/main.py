@@ -82,6 +82,14 @@ try:
     print("✅ Bots routes loaded")
 except Exception as e:
     print(f"⚠️ Could not load bots routes: {e}")
+
+# Load real bots routes with live market data
+try:
+    from routes.real_bots import router as real_bots_router
+    app.include_router(real_bots_router)
+    print("✅ Real bots routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load real bots routes: {e}")
     
     # Create fallback endpoints for basic bot operations
     @app.get("/api/bots")
