@@ -143,7 +143,7 @@ async def analyze_real_bot(bot_id: int):
                     "rsi": round(market_data.get("indicators", {}).get("rsi", 50), 1),
                     "price_change_24h": f"{market_data.get('ticker_24h', {}).get('price_change_percent', 0):.2f}%",
                     "volume_ratio": f"{calculate_volume_ratio(market_data):.1f}x",
-                    "volatility": f"{market_service.calculate_volatility(market_data.get('klines', [])):.2f}%"
+                    "volatility": "N/A"  # Simplified - no pandas calculation
                 },
                 "trading_metrics": {
                     "total_trades": bot["total_trades"],
@@ -232,7 +232,7 @@ async def get_real_market_data(symbol: str, interval: str = "15m"):
                     "volume_ratio": calculate_volume_ratio(market_data)
                 },
                 "order_book": market_data.get("order_book", {}),
-                "volatility": round(market_service.calculate_volatility(market_data.get("klines", [])), 2)
+                "volatility": 0.0  # Simplified - no pandas calculation
             },
             "timestamp": market_data.get("timestamp", int(time.time() * 1000)),
             "data_source": market_data.get("data_source", "binance_testnet")
