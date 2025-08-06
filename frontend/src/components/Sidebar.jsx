@@ -7,8 +7,7 @@ const links = [
   { to: "/smart-trade", label: "SmartTrade Panel", icon: <BarChart2 size={18} /> },
   { to: "/intelligence", label: "Inteligencia", icon: <Cpu size={18} /> },
   { to: "/portfolio", label: "Portafolio", icon: <PieChart size={18} /> },
-  { to: "/bots", label: "Bots", icon: <Layers size={18} /> },
-  { to: "/bots-advanced", label: "🤖 InteliBots AI", icon: <Bot size={18} /> },
+  { to: "/bots", label: "🤖 InteliBots AI", icon: <Bot size={18} /> },
 ];
 
 const Sidebar = () => {
