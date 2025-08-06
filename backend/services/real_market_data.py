@@ -131,7 +131,7 @@ class RealMarketDataService:
             
             # Calcular indicadores básicos si tenemos datos
             indicators = {}
-            if not klines_df.empty and len(klines_df) > 20:
+            if isinstance(klines_df, pd.DataFrame) and not klines_df.empty and len(klines_df) > 20:
                 # RSI simplificado
                 delta = klines_df['close'].diff()
                 gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
@@ -155,7 +155,7 @@ class RealMarketDataService:
                 "symbol": symbol,
                 "current_price": current_price,
                 "ticker_24h": ticker_24h,
-                "klines": klines_df.to_dict('records') if not klines_df.empty else [],
+                "klines": klines_df.to_dict('records') if isinstance(klines_df, pd.DataFrame) and not klines_df.empty else [],
                 "order_book": order_book,
                 "indicators": indicators,
                 "timestamp": int(time.time() * 1000),
@@ -184,9 +184,9 @@ class RealMarketDataService:
             print(f"❌ Error obteniendo datos múltiples símbolos: {e}")
             return {}
     
-    def calculate_volatility(self, klines_df: pd.DataFrame, period: int = 20) -> float:
+    def calculate_volatility(self, klines_df, period: int = 20) -> float:
         """Calcular volatilidad basada en ATR"""
-        if klines_df.empty or len(klines_df) < period:
+        if not isinstance(klines_df, pd.DataFrame) or klines_df.empty or len(klines_df) < period:
             return 0.0
         
         try:
