@@ -16,13 +16,23 @@ import {
 } from "lucide-react";
 
 export default function ProfessionalBotsTable({ 
-  bots, 
+  bots = [], 
   onSelectBot, 
   onDeleteBot, 
   onControlBot,
   onToggleBotStatus 
 }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+  // Validación de seguridad
+  if (!Array.isArray(bots)) {
+    console.warn('ProfessionalBotsTable: bots no es un array válido');
+    return (
+      <div className="bg-gray-900/50 border border-gray-700/50 rounded-xl backdrop-blur-sm overflow-hidden p-8 text-center">
+        <div className="text-gray-400">Error cargando la tabla de bots</div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -53,11 +63,13 @@ export default function ProfessionalBotsTable({
   };
 
   const sortedBots = React.useMemo(() => {
+    if (!Array.isArray(bots)) return [];
+    
     let sortableBots = [...bots];
     if (sortConfig.key) {
       sortableBots.sort((a, b) => {
-        let aValue = a[sortConfig.key];
-        let bValue = b[sortConfig.key];
+        let aValue = a?.[sortConfig.key];
+        let bValue = b?.[sortConfig.key];
         
         // Handle nested metrics
         if (sortConfig.key.includes('.')) {
@@ -66,10 +78,14 @@ export default function ProfessionalBotsTable({
           bValue = keys.reduce((obj, key) => obj?.[key], b);
         }
         
-        if (aValue < bValue) {
+        // Convert to numbers if possible
+        const aNum = parseFloat(aValue) || 0;
+        const bNum = parseFloat(bValue) || 0;
+        
+        if (aNum < bNum) {
           return sortConfig.direction === 'asc' ? -1 : 1;
         }
-        if (aValue > bValue) {
+        if (aNum > bNum) {
           return sortConfig.direction === 'asc' ? 1 : -1;
         }
         return 0;
@@ -79,7 +95,8 @@ export default function ProfessionalBotsTable({
   }, [bots, sortConfig]);
 
   const formatPnL = (bot) => {
-    const pnl = (Math.random() - 0.5) * 2000; // Mock PnL
+    // Usar PnL real del bot si está disponible, sino 0
+    const pnl = parseFloat(bot.metrics?.realizedPnL || 0);
     return {
       value: pnl,
       formatted: pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`,
@@ -168,6 +185,11 @@ export default function ProfessionalBotsTable({
           </thead>
           <tbody>
             {sortedBots.map((bot, index) => {
+              if (!bot || !bot.id) {
+                console.warn(`Bot inválido en index ${index}:`, bot);
+                return null;
+              }
+              
               const pnl = formatPnL(bot);
               return (
                 <tr 
@@ -180,13 +202,13 @@ export default function ProfessionalBotsTable({
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                        {bot.symbol.slice(0, 2)}
+                        {(bot.symbol || 'N/A').slice(0, 2)}
                       </div>
                       <div>
-                        <div className="font-semibold text-white">{bot.symbol}</div>
-                        <div className="text-xs text-gray-400">{bot.strategy}</div>
+                        <div className="font-semibold text-white">{bot.symbol || 'N/A'}</div>
+                        <div className="text-xs text-gray-400">{bot.strategy || 'Sin Estrategia'}</div>
                         <div className="text-xs text-purple-400">
-                          {bot.marketType?.toUpperCase() || 'SPOT'}
+                          {(bot.marketType || 'spot').toUpperCase()}
                         </div>
                       </div>
                     </div>
@@ -212,7 +234,7 @@ export default function ProfessionalBotsTable({
                       {pnl.formatted}
                     </div>
                     <div className="text-xs text-gray-400">
-                      {pnl.value >= 0 ? '+' : ''}{((pnl.value / bot.stake) * 100).toFixed(2)}%
+                      {pnl.value >= 0 ? '+' : ''}{bot.stake > 0 ? ((pnl.value / bot.stake) * 100).toFixed(2) : '0.00'}%
                     </div>
                   </td>
 
@@ -260,7 +282,7 @@ export default function ProfessionalBotsTable({
                             ? 'text-yellow-400 hover:text-yellow-300' 
                             : 'text-green-400 hover:text-green-300'
                         }`}
-                        onClick={() => onToggleBotStatus(bot.id, bot.status)}
+                        onClick={() => onToggleBotStatus && onToggleBotStatus(bot.id, bot.status)}
                         title={bot.status === 'RUNNING' ? 'Pausar Bot' : 'Iniciar Bot'}
                       >
                         {bot.status === 'RUNNING' ? <Pause size={14} /> : <Play size={14} />}
@@ -271,8 +293,8 @@ export default function ProfessionalBotsTable({
                         size="sm"
                         variant="ghost"
                         className="w-8 h-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-gray-700"
-                        onClick={() => onSelectBot(bot)}
-                        title="Ver Detalles"
+                        onClick={() => onSelectBot && onSelectBot(bot.id)}
+                        title="Ver Historial de Trading"
                       >
                         <Eye size={14} />
                       </Button>
@@ -282,7 +304,7 @@ export default function ProfessionalBotsTable({
                         size="sm"
                         variant="ghost"
                         className="w-8 h-8 p-0 text-purple-400 hover:text-purple-300 hover:bg-gray-700"
-                        onClick={() => onControlBot(bot)}
+                        onClick={() => onControlBot && onControlBot(bot)}
                         title="Configurar Bot"
                       >
                         <Settings size={14} />
@@ -294,7 +316,7 @@ export default function ProfessionalBotsTable({
                         variant="ghost"
                         className="w-8 h-8 p-0 text-red-400 hover:text-red-300 hover:bg-gray-700"
                         onClick={() => {
-                          if (confirm(`¿Eliminar bot ${bot.symbol}?`)) {
+                          if (onDeleteBot && confirm(`¿Eliminar bot ${bot.symbol || 'N/A'}?`)) {
                             onDeleteBot(bot.id);
                           }
                         }}
