@@ -238,10 +238,16 @@ export default function BotsAdvanced() {
   };
 
   const handleToggleBotStatus = async (botId, currentStatus) => {
-    const newStatus = currentStatus === 'RUNNING' ? 'PAUSED' : 'RUNNING';
-    const bot = bots.find(b => b.id === botId);
-    
     try {
+      console.log('🔄 Cambiando estado bot:', botId, 'de', currentStatus);
+      
+      const newStatus = currentStatus === 'RUNNING' ? 'PAUSED' : 'RUNNING';
+      const bot = bots.find(b => b.id === botId);
+      
+      if (!bot) {
+        throw new Error('Bot no encontrado');
+      }
+      
       // Actualizar estado visualmente primero
       setBots(prevBots => 
         prevBots.map(bot => 
@@ -274,12 +280,17 @@ export default function BotsAdvanced() {
       
     } catch (error) {
       console.error(`❌ Error cambiando estado del bot:`, error);
+      
       // Revertir cambio si hay error
       setBots(prevBots => 
         prevBots.map(bot => 
           bot.id === botId ? { ...bot, status: currentStatus } : bot
         )
       );
+      
+      // Mostrar mensaje de error al usuario
+      setSuccessMessage(`❌ Error al cambiar estado del bot: ${error.message}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
     }
   };
 
@@ -396,8 +407,16 @@ export default function BotsAdvanced() {
   };
 
   const handleBotSelect = (botId) => {
-    setSelectedBotId(botId);
-    setActiveTab('history');
+    try {
+      console.log('🔍 Seleccionando bot:', botId);
+      setSelectedBotId(botId);
+      setActiveTab('history');
+      console.log('✅ Bot seleccionado exitosamente');
+    } catch (error) {
+      console.error('❌ Error en handleBotSelect:', error);
+      setSuccessMessage(`❌ Error al seleccionar bot: ${error.message}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    }
   };
 
   useEffect(() => {
@@ -573,25 +592,34 @@ export default function BotsAdvanced() {
                   <p className="text-gray-400">Bot ID: {selectedBotId}</p>
                 </div>
                 <div className="flex space-x-2">
-                  {bots.map((bot) => (
-                    <Button
-                      key={bot.id}
-                      variant={selectedBotId === bot.id ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedBotId(bot.id)}
-                      className={selectedBotId === bot.id 
-                        ? 'bg-blue-600 text-white text-xs' 
-                        : 'text-gray-300 border-gray-600 hover:text-white text-xs'
-                      }
-                    >
-                      Bot {bot.id} ({bot.strategy})
-                    </Button>
-                  ))}
+                  {bots.map((bot) => {
+                    if (!bot || !bot.id) return null;
+                    return (
+                      <Button
+                        key={bot.id}
+                        variant={selectedBotId === bot.id ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => {
+                          console.log('🔄 Cambiando bot seleccionado a:', bot.id);
+                          setSelectedBotId(bot.id);
+                        }}
+                        className={selectedBotId === bot.id 
+                          ? 'bg-blue-600 text-white text-xs' 
+                          : 'text-gray-300 border-gray-600 hover:text-white text-xs'
+                        }
+                      >
+                        Bot {bot.id} ({bot.strategy || 'N/A'})
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
             
-            <TradingHistory botId={selectedBotId} />
+            {/* Envolver TradingHistory en try-catch visual */}
+            <div className="relative">
+              <TradingHistory botId={selectedBotId} />
+            </div>
           </div>
         )}
 
