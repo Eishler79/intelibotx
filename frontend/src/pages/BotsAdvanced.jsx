@@ -149,6 +149,14 @@ export default function BotsAdvanced() {
     try {
       const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
       
+      // Encontrar el bot antes de eliminarlo
+      const bot = bots.find(b => b.id === botId);
+      if (!bot) {
+        console.log('Bot no encontrado en la lista local');
+        return;
+      }
+
+      // Intentar eliminar del servidor
       const response = await fetch(`${BASE_URL}/api/bots/${botId}`, {
         method: 'DELETE',
         headers: {
@@ -158,21 +166,36 @@ export default function BotsAdvanced() {
 
       if (response.ok) {
         const result = await response.json();
-        setBots(prevBots => prevBots.filter(bot => bot.id !== botId));
-        console.log('✅ Bot eliminado:', result.message);
-        
-        // Detener bot si estaba corriendo
-        if (window.botIntervals && window.botIntervals[botId]) {
-          clearInterval(window.botIntervals[botId]);
-          delete window.botIntervals[botId];
-        }
+        console.log('✅ Bot eliminado del servidor:', result.message);
+      } else if (response.status === 404) {
+        // Bot no existe en servidor, solo eliminar localmente
+        console.log('⚠️ Bot no encontrado en servidor, eliminando solo localmente');
       } else {
         const error = await response.json();
         throw new Error(error.detail || 'Error del servidor');
       }
+
+      // Siempre eliminar de la interfaz local
+      setBots(prevBots => prevBots.filter(bot => bot.id !== botId));
+      
+      // Detener bot si estaba corriendo
+      if (window.botIntervals && window.botIntervals[botId]) {
+        clearInterval(window.botIntervals[botId]);
+        delete window.botIntervals[botId];
+      }
+
+      console.log(`🗑️ Bot ${bot.symbol} eliminado de la interfaz`);
+      
     } catch (error) {
       console.error('❌ Error eliminando bot:', error);
-      alert(`Error: ${error.message}`);
+      
+      // Si es un error de conexión, eliminar solo localmente
+      if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
+        setBots(prevBots => prevBots.filter(bot => bot.id !== botId));
+        console.log('🔌 Sin conexión - Bot eliminado solo localmente');
+      } else {
+        alert(`Error: ${error.message}`);
+      }
     }
   };
 
@@ -396,34 +419,8 @@ export default function BotsAdvanced() {
         }
       } catch (error) {
         console.error("Error loading bots:", error);
-        // Fallback con datos de ejemplo
-        setBots([
-          {
-            id: 1,
-            symbol: "BTCUSDT",
-            strategy: "Smart Scalper",
-            stake: 1000,
-            takeProfit: 2.5,
-            stopLoss: 1.5,
-            riskPercentage: 1.0,
-            marketType: "spot",
-            status: "STOPPED",
-            metrics: getAdvancedMetrics({})
-          },
-          {
-            id: 2,
-            symbol: "ETHUSDT", 
-            strategy: "Trend Hunter",
-            stake: 500,
-            takeProfit: 3.0,
-            stopLoss: 2.0,
-            riskPercentage: 1.5,
-            marketType: "futures",
-            status: "STOPPED",
-            metrics: getAdvancedMetrics({})
-          }
-        ]);
-        console.log("📝 Usando datos de ejemplo (offline mode)");
+        console.log("📝 Sin conexión al servidor - Iniciando sin bots");
+        setBots([]); // Empezar sin bots si no hay conexión
       } finally {
         setLoading(false);
       }
