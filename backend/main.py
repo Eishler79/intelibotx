@@ -145,25 +145,36 @@ except Exception as e:
 async def get_real_market_simple(symbol: str):
     """Obtener datos reales de mercado simplificados"""
     import httpx
+    import time
     
     try:
         async with httpx.AsyncClient() as client:
+            # Obtener ticker 24h
             response = await client.get(f"https://testnet.binance.vision/api/v3/ticker/24hr", params={"symbol": symbol.upper()})
             if response.status_code == 200:
                 data = response.json()
+                
+                # Obtener precio actual separadamente para mayor precisión
+                price_response = await client.get(f"https://testnet.binance.vision/api/v3/ticker/price", params={"symbol": symbol.upper()})
+                current_price = float(data["lastPrice"])
+                if price_response.status_code == 200:
+                    price_data = price_response.json()
+                    current_price = float(price_data["price"])
+                
                 return {
                     "symbol": symbol.upper(),
-                    "current_price": float(data["lastPrice"]),
+                    "current_price": current_price,
                     "price_change_24h": float(data["priceChangePercent"]),
                     "volume_24h": float(data["volume"]),
                     "high_24h": float(data["highPrice"]),
                     "low_24h": float(data["lowPrice"]),
-                    "timestamp": int(data["closeTime"]),
-                    "data_source": "binance_testnet_real"
+                    "timestamp": int(time.time() * 1000),
+                    "data_source": "binance_testnet_real",
+                    "success": True
                 }
-            return {"error": "No data available"}
+            return {"error": "No data available", "success": False}
     except Exception as e:
-        return {"error": f"Error obteniendo datos: {str(e)}"}
+        return {"error": f"Error obteniendo datos de mercado: {str(e)}", "success": False}
 
 @app.post("/api/real-bots/create-simple")
 async def create_simple_real_bot(bot_data: dict):
