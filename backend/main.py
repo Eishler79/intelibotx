@@ -82,10 +82,55 @@ try:
     print("✅ Bots routes loaded")
 except Exception as e:
     print(f"⚠️ Could not load bots routes: {e}")
-    # Create minimal fallback endpoint
+    
+    # Create fallback endpoints for basic bot operations
     @app.get("/api/bots")
-    async def fallback_bots():
-        return [{"id": 1, "symbol": "BTCUSDT", "strategy": "Smart Scalper", "status": "DEMO"}]
+    async def fallback_get_bots():
+        return []  # Start empty instead of demo bot
+    
+    @app.post("/api/create-bot")
+    async def fallback_create_bot(bot_data: dict):
+        # Generate a simple ID
+        import time
+        bot_id = int(time.time())
+        
+        return {
+            "message": f"✅ Bot {bot_data.get('strategy', 'Bot')} creado para {bot_data.get('symbol', 'UNKNOWN')} (MODO DEMO)",
+            "bot_id": bot_id,
+            "bot": {
+                "id": bot_id,
+                "symbol": bot_data.get("symbol", "BTCUSDT"),
+                "strategy": bot_data.get("strategy", "Smart Scalper"),
+                "stake": bot_data.get("stake", 1000),
+                "take_profit": bot_data.get("take_profit", 2.5),
+                "stop_loss": bot_data.get("stop_loss", 1.5),
+                "risk_percentage": bot_data.get("risk_percentage", 1.0),
+                "market_type": bot_data.get("market_type", "spot")
+            }
+        }
+    
+    @app.delete("/api/bots/{bot_id}")
+    async def fallback_delete_bot(bot_id: int):
+        return {
+            "message": f"🗑️ Bot eliminado (MODO DEMO)",
+            "bot_id": bot_id
+        }
+    
+    @app.post("/api/bots/{bot_id}/start")
+    async def fallback_start_bot(bot_id: int):
+        return {
+            "message": f"🚀 Bot {bot_id} iniciado (MODO DEMO)",
+            "bot_id": bot_id,
+            "status": "RUNNING"
+        }
+    
+    @app.post("/api/bots/{bot_id}/pause")  
+    async def fallback_pause_bot(bot_id: int):
+        return {
+            "message": f"⏸️ Bot {bot_id} pausado (MODO DEMO)",
+            "bot_id": bot_id,
+            "status": "PAUSED"
+        }
 
 if __name__ == "__main__":
     import uvicorn
