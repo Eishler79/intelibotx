@@ -18,6 +18,7 @@ import {
 export default function ProfessionalBotsTable({ 
   bots = [], 
   onSelectBot, 
+  onViewDetails,
   onDeleteBot, 
   onControlBot,
   onToggleBotStatus 
@@ -310,15 +311,26 @@ export default function ProfessionalBotsTable({
                         {bot.status === 'RUNNING' ? <Pause size={14} /> : <Play size={14} />}
                       </Button>
 
-                      {/* View Details */}
+                      {/* View Advanced Details */}
                       <Button
                         size="sm"
                         variant="ghost"
                         className="w-8 h-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-gray-700"
+                        onClick={() => onViewDetails && onViewDetails(bot)}
+                        title="Ver Indicadores Avanzados"
+                      >
+                        <Eye size={14} />
+                      </Button>
+
+                      {/* View Trading History */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-8 h-8 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-gray-700"
                         onClick={() => onSelectBot && onSelectBot(bot.id)}
                         title="Ver Historial de Trading"
                       >
-                        <Eye size={14} />
+                        <BarChart3 size={14} />
                       </Button>
 
                       {/* Settings */}

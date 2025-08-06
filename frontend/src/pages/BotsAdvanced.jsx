@@ -408,13 +408,25 @@ export default function BotsAdvanced() {
 
   const handleBotSelect = (botId) => {
     try {
-      console.log('🔍 Seleccionando bot:', botId);
+      console.log('🔍 Seleccionando bot para historial:', botId);
       setSelectedBotId(botId);
       setActiveTab('history');
-      console.log('✅ Bot seleccionado exitosamente');
+      console.log('✅ Bot seleccionado para historial exitosamente');
     } catch (error) {
       console.error('❌ Error en handleBotSelect:', error);
       setSuccessMessage(`❌ Error al seleccionar bot: ${error.message}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    }
+  };
+
+  const handleViewBotDetails = (bot) => {
+    try {
+      console.log('👁️ Mostrando detalles avanzados del bot:', bot.id);
+      setSelectedBot(bot);
+      console.log('✅ Detalles del bot mostrados exitosamente');
+    } catch (error) {
+      console.error('❌ Error en handleViewBotDetails:', error);
+      setSuccessMessage(`❌ Error al mostrar detalles: ${error.message}`);
       setTimeout(() => setSuccessMessage(null), 3000);
     }
   };
@@ -570,6 +582,7 @@ export default function BotsAdvanced() {
             <ProfessionalBotsTable 
               bots={bots}
               onSelectBot={handleBotSelect}
+              onViewDetails={handleViewBotDetails}
               onDeleteBot={handleDeleteBot}
               onControlBot={setControlPanelBot}
               onToggleBotStatus={handleToggleBotStatus}
@@ -771,6 +784,39 @@ export default function BotsAdvanced() {
                     step="0.1"
                     value={newBotData.stopLoss}
                     onChange={(e) => setNewBotData(prev => ({...prev, stopLoss: parseFloat(e.target.value)}))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Tipo de Mercado */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Tipo de Mercado</label>
+                  <select 
+                    value={newBotData.marketType}
+                    onChange={(e) => setNewBotData(prev => ({...prev, marketType: e.target.value}))}
+                    className="w-full bg-gray-800 border-gray-600 rounded-lg px-3 py-2 text-white"
+                  >
+                    <option value="spot">Spot - Trading sin apalancamiento</option>
+                    <option value="futures">Futures - Trading con apalancamiento</option>
+                    <option value="margin">Margin - Trading con margen</option>
+                  </select>
+                </div>
+
+                {/* Riesgo por Trade */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Riesgo por Trade: {newBotData.riskPercentage}%
+                    <span className="text-yellow-400 ml-2">
+                      (${((newBotData.stake * newBotData.riskPercentage) / 100).toFixed(2)} USDT por operación)
+                    </span>
+                  </label>
+                  <input 
+                    type="range"
+                    min="0.1"
+                    max="5"
+                    step="0.1"
+                    value={newBotData.riskPercentage}
+                    onChange={(e) => setNewBotData(prev => ({...prev, riskPercentage: parseFloat(e.target.value)}))}
                     className="w-full"
                   />
                 </div>
