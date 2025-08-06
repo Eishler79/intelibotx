@@ -90,6 +90,14 @@ try:
     print("✅ Real bots routes loaded")
 except Exception as e:
     print(f"⚠️ Could not load real bots routes: {e}")
+
+# Load trading history routes
+try:
+    from routes.trading_history import router as trading_history_router
+    app.include_router(trading_history_router)
+    print("✅ Trading history routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load trading history routes: {e}")
     
     # Create fallback endpoints for basic bot operations
     @app.get("/api/bots")
