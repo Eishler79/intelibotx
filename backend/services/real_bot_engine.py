@@ -147,7 +147,7 @@ class RealBotEngine:
                     "price_change_24h": market_data.get("ticker_24h", {}).get("price_change_percent", 0),
                     "volume_24h": market_data.get("ticker_24h", {}).get("volume", 0),
                     "rsi": market_data.get("indicators", {}).get("rsi", 50),
-                    "volatility": market_service.calculate_volatility(pd.DataFrame(market_data.get("klines", [])))
+                    "volatility": 0.0  # Simplified - no pandas calculation
                 },
                 "timestamp": int(time.time() * 1000)
             }
