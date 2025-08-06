@@ -235,16 +235,21 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 onChange={(value) => handleParameterChange('maxOpenPositions', value)}
                 icon={Activity}
               />
-              <SliderInput
-                label="Cooldown (minutos)"
-                value={parameters.cooldownMinutes}
-                min={5}
-                max={120}
-                step={5}
-                suffix="m"
-                onChange={(value) => handleParameterChange('cooldownMinutes', value)}
-                icon={Settings}
-              />
+              <div className="space-y-2">
+                <SliderInput
+                  label="Cooldown (minutos)"
+                  value={parameters.cooldownMinutes}
+                  min={5}
+                  max={120}
+                  step={5}
+                  suffix="m"
+                  onChange={(value) => handleParameterChange('cooldownMinutes', value)}
+                  icon={Settings}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  ⏱️ Tiempo de espera entre operaciones para evitar overtrading
+                </p>
+              </div>
             </div>
           </div>
 

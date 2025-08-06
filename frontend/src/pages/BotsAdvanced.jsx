@@ -6,6 +6,7 @@ import { fetchBots } from "@/services/api";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import BotControlPanel from "@/components/BotControlPanel";
 import AdvancedMetrics from "@/components/AdvancedMetrics";
+import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -24,6 +25,16 @@ export default function BotsAdvanced() {
   const [selectedBot, setSelectedBot] = useState(null);
   const [controlPanelBot, setControlPanelBot] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newBotData, setNewBotData] = useState({
+    symbol: 'BTCUSDT',
+    strategy: 'Smart Scalper',
+    stake: 1000,
+    takeProfit: 2.5,
+    stopLoss: 1.5,
+    riskPercentage: 1.0,
+    marketType: 'spot'
+  });
 
   // Mock advanced metrics - En producción vendrían del backend
   const getAdvancedMetrics = (bot) => ({
@@ -65,6 +76,50 @@ export default function BotsAdvanced() {
       case 'ERROR': return <AlertTriangle size={12} />;
       default: return <Square size={12} />;
     }
+  };
+
+  const handleCreateBot = async () => {
+    try {
+      const newBot = {
+        id: Date.now(),
+        ...newBotData,
+        status: 'STOPPED',
+        metrics: getAdvancedMetrics({})
+      };
+      
+      setBots(prevBots => [...prevBots, newBot]);
+      setShowCreateModal(false);
+      
+      // Reset form
+      setNewBotData({
+        symbol: 'BTCUSDT',
+        strategy: 'Smart Scalper', 
+        stake: 1000,
+        takeProfit: 2.5,
+        stopLoss: 1.5,
+        riskPercentage: 1.0,
+        marketType: 'spot'
+      });
+      
+      console.log('Bot creado:', newBot);
+    } catch (error) {
+      console.error('Error creando bot:', error);
+    }
+  };
+
+  const handleDeleteBot = (botId) => {
+    setBots(prevBots => prevBots.filter(bot => bot.id !== botId));
+    console.log(`Bot ${botId} eliminado`);
+  };
+
+  const handleToggleBotStatus = (botId, currentStatus) => {
+    const newStatus = currentStatus === 'RUNNING' ? 'PAUSED' : 'RUNNING';
+    setBots(prevBots => 
+      prevBots.map(bot => 
+        bot.id === botId ? { ...bot, status: newStatus } : bot
+      )
+    );
+    console.log(`Bot ${botId} cambiado a ${newStatus}`);
   };
 
   const handleUpdateBot = async (botId, parameters) => {
@@ -145,7 +200,10 @@ export default function BotsAdvanced() {
             </h1>
             <p className="text-gray-400 mt-2">Dashboard avanzado superior a 3Commas</p>
           </div>
-          <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+          >
             + Crear Bot IA
           </Button>
         </div>
@@ -201,7 +259,33 @@ export default function BotsAdvanced() {
           </Card>
         </div>
 
-        {/* Grid de Bots */}
+        {/* Tabla Profesional de Bots */}
+        <ProfessionalBotsTable 
+          bots={bots}
+          onSelectBot={setSelectedBot}
+          onDeleteBot={handleDeleteBot}
+          onControlBot={setControlPanelBot}
+          onToggleBotStatus={handleToggleBotStatus}
+        />
+
+        {/* Sección de Operaciones Historial */}
+        <div className="mt-8">
+          <Card className="bg-gray-900/50 border-gray-700/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">📊 Historial de Operaciones</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-gray-800/50 rounded-lg p-6 text-center">
+                <Activity className="mx-auto mb-4 text-gray-400" size={48} />
+                <p className="text-gray-400 mb-2">Historial de operaciones en tiempo real</p>
+                <p className="text-sm text-gray-500">Las operaciones aparecerán cuando los bots estén activos</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Grid de Bots - DEPRECADO, reemplazado por tabla profesional */}
+        <div style={{display: 'none'}}>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {bots.map((bot) => (
             <Card 
@@ -264,10 +348,24 @@ export default function BotsAdvanced() {
                   >
                     <Settings size={14} />
                   </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-red-600 hover:bg-red-800 text-red-400"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`¿Eliminar bot ${bot.symbol}?`)) {
+                        handleDeleteBot(bot.id);
+                      }
+                    }}
+                  >
+                    ✕
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
+        </div>
         </div>
 
         {/* Panel de Detalles */}
@@ -304,6 +402,162 @@ export default function BotsAdvanced() {
                   equityData={selectedBot.metrics.equity}
                   tradeHistory={selectedBot.metrics.trades}
                 />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Modal de Creación */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <Card className="bg-gray-900 border-gray-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    🤖 Crear Bot IA Inteligente
+                  </CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setShowCreateModal(false)}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Símbolo */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Par de Trading</label>
+                  <select 
+                    value={newBotData.symbol}
+                    onChange={(e) => setNewBotData(prev => ({...prev, symbol: e.target.value}))}
+                    className="w-full bg-gray-800 border-gray-600 rounded-lg px-3 py-2 text-white"
+                  >
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="ADAUSDT">ADA/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                  </select>
+                </div>
+
+                {/* Tipo de Mercado */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Tipo de Mercado</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button 
+                      variant={newBotData.marketType === 'spot' ? 'default' : 'outline'}
+                      onClick={() => setNewBotData(prev => ({...prev, marketType: 'spot'}))}
+                      className="w-full"
+                    >
+                      Spot
+                    </Button>
+                    <Button 
+                      variant={newBotData.marketType === 'futures' ? 'default' : 'outline'}
+                      onClick={() => setNewBotData(prev => ({...prev, marketType: 'futures'}))}
+                      className="w-full"
+                    >
+                      Futuros
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Estrategia */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Estrategia IA</label>
+                  <select 
+                    value={newBotData.strategy}
+                    onChange={(e) => setNewBotData(prev => ({...prev, strategy: e.target.value}))}
+                    className="w-full bg-gray-800 border-gray-600 rounded-lg px-3 py-2 text-white"
+                  >
+                    <option value="Smart Scalper">Smart Scalper - IA Multi-timeframe</option>
+                    <option value="Trend Hunter">Trend Hunter - Detección de Tendencias IA</option>
+                    <option value="Manipulation Detector">Manipulation Detector - Anti-Whales IA</option>
+                    <option value="News Sentiment">News Sentiment - IA + Análisis de Noticias</option>
+                    <option value="Volatility Master">Volatility Master - IA Adaptativa</option>
+                  </select>
+                </div>
+
+                {/* Capital */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Capital (USDT): ${newBotData.stake}
+                  </label>
+                  <input 
+                    type="range"
+                    min="100"
+                    max="10000"
+                    step="100"
+                    value={newBotData.stake}
+                    onChange={(e) => setNewBotData(prev => ({...prev, stake: parseInt(e.target.value)}))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Take Profit */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Take Profit: {newBotData.takeProfit}% (${(newBotData.stake * newBotData.takeProfit / 100).toFixed(2)} USDT)
+                  </label>
+                  <input 
+                    type="range"
+                    min="0.5"
+                    max="10"
+                    step="0.1"
+                    value={newBotData.takeProfit}
+                    onChange={(e) => setNewBotData(prev => ({...prev, takeProfit: parseFloat(e.target.value)}))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Stop Loss */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Stop Loss: {newBotData.stopLoss}% (-${(newBotData.stake * newBotData.stopLoss / 100).toFixed(2)} USDT)
+                  </label>
+                  <input 
+                    type="range"
+                    min="0.5"
+                    max="5"
+                    step="0.1"
+                    value={newBotData.stopLoss}
+                    onChange={(e) => setNewBotData(prev => ({...prev, stopLoss: parseFloat(e.target.value)}))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Risk per Trade */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Riesgo por Trade: {newBotData.riskPercentage}%
+                  </label>
+                  <input 
+                    type="range"
+                    min="0.1"
+                    max="5"
+                    step="0.1"
+                    value={newBotData.riskPercentage}
+                    onChange={(e) => setNewBotData(prev => ({...prev, riskPercentage: parseFloat(e.target.value)}))}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <Button 
+                    onClick={() => setShowCreateModal(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleCreateBot}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500"
+                  >
+                    🚀 Crear Bot Inteligente
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
