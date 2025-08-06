@@ -173,6 +173,15 @@ export default function ProfessionalBotsTable({
               </th>
               <th 
                 className="text-right px-4 py-4 font-medium text-gray-300 cursor-pointer hover:text-white transition-colors"
+                onClick={() => handleSort('takeProfit')}
+              >
+                TP/SL
+                {sortConfig.key === 'takeProfit' && (
+                  <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
+              <th 
+                className="text-right px-4 py-4 font-medium text-gray-300 cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('metrics.maxDrawdown')}
               >
                 Max DD
@@ -260,6 +269,19 @@ export default function ProfessionalBotsTable({
                       {bot.metrics?.totalTrades || 0}
                     </div>
                     <div className="text-xs text-gray-400">Total</div>
+                  </td>
+
+                  {/* TP/SL */}
+                  <td className="px-4 py-4 text-right">
+                    <div className="font-semibold text-green-400">
+                      +{bot.takeProfit || 0}%
+                    </div>
+                    <div className="text-xs text-red-400">
+                      -{bot.stopLoss || 0}%
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      ${((bot.stake || 0) * ((bot.takeProfit || 0) / 100)).toFixed(2)}
+                    </div>
                   </td>
 
                   {/* Max Drawdown */}

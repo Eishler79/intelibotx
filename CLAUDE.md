@@ -3,6 +3,35 @@
 Este documento **unifica el contexto completo** del proyecto InteliBotX desarrollado por Eduard Guzmán.
 Claude debe seguir las reglas del archivo `claude/claude_project_system_prompt.txt`.
 
+## ⚠️ REGLAS CRÍTICAS DE DESARROLLO
+
+### 🚫 **NO SOBREESCRIBIR CÓDIGO FUNCIONAL**
+**NUNCA eliminar o reemplazar funcionalidades que YA FUNCIONAN** sin explícita autorización del usuario.
+
+#### ✅ **Permitido:**
+- **Arreglar errores** en código que no funciona
+- **Agregar nuevas funcionalidades** sin afectar las existentes  
+- **Mejorar performance** manteniendo funcionalidad intacta
+- **Refactorizar** solo si se mantiene 100% la funcionalidad
+
+#### ❌ **PROHIBIDO:**
+- **Eliminar características** que funcionan correctamente
+- **Cambiar comportamiento** de funciones estables
+- **Reemplazar componentes** sin verificar compatibilidad completa
+- **Modificar APIs** que ya están integradas y funcionando
+
+#### 🔍 **Antes de cada cambio:**
+1. **Verificar** que la funcionalidad actual no se rompa
+2. **Probar en local** antes de hacer commit/push
+3. **Preguntar al usuario** si hay dudas sobre mantener funcionalidad
+4. **Documentar** qué se mantiene intacto vs. qué se modifica
+
+### 📋 **Flujo Obligatorio:**
+1. **Identificar** funcionalidades existentes que DEBEN mantenerse
+2. **Probar en local** con `npm run dev` antes de commit
+3. **Solo hacer push** cuando esté 100% verificado
+4. **Documentar** cambios sin afectar código estable
+
 ## 🎯 CONTEXTO GENERAL DEL PROYECTO
 
 **InteliBotX** es un sistema de trading inteligente que comprende:
