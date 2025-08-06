@@ -143,7 +143,9 @@ async def create_bot(bot_data: dict):
                 stake=bot_data.get("stake", 100.0),
                 take_profit=bot_data.get("take_profit", 2.5),
                 stop_loss=bot_data.get("stop_loss", 1.5),
-                dca_levels=bot_data.get("dca_levels", 3)
+                dca_levels=bot_data.get("dca_levels", 3),
+                risk_percentage=bot_data.get("risk_percentage", 1.0),
+                market_type=bot_data.get("market_type", "spot")
             )
             
             session.add(bot)
@@ -151,7 +153,7 @@ async def create_bot(bot_data: dict):
             session.refresh(bot)
             
             return {
-                "message": f"✅ Bot creado exitosamente para {bot.symbol}",
+                "message": f"✅ Bot {bot.strategy} creado para {bot.symbol} ({bot.market_type.upper()})",
                 "bot_id": bot.id,
                 "bot": bot
             }
@@ -159,6 +161,36 @@ async def create_bot(bot_data: dict):
         raise HTTPException(
             status_code=500,
             detail=f"Error creando bot: {str(e)}"
+        )
+
+
+@router.delete("/api/bots/{bot_id}")
+async def delete_bot(bot_id: int):
+    """Eliminar un bot"""
+    try:
+        with Session(engine) as session:
+            query = select(BotConfig).where(BotConfig.id == bot_id)
+            bot = session.exec(query).first()
+            
+            if not bot:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Bot con ID {bot_id} no encontrado"
+                )
+            
+            session.delete(bot)
+            session.commit()
+            
+            return {
+                "message": f"🗑️ Bot {bot.symbol} eliminado exitosamente",
+                "bot_id": bot_id
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error eliminando bot: {str(e)}"
         )
 
 

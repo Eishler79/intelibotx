@@ -81,36 +81,99 @@ export default function BotsAdvanced() {
 
   const handleCreateBot = async () => {
     try {
-      const newBot = {
-        id: Date.now(),
-        ...newBotData,
-        status: 'STOPPED',
-        metrics: getAdvancedMetrics({})
-      };
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
       
-      setBots(prevBots => [...prevBots, newBot]);
-      setShowCreateModal(false);
-      
-      // Reset form
-      setNewBotData({
-        symbol: 'BTCUSDT',
-        strategy: 'Smart Scalper', 
-        stake: 1000,
-        takeProfit: 2.5,
-        stopLoss: 1.5,
-        riskPercentage: 1.0,
-        marketType: 'spot'
+      // Enviar datos al backend
+      const response = await fetch(`${BASE_URL}/api/create-bot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          symbol: newBotData.symbol,
+          strategy: newBotData.strategy,
+          stake: newBotData.stake,
+          take_profit: newBotData.takeProfit,
+          stop_loss: newBotData.stopLoss,
+          risk_percentage: newBotData.riskPercentage,
+          market_type: newBotData.marketType,
+          interval: '15m'
+        })
       });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Crear bot para el frontend con métricas
+        const newBot = {
+          id: result.bot.id,
+          symbol: result.bot.symbol,
+          strategy: result.bot.strategy,
+          stake: result.bot.stake,
+          takeProfit: result.bot.take_profit,
+          stopLoss: result.bot.stop_loss,
+          riskPercentage: result.bot.risk_percentage || newBotData.riskPercentage,
+          marketType: newBotData.marketType,
+          status: 'STOPPED',
+          metrics: getAdvancedMetrics({})
+        };
+        
+        setBots(prevBots => [...prevBots, newBot]);
+        setShowCreateModal(false);
+        
+        // Reset form
+        setNewBotData({
+          symbol: 'BTCUSDT',
+          strategy: 'Smart Scalper', 
+          stake: 1000,
+          takeProfit: 2.5,
+          stopLoss: 1.5,
+          riskPercentage: 1.0,
+          marketType: 'spot'
+        });
+        
+        console.log('✅ Bot creado exitosamente:', result.message);
+        alert(`✅ ${result.message}`);
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Error del servidor');
+      }
       
-      console.log('Bot creado:', newBot);
     } catch (error) {
-      console.error('Error creando bot:', error);
+      console.error('❌ Error creando bot:', error);
+      alert(`Error: ${error.message}`);
     }
   };
 
-  const handleDeleteBot = (botId) => {
-    setBots(prevBots => prevBots.filter(bot => bot.id !== botId));
-    console.log(`Bot ${botId} eliminado`);
+  const handleDeleteBot = async (botId) => {
+    try {
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
+      
+      const response = await fetch(`${BASE_URL}/api/bots/${botId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setBots(prevBots => prevBots.filter(bot => bot.id !== botId));
+        console.log('✅ Bot eliminado:', result.message);
+        
+        // Detener bot si estaba corriendo
+        if (window.botIntervals && window.botIntervals[botId]) {
+          clearInterval(window.botIntervals[botId]);
+          delete window.botIntervals[botId];
+        }
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Error del servidor');
+      }
+    } catch (error) {
+      console.error('❌ Error eliminando bot:', error);
+      alert(`Error: ${error.message}`);
+    }
   };
 
   const handleToggleBotStatus = async (botId, currentStatus) => {
@@ -310,12 +373,27 @@ export default function BotsAdvanced() {
   useEffect(() => {
     const loadBots = async () => {
       try {
-        const response = await fetchBots();
-        setBots(response.map(bot => ({
-          ...bot,
-          status: getBotStatus(bot),
-          metrics: getAdvancedMetrics(bot)
-        })));
+        const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
+        
+        const response = await fetch(`${BASE_URL}/api/bots`);
+        if (response.ok) {
+          const botsData = await response.json();
+          setBots(botsData.map(bot => ({
+            id: bot.id,
+            symbol: bot.symbol,
+            strategy: bot.strategy,
+            stake: bot.stake,
+            takeProfit: bot.take_profit,
+            stopLoss: bot.stop_loss,
+            riskPercentage: bot.risk_percentage,
+            marketType: bot.market_type,
+            status: getBotStatus(bot),
+            metrics: getAdvancedMetrics(bot)
+          })));
+          console.log(`✅ Cargados ${botsData.length} bots desde el servidor`);
+        } else {
+          throw new Error('Error al cargar bots del servidor');
+        }
       } catch (error) {
         console.error("Error loading bots:", error);
         // Fallback con datos de ejemplo
@@ -325,7 +403,11 @@ export default function BotsAdvanced() {
             symbol: "BTCUSDT",
             strategy: "Smart Scalper",
             stake: 1000,
-            status: "RUNNING",
+            takeProfit: 2.5,
+            stopLoss: 1.5,
+            riskPercentage: 1.0,
+            marketType: "spot",
+            status: "STOPPED",
             metrics: getAdvancedMetrics({})
           },
           {
@@ -333,10 +415,15 @@ export default function BotsAdvanced() {
             symbol: "ETHUSDT", 
             strategy: "Trend Hunter",
             stake: 500,
-            status: "PAUSED",
+            takeProfit: 3.0,
+            stopLoss: 2.0,
+            riskPercentage: 1.5,
+            marketType: "futures",
+            status: "STOPPED",
             metrics: getAdvancedMetrics({})
           }
         ]);
+        console.log("📝 Usando datos de ejemplo (offline mode)");
       } finally {
         setLoading(false);
       }
