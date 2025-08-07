@@ -187,7 +187,16 @@ async def get_exchange_balances(
 
 ---
 
-## 🎨 **FRONTEND COMPONENTS:**
+## 🎨 **FRONTEND COMPONENTS - ESTILO PERSONAL INTELIBOTX:**
+
+> **NOTA IMPORTANTE**: Todos los componentes deben seguir la **paleta de colores del Login Page InteliBotX** que le encantó al usuario. Ver documento `DESIGN_SYSTEM_INTELIBOTX.md` para especificaciones completas de colores, gradientes y estilos.
+
+### **🌈 Paleta de Referencia:**
+- **Background**: `--bg-primary: #0a0e27`, `--bg-secondary: #1a1f3a`
+- **Accent Dorado**: `--accent-gold: #f7931a` (botones principales)
+- **Success**: `--success-green: #00d4aa` (conexiones exitosas)
+- **Error**: `--error-red: #ff4757` (errores conexión)
+- **Text**: `--text-primary: #ffffff`, `--text-secondary: #b8bcc8`
 
 ### **1. Exchange Management Page:**
 
