@@ -132,11 +132,17 @@ async def get_bots():
 
 @router.post("/api/create-bot")
 async def create_bot(bot_data: dict):
-    """Crear un nuevo bot"""
+    """Crear un nuevo bot - TEMPORAL: user_id fijo para compatibility"""
     try:
         with Session(engine) as session:
+            # TEMPORAL: user_id fijo mientras implementamos auth completo
+            # En el futuro se obtendrá del JWT token
+            default_user_id = 1
+            
             # Crear instancia de BotConfig con los datos recibidos
             bot = BotConfig(
+                user_id=default_user_id,  # ✅ FIX: Agregar user_id requerido
+                name=bot_data.get("name", f"{bot_data.get('strategy', 'Smart Scalper')} Bot"),
                 symbol=bot_data.get("symbol", "BTCUSDT"),
                 strategy=bot_data.get("strategy", "Smart Scalper"),
                 interval=bot_data.get("interval", "15m"),
