@@ -31,6 +31,13 @@ async def startup_event():
         from models.bot_config import BotConfig
         from models.user import User, UserSession
         
+        # Import trading models to ensure tables are created
+        try:
+            from models.trading_order import TradingOrder, Trade
+            print("✅ Trading models imported successfully")
+        except ImportError as e:
+            print(f"⚠️ Trading models import failed: {e}")
+        
         DATABASE_URL = "sqlite:///./intelibotx.db"  # Renamed for security system
         engine = create_engine(DATABASE_URL, echo=False)
         SQLModel.metadata.create_all(engine)
@@ -114,27 +121,151 @@ async def health():
 async def initialize_database():
     """Initialize database tables and create admin user - for production deployment"""
     try:
-        # Import here to avoid circular imports
-        from sqlmodel import create_engine, SQLModel
-        from models.bot_config import BotConfig
-        from models.user import User, UserSession
+        import os
+        from sqlmodel import create_engine, SQLModel, Session, select
         
         DATABASE_URL = "sqlite:///./intelibotx.db"
+        
+        # Delete existing database file for clean start
+        if os.path.exists("./intelibotx.db"):
+            os.remove("./intelibotx.db")
+            
+        # Create new engine and initialize
         engine = create_engine(DATABASE_URL, echo=False)
+        
+        # Import models individually to ensure they're registered
+        from models.user import User, UserSession
+        from models.bot_config import BotConfig
+        
+        # Create only essential tables for auth system
         SQLModel.metadata.create_all(engine)
         
-        # Create default admin user if none exists
-        await create_default_admin_user()
+        # Create admin user
+        from services.auth_service import auth_service
+        from models.user import UserCreate
+        
+        with Session(engine) as session:
+            # Check if admin already exists
+            existing_admin = session.exec(
+                select(User).where(User.email == "admin@intelibotx.com")
+            ).first()
+            
+            if not existing_admin:
+                # Create admin user
+                admin_data = UserCreate(
+                    email="admin@intelibotx.com",
+                    password="admin123",
+                    full_name="InteliBotX Admin"
+                )
+                
+                admin_user = auth_service.register_user(admin_data, session)
+                
+                # Add API keys from environment
+                import dotenv
+                dotenv.load_dotenv()
+                
+                testnet_key = os.getenv("BINANCE_TESTNET_API_KEY")
+                testnet_secret = os.getenv("BINANCE_TESTNET_API_SECRET")
+                
+                if testnet_key and testnet_secret:
+                    keys_data = {
+                        'testnet_key': testnet_key,
+                        'testnet_secret': testnet_secret,
+                        'preferred_mode': 'TESTNET'
+                    }
+                    auth_service.update_user_api_keys(admin_user.id, keys_data, session)
         
         return {
             "status": "success",
-            "message": "Database initialized successfully",
-            "tables": ["user", "botconfig", "usersession"]
+            "message": "Database initialized successfully - Auth system ready",
+            "tables": ["user", "usersession", "botconfig"],
+            "admin_created": True,
+            "admin_email": "admin@intelibotx.com"
         }
+        
     except Exception as e:
+        import traceback
         return {
             "status": "error",
-            "message": f"Database initialization failed: {str(e)}"
+            "message": f"Database initialization failed: {str(e)}",
+            "traceback": traceback.format_exc()
+        }
+
+@app.post("/api/init-auth-only")
+async def initialize_auth_only():
+    """Initialize ONLY authentication tables - for Railway deployment"""
+    try:
+        import os
+        from sqlmodel import create_engine, SQLModel, Session, select, MetaData
+        
+        DATABASE_URL = "sqlite:///./intelibotx.db"
+        
+        # Delete existing database file for clean start
+        if os.path.exists("./intelibotx.db"):
+            os.remove("./intelibotx.db")
+        
+        # Create fresh metadata instance
+        auth_metadata = MetaData()
+        
+        # Create new engine 
+        engine = create_engine(DATABASE_URL, echo=False)
+        
+        # Import and create ONLY auth models with fresh metadata
+        from models.user import User, UserSession
+        from models.bot_config import BotConfig
+        
+        # Set the metadata for these models
+        User.metadata = auth_metadata
+        UserSession.metadata = auth_metadata  
+        BotConfig.metadata = auth_metadata
+        
+        # Create only auth tables
+        auth_metadata.create_all(engine)
+        
+        # Create admin user
+        from services.auth_service import auth_service
+        from models.user import UserCreate
+        
+        with Session(engine) as session:
+            # Create admin user
+            admin_data = UserCreate(
+                email="admin@intelibotx.com",
+                password="admin123",
+                full_name="InteliBotX Admin"
+            )
+            
+            admin_user = auth_service.register_user(admin_data, session)
+            
+            # Add API keys from environment (if available)
+            import dotenv
+            dotenv.load_dotenv()
+            
+            testnet_key = os.getenv("BINANCE_TESTNET_API_KEY")
+            testnet_secret = os.getenv("BINANCE_TESTNET_API_SECRET")
+            
+            if testnet_key and testnet_secret:
+                keys_data = {
+                    'testnet_key': testnet_key,
+                    'testnet_secret': testnet_secret,
+                    'preferred_mode': 'TESTNET'
+                }
+                auth_service.update_user_api_keys(admin_user.id, keys_data, session)
+        
+        return {
+            "status": "success",
+            "message": "Auth system initialized successfully",
+            "tables": ["user", "usersession", "botconfig"],
+            "admin_created": True,
+            "admin_email": "admin@intelibotx.com",
+            "admin_password": "admin123"
+        }
+        
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "message": f"Auth initialization failed: {str(e)}",
+            "traceback": traceback.format_exc()
         }
 
 # Import routes only after app is created
