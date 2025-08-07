@@ -441,24 +441,58 @@ except Exception as e:
     
     @app.post("/api/create-bot")
     async def fallback_create_bot(bot_data: dict):
-        # Generate a simple ID
-        import time
-        bot_id = int(time.time())
-        
-        return {
-            "message": f"✅ Bot {bot_data.get('strategy', 'Bot')} creado para {bot_data.get('symbol', 'UNKNOWN')} (MODO DEMO)",
-            "bot_id": bot_id,
-            "bot": {
-                "id": bot_id,
-                "symbol": bot_data.get("symbol", "BTCUSDT"),
-                "strategy": bot_data.get("strategy", "Smart Scalper"),
-                "stake": bot_data.get("stake", 1000),
-                "take_profit": bot_data.get("take_profit", 2.5),
-                "stop_loss": bot_data.get("stop_loss", 1.5),
-                "risk_percentage": bot_data.get("risk_percentage", 1.0),
-                "market_type": bot_data.get("market_type", "spot")
+        """Crear bot con user_id fix - fallback endpoint"""
+        try:
+            from sqlmodel import Session
+            from models.bot_config import BotConfig
+            from sqlmodel import create_engine
+            
+            DATABASE_URL = "sqlite:///./intelibotx.db"
+            engine = create_engine(DATABASE_URL, echo=False)
+            
+            with Session(engine) as session:
+                # Fix: user_id requerido
+                bot = BotConfig(
+                    user_id=1,  # ✅ FIX: Default user_id
+                    name=bot_data.get("name", f"{bot_data.get('strategy', 'Smart Scalper')} Bot"),
+                    symbol=bot_data.get("symbol", "BTCUSDT"),
+                    strategy=bot_data.get("strategy", "Smart Scalper"),
+                    interval=bot_data.get("interval", "15m"),
+                    stake=bot_data.get("stake", 1000.0),
+                    take_profit=bot_data.get("take_profit", 2.5),
+                    stop_loss=bot_data.get("stop_loss", 1.5),
+                    dca_levels=bot_data.get("dca_levels", 3),
+                    risk_percentage=bot_data.get("risk_percentage", 1.0),
+                    market_type=bot_data.get("market_type", "spot")
+                )
+                
+                session.add(bot)
+                session.commit()
+                session.refresh(bot)
+                
+                return {
+                    "message": f"✅ Bot {bot.strategy} creado para {bot.symbol} ({bot.market_type.upper()})",
+                    "bot_id": bot.id,
+                    "bot": bot
+                }
+        except Exception as e:
+            import time
+            bot_id = int(time.time())
+            return {
+                "message": f"✅ Bot {bot_data.get('strategy', 'Bot')} creado para {bot_data.get('symbol', 'UNKNOWN')} (DEMO - DB Error)",
+                "bot_id": bot_id,
+                "error": str(e),
+                "bot": {
+                    "id": bot_id,
+                    "symbol": bot_data.get("symbol", "BTCUSDT"),
+                    "strategy": bot_data.get("strategy", "Smart Scalper"),
+                    "stake": bot_data.get("stake", 1000),
+                    "take_profit": bot_data.get("take_profit", 2.5),
+                    "stop_loss": bot_data.get("stop_loss", 1.5),
+                    "risk_percentage": bot_data.get("risk_percentage", 1.0),
+                    "market_type": bot_data.get("market_type", "spot")
+                }
             }
-        }
     
     @app.delete("/api/bots/{bot_id}")
     async def fallback_delete_bot(bot_id: int):
