@@ -110,6 +110,33 @@ async def health():
     """Health check for monitoring"""
     return {"status": "ok", "message": "API is running"}
 
+@app.post("/api/init-db")
+async def initialize_database():
+    """Initialize database tables and create admin user - for production deployment"""
+    try:
+        # Import here to avoid circular imports
+        from sqlmodel import create_engine, SQLModel
+        from models.bot_config import BotConfig
+        from models.user import User, UserSession
+        
+        DATABASE_URL = "sqlite:///./intelibotx.db"
+        engine = create_engine(DATABASE_URL, echo=False)
+        SQLModel.metadata.create_all(engine)
+        
+        # Create default admin user if none exists
+        await create_default_admin_user()
+        
+        return {
+            "status": "success",
+            "message": "Database initialized successfully",
+            "tables": ["user", "botconfig", "usersession"]
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Database initialization failed: {str(e)}"
+        }
+
 # Import routes only after app is created
 # Load authentication routes FIRST (security)
 try:
