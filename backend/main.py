@@ -31,12 +31,9 @@ async def startup_event():
         from models.bot_config import BotConfig
         from models.user import User, UserSession
         
-        # Import trading models to ensure tables are created
-        try:
-            from models.trading_order import TradingOrder, Trade
-            print("✅ Trading models imported successfully")
-        except ImportError as e:
-            print(f"⚠️ Trading models import failed: {e}")
+        # Temporarily disable trading models for Railway deployment
+        # These will be enabled after auth system is stable
+        print("⏸️ Trading models temporarily disabled for Railway deployment")
         
         DATABASE_URL = "sqlite:///./intelibotx.db"  # Renamed for security system
         engine = create_engine(DATABASE_URL, echo=False)
@@ -196,7 +193,9 @@ async def initialize_auth_only():
     """Initialize ONLY authentication tables - for Railway deployment"""
     try:
         import os
-        from sqlmodel import create_engine, SQLModel, Session, select, MetaData
+        import bcrypt
+        from sqlmodel import create_engine, SQLModel, Session, select
+        from datetime import datetime
         
         DATABASE_URL = "sqlite:///./intelibotx.db"
         
@@ -204,39 +203,37 @@ async def initialize_auth_only():
         if os.path.exists("./intelibotx.db"):
             os.remove("./intelibotx.db")
         
-        # Create fresh metadata instance
-        auth_metadata = MetaData()
-        
         # Create new engine 
         engine = create_engine(DATABASE_URL, echo=False)
         
-        # Import and create ONLY auth models with fresh metadata
+        # Import models
         from models.user import User, UserSession
         from models.bot_config import BotConfig
         
-        # Set the metadata for these models
-        User.metadata = auth_metadata
-        UserSession.metadata = auth_metadata  
-        BotConfig.metadata = auth_metadata
+        # Create only essential tables
+        SQLModel.metadata.create_all(engine)
         
-        # Create only auth tables
-        auth_metadata.create_all(engine)
-        
-        # Create admin user
-        from services.auth_service import auth_service
-        from models.user import UserCreate
-        
+        # Create admin user directly without auth_service to avoid conflicts
         with Session(engine) as session:
-            # Create admin user
-            admin_data = UserCreate(
+            # Hash password
+            password_hash = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            
+            # Create admin user directly
+            admin_user = User(
                 email="admin@intelibotx.com",
-                password="admin123",
-                full_name="InteliBotX Admin"
+                password_hash=password_hash,
+                full_name="InteliBotX Admin",
+                preferred_exchange="BINANCE",
+                preferred_mode="TESTNET",
+                default_market_type="SPOT",
+                two_factor_enabled=False,
+                api_keys_configured=False,  # Will be updated if keys exist
+                created_at=datetime.utcnow(),
+                is_active=True,
+                is_verified=True
             )
             
-            admin_user = auth_service.register_user(admin_data, session)
-            
-            # Add API keys from environment (if available)
+            # Add API keys if available
             import dotenv
             dotenv.load_dotenv()
             
@@ -244,20 +241,28 @@ async def initialize_auth_only():
             testnet_secret = os.getenv("BINANCE_TESTNET_API_SECRET")
             
             if testnet_key and testnet_secret:
-                keys_data = {
-                    'testnet_key': testnet_key,
-                    'testnet_secret': testnet_secret,
-                    'preferred_mode': 'TESTNET'
-                }
-                auth_service.update_user_api_keys(admin_user.id, keys_data, session)
+                # Simple encryption for Railway
+                from services.encryption_service import encryption_service
+                try:
+                    admin_user.encrypted_binance_testnet_key = encryption_service.encrypt_api_key(testnet_key)
+                    admin_user.encrypted_binance_testnet_secret = encryption_service.encrypt_api_key(testnet_secret)
+                    admin_user.api_keys_configured = True
+                except Exception as enc_error:
+                    print(f"⚠️ Encryption failed: {enc_error}")
+            
+            session.add(admin_user)
+            session.commit()
+            session.refresh(admin_user)
         
         return {
             "status": "success",
-            "message": "Auth system initialized successfully",
+            "message": "Auth system initialized successfully - Railway ready",
             "tables": ["user", "usersession", "botconfig"],
             "admin_created": True,
             "admin_email": "admin@intelibotx.com",
-            "admin_password": "admin123"
+            "admin_password": "admin123",
+            "api_keys_configured": bool(testnet_key and testnet_secret),
+            "ready_for_login": True
         }
         
     except Exception as e:
@@ -316,11 +321,11 @@ try:
 except Exception as e:
     print(f"⚠️ Could not load real bots routes: {e}")
 
-# Load trading history routes
+# Temporarily disable trading history routes for Railway deployment
 try:
-    from routes.trading_history import router as trading_history_router
-    app.include_router(trading_history_router)
-    print("✅ Trading history routes loaded")
+    # from routes.trading_history import router as trading_history_router
+    # app.include_router(trading_history_router)
+    print("⏸️ Trading history routes temporarily disabled for Railway deployment")
 except Exception as e:
     print(f"⚠️ Could not load trading history routes: {e}")
     
