@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, BarChart2, PieChart, Cpu, Layers, Bot } from "lucide-react";
+import { Home, BarChart2, PieChart, Cpu, Layers, Bot, Link } from "lucide-react";
 
 const links = [
   { to: "/dashboard", label: "Dashboard", icon: <Home size={18} /> },
@@ -8,6 +8,7 @@ const links = [
   { to: "/intelligence", label: "Inteligencia", icon: <Cpu size={18} /> },
   { to: "/portfolio", label: "Portafolio", icon: <PieChart size={18} /> },
   { to: "/bots", label: "🤖 InteliBots AI", icon: <Bot size={18} /> },
+  { to: "/exchanges", label: "🔗 Mis Exchanges", icon: <Link size={18} /> },
 ];
 
 const Sidebar = () => {
