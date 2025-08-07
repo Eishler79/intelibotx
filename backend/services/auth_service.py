@@ -174,10 +174,10 @@ class AuthService:
                 detail="Invalid credentials"
             )
         
-        # Actualizar último login
-        user.last_login_at = datetime.utcnow()
-        session.add(user)
-        session.commit()
+        # Skip last_login update to avoid readonly database issues for Railway
+        # user.last_login_at = datetime.utcnow()
+        # session.add(user)
+        # session.commit()
         
         logger.info(f"User authenticated: {login_data.email}")
         return user
