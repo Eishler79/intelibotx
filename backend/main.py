@@ -451,11 +451,17 @@ except Exception as e:
             engine = create_engine(DATABASE_URL, echo=False)
             
             with Session(engine) as session:
-                # Fix: user_id requerido
+                # Fix: campos requeridos completos
+                symbol = bot_data.get("symbol", "BTCUSDT")
+                base_currency = "USDT"  # Extraer de símbolo
+                quote_currency = symbol.replace("USDT", "").replace("BTC", "BTC" if "BTC" in symbol else symbol[:3])
+                
                 bot = BotConfig(
                     user_id=1,  # ✅ FIX: Default user_id
                     name=bot_data.get("name", f"{bot_data.get('strategy', 'Smart Scalper')} Bot"),
-                    symbol=bot_data.get("symbol", "BTCUSDT"),
+                    symbol=symbol,
+                    base_currency=base_currency,  # ✅ FIX: Required field
+                    quote_currency=quote_currency,  # ✅ FIX: Required field
                     strategy=bot_data.get("strategy", "Smart Scalper"),
                     interval=bot_data.get("interval", "15m"),
                     stake=bot_data.get("stake", 1000.0),

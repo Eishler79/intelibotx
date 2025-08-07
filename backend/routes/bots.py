@@ -139,11 +139,18 @@ async def create_bot(bot_data: dict):
             # En el futuro se obtendrá del JWT token
             default_user_id = 1
             
+            # Extraer info del símbolo para campos requeridos
+            symbol = bot_data.get("symbol", "BTCUSDT")
+            base_currency = "USDT"
+            quote_currency = symbol.replace("USDT", "").replace("BTC", "BTC" if "BTC" in symbol else symbol[:3])
+            
             # Crear instancia de BotConfig con los datos recibidos
             bot = BotConfig(
                 user_id=default_user_id,  # ✅ FIX: Agregar user_id requerido
                 name=bot_data.get("name", f"{bot_data.get('strategy', 'Smart Scalper')} Bot"),
-                symbol=bot_data.get("symbol", "BTCUSDT"),
+                symbol=symbol,
+                base_currency=base_currency,  # ✅ FIX: Required field
+                quote_currency=quote_currency,  # ✅ FIX: Required field
                 strategy=bot_data.get("strategy", "Smart Scalper"),
                 interval=bot_data.get("interval", "15m"),
                 stake=bot_data.get("stake", 100.0),
