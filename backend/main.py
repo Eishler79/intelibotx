@@ -29,13 +29,72 @@ async def startup_event():
         # Import here to avoid circular imports
         from sqlmodel import create_engine, SQLModel
         from models.bot_config import BotConfig
+        from models.user import User, UserSession
         
-        DATABASE_URL = "sqlite:///./bots.db"
+        DATABASE_URL = "sqlite:///./intelibotx.db"  # Renamed for security system
         engine = create_engine(DATABASE_URL, echo=False)
         SQLModel.metadata.create_all(engine)
-        print("✅ Database initialized successfully")
+        print("✅ Database initialized successfully (Users + Bots)")
+        
+        # Create default admin user if none exists
+        await create_default_admin_user()
+        
     except Exception as e:
         print(f"⚠️ Database initialization warning: {e}")
+
+async def create_default_admin_user():
+    """Create default admin user with current .env API keys"""
+    try:
+        from db.database import get_session
+        from services.auth_service import auth_service
+        from models.user import UserCreate
+        import os
+        
+        # Check if we need to migrate existing keys
+        testnet_key = os.getenv("BINANCE_TESTNET_API_KEY")
+        testnet_secret = os.getenv("BINANCE_TESTNET_API_SECRET")
+        
+        if testnet_key and testnet_secret:
+            # Create session
+            from sqlmodel import Session, create_engine
+            DATABASE_URL = "sqlite:///./intelibotx.db"
+            engine = create_engine(DATABASE_URL, echo=False)
+            
+            with Session(engine) as session:
+                from models.user import User
+                from sqlmodel import select
+                
+                # Check if admin already exists
+                existing_admin = session.exec(
+                    select(User).where(User.email == "admin@intelibotx.com")
+                ).first()
+                
+                if not existing_admin:
+                    # Create admin user
+                    admin_data = UserCreate(
+                        email="admin@intelibotx.com",
+                        password="admin123",  # User should change this
+                        full_name="InteliBotX Admin"
+                    )
+                    
+                    admin_user = auth_service.register_user(admin_data, session)
+                    
+                    # Add API keys
+                    keys_data = {
+                        'testnet_key': testnet_key,
+                        'testnet_secret': testnet_secret,
+                        'preferred_mode': 'TESTNET'
+                    }
+                    
+                    auth_service.update_user_api_keys(admin_user.id, keys_data, session)
+                    
+                    print("✅ Default admin user created: admin@intelibotx.com / admin123")
+                    print("⚠️  IMPORTANT: Change admin password after first login!")
+                else:
+                    print("ℹ️  Admin user already exists")
+                    
+    except Exception as e:
+        print(f"⚠️ Admin user creation warning: {e}")
 
 @app.get("/")
 async def root():
@@ -52,7 +111,15 @@ async def health():
     return {"status": "ok", "message": "API is running"}
 
 # Import routes only after app is created
-# Load core routes first (most stable)
+# Load authentication routes FIRST (security)
+try:
+    from routes.auth import router as auth_router
+    app.include_router(auth_router)
+    print("✅ Authentication routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load auth routes: {e}")
+
+# Load core routes (most stable)  
 try:
     from routes.available_symbols import router as symbols_router
     app.include_router(symbols_router, prefix="/api")
