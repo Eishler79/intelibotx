@@ -15,18 +15,74 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authProvider, setAuthProvider] = useState(null); // 'email', 'google', 'binance', etc.
+  const [userExchanges, setUserExchanges] = useState([]); // User's configured exchanges
 
   // API base URL
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+  // Función para hacer llamadas API autenticadas
+  const authenticatedFetch = async (url, options = {}) => {
+    try {
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+      
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+      
+      const response = await fetch(`${API_BASE_URL}${url}`, {
+        ...options,
+        headers: {
+          ...headers,
+          ...options.headers,
+        },
+      });
+
+      // Si recibimos 401/403, el token expiró
+      if (response.status === 401 || response.status === 403) {
+        logout();
+        throw new Error('Session expired. Please login again.');
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Authenticated fetch error:', error);
+      throw error;
+    }
+  };
+
+  // Load user exchanges
+  const loadUserExchanges = async () => {
+    try {
+      if (!token) return;
+      
+      const response = await authenticatedFetch('/api/user/exchanges');
+      if (response.ok) {
+        const exchanges = await response.json();
+        setUserExchanges(exchanges);
+      }
+    } catch (error) {
+      console.error('Error loading exchanges:', error);
+      setUserExchanges([]);
+    }
+  };
 
   // Cargar token del localStorage al inicializar
   useEffect(() => {
     const savedToken = localStorage.getItem('intelibotx_token');
     const savedUser = localStorage.getItem('intelibotx_user');
+    const savedProvider = localStorage.getItem('intelibotx_auth_provider');
     
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
+      setAuthProvider(savedProvider || 'email');
+      
+      // Load user exchanges if authenticated
+      loadUserExchanges();
     }
     setLoading(false);
   }, []);
@@ -55,10 +111,15 @@ export const AuthProvider = ({ children }) => {
 
       setToken(accessToken);
       setUser(userData);
+      setAuthProvider('email');
       
       // Persistir en localStorage
       localStorage.setItem('intelibotx_token', accessToken);
       localStorage.setItem('intelibotx_user', JSON.stringify(userData));
+      localStorage.setItem('intelibotx_auth_provider', 'email');
+      
+      // Load user exchanges
+      await loadUserExchanges();
 
       return { success: true, data };
     } catch (error) {
@@ -95,10 +156,15 @@ export const AuthProvider = ({ children }) => {
 
       setToken(accessToken);
       setUser(userData);
+      setAuthProvider('email');
       
       // Persistir en localStorage
       localStorage.setItem('intelibotx_token', accessToken);
       localStorage.setItem('intelibotx_user', JSON.stringify(userData));
+      localStorage.setItem('intelibotx_auth_provider', 'email');
+      
+      // Load user exchanges (empty for new user)
+      await loadUserExchanges();
 
       return { success: true, data };
     } catch (error) {
@@ -127,11 +193,14 @@ export const AuthProvider = ({ children }) => {
     // Limpiar estado local siempre
     setToken(null);
     setUser(null);
+    setAuthProvider(null);
+    setUserExchanges([]);
     localStorage.removeItem('intelibotx_token');
     localStorage.removeItem('intelibotx_user');
+    localStorage.removeItem('intelibotx_auth_provider');
   };
 
-  // Función para obtener headers autenticados
+  // Función para obtener headers autenticados (compatibility)
   const getAuthHeaders = () => {
     if (!token) {
       throw new Error('No authentication token available');
@@ -142,28 +211,83 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
-  // Función para hacer llamadas API autenticadas
-  const authenticatedFetch = async (url, options = {}) => {
+  // Exchange management functions
+  const addExchange = async (exchangeData) => {
     try {
-      const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}${url}`, {
-        ...options,
-        headers: {
-          ...headers,
-          ...options.headers,
-        },
+      const response = await authenticatedFetch('/api/user/exchanges', {
+        method: 'POST',
+        body: JSON.stringify(exchangeData),
       });
 
-      // Si recibimos 401/403, el token expiró
-      if (response.status === 401 || response.status === 403) {
-        logout();
-        throw new Error('Session expired. Please login again.');
+      if (response.ok) {
+        await loadUserExchanges();
+        return { success: true, data: await response.json() };
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to add exchange');
       }
-
-      return response;
     } catch (error) {
-      console.error('Authenticated fetch error:', error);
-      throw error;
+      console.error('Add exchange error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const updateExchange = async (exchangeId, exchangeData) => {
+    try {
+      const response = await authenticatedFetch(`/api/user/exchanges/${exchangeId}`, {
+        method: 'PUT',
+        body: JSON.stringify(exchangeData),
+      });
+
+      if (response.ok) {
+        await loadUserExchanges();
+        return { success: true, data: await response.json() };
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to update exchange');
+      }
+    } catch (error) {
+      console.error('Update exchange error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const deleteExchange = async (exchangeId) => {
+    try {
+      const response = await authenticatedFetch(`/api/user/exchanges/${exchangeId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await loadUserExchanges();
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to delete exchange');
+      }
+    } catch (error) {
+      console.error('Delete exchange error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const testExchangeConnection = async (exchangeId) => {
+    try {
+      const response = await authenticatedFetch(`/api/user/exchanges/${exchangeId}/test`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        await loadUserExchanges(); // Refresh to get updated status
+        return { success: true, data: result };
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Connection test failed');
+      }
+    } catch (error) {
+      console.error('Test connection error:', error);
+      return { success: false, error: error.message };
     }
   };
 
@@ -171,12 +295,19 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     loading,
+    authProvider,
+    userExchanges,
     isAuthenticated: !!token && !!user,
     login,
     register,
     logout,
     getAuthHeaders,
     authenticatedFetch,
+    loadUserExchanges,
+    addExchange,
+    updateExchange,
+    deleteExchange,
+    testExchangeConnection,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

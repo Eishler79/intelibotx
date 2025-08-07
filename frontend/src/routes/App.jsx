@@ -6,8 +6,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { AuthProvider } from "../contexts/AuthContext";
 
 // Auth Components
-import LoginPage from "../components/auth/LoginPage";
-import RegisterPage from "../components/auth/RegisterPage";
+import AuthPage from "../pages/AuthPage";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 
 // Existing Pages
@@ -24,12 +23,13 @@ const App = () => {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public Routes - Auth */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          {/* Public Routes - Enhanced Auth */}
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
+          <Route path="/register" element={<Navigate to="/auth" replace />} />
           
-          {/* Redirect root to login */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Redirect root to auth */}
+          <Route path="/" element={<Navigate to="/auth" replace />} />
           
           {/* Protected Routes - App */}
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
