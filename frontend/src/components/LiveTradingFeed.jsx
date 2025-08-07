@@ -163,7 +163,7 @@ export default function LiveTradingFeed({ bots }) {
                     <div className={`font-semibold text-sm ${
                       trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
+                      {trade.pnl >= 0 ? '+' : ''}${Number(trade.pnl || 0).toFixed(2)}
                     </div>
                     <div className="text-xs text-gray-400 flex items-center gap-1">
                       <Clock size={10} />

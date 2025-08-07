@@ -97,10 +97,11 @@ export default function ProfessionalBotsTable({
 
   const formatPnL = (bot) => {
     // Usar PnL real del bot si está disponible, sino 0
-    const pnl = parseFloat(bot.metrics?.realizedPnL || 0);
+    const rawPnL = bot.metrics?.realizedPnL || 0;
+    const pnl = isNaN(rawPnL) ? 0 : Number(rawPnL);
     return {
       value: pnl,
-      formatted: pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`,
+      formatted: pnl >= 0 ? `+$${Number(pnl).toFixed(2)}` : `-$${Number(Math.abs(pnl)).toFixed(2)}`,
       color: pnl >= 0 ? 'text-green-400' : 'text-red-400'
     };
   };

@@ -115,20 +115,20 @@ export default function AdvancedMetrics({ bot, equityData, tradeHistory }) {
       const worstTrade = Math.min(...trades);
 
       setMetrics({
-        sharpeRatio: sharpeRatio.toFixed(2),
-        sortinoRatio: isFinite(sortinoRatio) ? sortinoRatio.toFixed(2) : '∞',
-        maxDrawdown: maxDrawdown.toFixed(2),
-        calmarRatio: isFinite(calmarRatio) ? calmarRatio.toFixed(2) : '∞',
-        winRate: winRate.toFixed(1),
-        profitFactor: isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞',
-        totalReturn: totalReturn.toFixed(2),
+        sharpeRatio: Number(sharpeRatio || 0).toFixed(2),
+        sortinoRatio: isFinite(sortinoRatio) ? Number(sortinoRatio).toFixed(2) : '∞',
+        maxDrawdown: Number(maxDrawdown || 0).toFixed(2),
+        calmarRatio: isFinite(calmarRatio) ? Number(calmarRatio).toFixed(2) : '∞',
+        winRate: Number(winRate || 0).toFixed(1),
+        profitFactor: isFinite(profitFactor) ? Number(profitFactor).toFixed(2) : '∞',
+        totalReturn: Number(totalReturn || 0).toFixed(2),
         totalTrades,
-        avgWin: avgWin.toFixed(2),
-        avgLoss: Math.abs(avgLoss).toFixed(2),
-        bestTrade: bestTrade.toFixed(2),
-        worstTrade: Math.abs(worstTrade).toFixed(2),
+        avgWin: Number(avgWin || 0).toFixed(2),
+        avgLoss: Number(Math.abs(avgLoss) || 0).toFixed(2),
+        bestTrade: Number(bestTrade || 0).toFixed(2),
+        worstTrade: Number(Math.abs(worstTrade) || 0).toFixed(2),
         currentStreak: Math.floor(Math.random() * 10) + 1,
-        recoveryFactor: (Math.abs(totalReturn) / maxDrawdown).toFixed(2)
+        recoveryFactor: Number((Math.abs(totalReturn) / (maxDrawdown || 1))).toFixed(2)
       });
       
       setLoading(false);

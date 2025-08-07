@@ -2,10 +2,21 @@
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://intelibotx-production.up.railway.app";
 
+// Helper function para manejar respuestas JSON de forma segura
+async function safeJsonParse(response: Response) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('JSON Parse Error:', text);
+    throw new Error(`Invalid JSON response: ${text.substring(0, 100)}`);
+  }
+}
+
 export async function fetchBots() {
   const res = await fetch(`${BASE_URL}/api/bots`);
   if (!res.ok) throw new Error("Error al obtener bots");
-  return res.json();
+  return safeJsonParse(res);
 }
 
 export async function createBot(data: any) {
@@ -15,13 +26,13 @@ export async function createBot(data: any) {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Error al crear bot");
-  return res.json();
+  return safeJsonParse(res);
 }
 
 export async function runBacktest(botId: string) {
   const res = await fetch(`${BASE_URL}/api/backtest-results/${botId}`);
   if (!res.ok) throw new Error("Error al ejecutar backtest");
-  return res.json();
+  return safeJsonParse(res);
 }
 
 export async function runSmartTrade(symbol: string) {
@@ -32,7 +43,7 @@ export async function runSmartTrade(symbol: string) {
     }
   });
   if (!res.ok) throw new Error("Error al ejecutar SmartTrade");
-  return res.json();
+  return safeJsonParse(res);
 }
 
 export async function updateBot(botId: string, data: any) {
@@ -42,7 +53,7 @@ export async function updateBot(botId: string, data: any) {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Error al actualizar bot");
-  return res.json();
+  return safeJsonParse(res);
 }
 
 export async function deleteBot(botId: string) {
@@ -50,7 +61,7 @@ export async function deleteBot(botId: string) {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Error al eliminar bot");
-  return res.json();
+  return safeJsonParse(res);
 }
 
 export async function startBot(botId: string) {
@@ -58,7 +69,7 @@ export async function startBot(botId: string) {
     method: "POST",
   });
   if (!res.ok) throw new Error("Error al iniciar bot");
-  return res.json();
+  return safeJsonParse(res);
 }
 
 export async function pauseBot(botId: string) {
@@ -66,7 +77,7 @@ export async function pauseBot(botId: string) {
     method: "POST",
   });
   if (!res.ok) throw new Error("Error al pausar bot");
-  return res.json();
+  return safeJsonParse(res);
 }
 
 export async function stopBot(botId: string) {
@@ -74,5 +85,5 @@ export async function stopBot(botId: string) {
     method: "POST",
   });
   if (!res.ok) throw new Error("Error al detener bot");
-  return res.json();
+  return safeJsonParse(res);
 }

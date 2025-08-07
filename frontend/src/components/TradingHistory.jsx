@@ -98,24 +98,26 @@ const TradingHistory = ({ botId }) => {
 
   const formatPnL = (pnl) => {
     if (!pnl && pnl !== 0) return 'N/A';
-    const value = parseFloat(pnl);
+    const value = Number(pnl);
+    if (isNaN(value)) return 'N/A';
     const color = value >= 0 ? 'text-green-600' : 'text-red-600';
     const sign = value >= 0 ? '+' : '';
     return (
       <span className={color}>
-        {sign}${value.toFixed(4)}
+        {sign}${Number(value).toFixed(4)}
       </span>
     );
   };
 
   const formatPnLPercentage = (pnl) => {
     if (!pnl && pnl !== 0) return 'N/A';
-    const value = parseFloat(pnl);
+    const value = Number(pnl);
+    if (isNaN(value)) return 'N/A';
     const color = value >= 0 ? 'text-green-600' : 'text-red-600';
     const sign = value >= 0 ? '+' : '';
     return (
       <span className={color}>
-        {sign}{value.toFixed(2)}%
+        {sign}{Number(value).toFixed(2)}%
       </span>
     );
   };
