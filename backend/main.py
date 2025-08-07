@@ -453,8 +453,20 @@ except Exception as e:
             with Session(engine) as session:
                 # Fix: campos requeridos completos
                 symbol = bot_data.get("symbol", "BTCUSDT")
-                base_currency = "USDT"  # Extraer de símbolo
-                quote_currency = symbol.replace("USDT", "").replace("BTC", "BTC" if "BTC" in symbol else symbol[:3])
+                
+                # Parsing más robusto de currencies
+                if symbol.endswith("USDT"):
+                    base_currency = "USDT"
+                    quote_currency = symbol[:-4]  # Remove USDT
+                elif symbol.endswith("BTC"):
+                    base_currency = "BTC"  
+                    quote_currency = symbol[:-3]  # Remove BTC
+                elif symbol.endswith("ETH"):
+                    base_currency = "ETH"
+                    quote_currency = symbol[:-3]  # Remove ETH
+                else:
+                    base_currency = "USDT"  # Default
+                    quote_currency = symbol[:3] if len(symbol) >= 3 else symbol
                 
                 bot = BotConfig(
                     user_id=1,  # ✅ FIX: Default user_id
