@@ -156,21 +156,29 @@ ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
     ⏱️ Tiempo: 1.5 días
     🧪 Test: Cada método auth → access a /bots-advanced
 
-1.2 EXCHANGE CONFIGURATION SYSTEM
-    📍 Archivo: frontend/src/pages/ExchangeSetup.jsx (nuevo)
-    📍 Archivo: frontend/src/components/BinanceConnector.jsx (nuevo)
-    🎯 Objetivo: Configuración exchanges por usuario (inicialmente Binance)
+1.2 EXCHANGE MANAGEMENT SYSTEM - ESTILO 3COMMAS
+    📍 Archivo: frontend/src/pages/ExchangeManagement.jsx (nuevo)
+    📍 Archivo: frontend/src/components/AddExchangeModal.jsx (nuevo)
+    📍 Archivo: frontend/src/components/ExchangeConnectionForm.jsx (nuevo)
+    🎯 Objetivo: Sistema completo gestión exchanges como 3Commas
     ✅ Funcionalidad:
-        - **Binance Exchange Setup** - API keys configuration
-        - Exchange selection interface (preparado para expansión)
-        - Connection testing con feedback visual
-        - Balance verification y display
-        - Permissions validation (spot/futures)
-        - Security warnings + best practices
-        - Multiple exchanges support architecture
-        - Auto-redirect post successful setup
-    ⏱️ Tiempo: 1 día
-    🧪 Test: Setup Binance → balance display → trading permissions
+        - **"Añadir exchange" button** - Según imagen #2 usuario
+        - **Exchange selection grid** - Binance, Bybit, OKX, KuCoin, etc. (imagen #3)
+        - **Market type tabs**: Spot, Margin, Futures (según imagen #3)
+        - **Connection form** con campos específicos por exchange (imagen #4):
+          * Nombre personalizado (ej. "Mi Binance")
+          * API Key field
+          * API Secret field
+          * IP Whitelist information + copy/paste
+          * "Conexión Rápida" vs "API Keys" tabs
+          * "Conectar" button con validation
+        - **Exchange list management** - Ver, editar, eliminar conexiones
+        - **Connection status indicators** - Activo/Inactivo/Error
+        - **Balance display** por exchange conectado
+        - **Permissions validation** - Spot/Futures/Margin según exchange
+        - **Security warnings** + best practices como 3Commas
+    ⏱️ Tiempo: 1.5 días
+    🧪 Test: Añadir Binance → configurar API → test conexión → balance display
 
 1.3 AUTH CONTEXT + JWT STORAGE ENHANCED
     📍 Archivo: frontend/src/contexts/AuthContext.jsx (nuevo)
@@ -203,31 +211,57 @@ ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
     ⏱️ Tiempo: 6 horas
     🧪 Test: Usuario sin exchange → redirect setup → post setup access bots
 
-1.5 USER-SPECIFIC BOTS + REAL DATA INTEGRATION
+1.5 BACKEND MULTI-EXCHANGE ARCHITECTURE
+    📍 Archivo: backend/models/user_exchange.py (nuevo)
+    📍 Archivo: backend/routes/exchanges.py (nuevo)
+    📍 Archivo: backend/services/exchange_factory.py (nuevo)
+    🎯 Objetivo: Backend support para múltiples exchanges por usuario
+    ✅ Funcionalidad:
+        - **UserExchange model** - relationship usuario ↔ exchange
+        - **Exchange configuration table** con encrypted API keys
+        - **Exchange factory pattern** - Binance, Bybit, OKX support
+        - **API endpoints** para CRUD exchanges:
+          * GET /api/user/exchanges - List exchanges usuario
+          * POST /api/user/exchanges - Add new exchange
+          * PUT /api/user/exchanges/{id} - Update exchange
+          * DELETE /api/user/exchanges/{id} - Remove exchange
+          * POST /api/user/exchanges/{id}/test - Test connection
+        - **Balance aggregation** desde múltiples exchanges
+        - **Connection validation** por exchange type
+        - **Permissions management** - Spot/Futures/Margin per exchange
+    ⏱️ Tiempo: 1 día
+    🧪 Test: Usuario añade Binance + Bybit → test connections → balances separados
+
+1.6 USER-SPECIFIC BOTS + MULTI-EXCHANGE DATA
     📍 Archivo: frontend/src/pages/BotsAdvanced.jsx (modificar)
     📍 Archivo: frontend/src/services/api.ts (modificar)
-    🎯 Objetivo: Bots ownership + datos reales exchange usuario
+    🎯 Objetivo: Bots ownership + datos reales multi-exchange
     ✅ Funcionalidad:
         - Headers Authorization: Bearer {token} en API calls
-        - Bot creation con user_id + exchange_id automático
-        - List bots del usuario específico por exchange
-        - **Real balance display** desde exchange configurado
-        - **Live prices** desde API real exchange usuario
-        - User profile + exchange info en header
-        - Multi-exchange support en interfaz
+        - Bot creation con user_id + exchange_id específico
+        - **Exchange selector** en bot creation (dropdown exchanges usuario)
+        - List bots del usuario agrupados por exchange
+        - **Real balance display** desde exchange seleccionado
+        - **Live prices** desde API exchange específico
+        - **Multi-exchange dashboard** con tabs por exchange
+        - User profile + active exchanges en header
+        - Exchange switching functionality
         - Logout functionality integrado
-    ⏱️ Tiempo: 8 horas
-    🧪 Test: Usuario con Binance → balance real → crear bot → datos live
+    ⏱️ Tiempo: 6 horas
+    🧪 Test: Usuario con 2+ exchanges → switch exchange → crear bot → datos live
 
-📊 DELIVERABLES FASE 1 - ENHANCED AUTH + EXCHANGE INTEGRATION:
+📊 DELIVERABLES FASE 1 - ENHANCED AUTH + MULTI-EXCHANGE MANAGEMENT:
 - ✅ **Multi-provider auth system** (Binance, Google, Apple, Facebook, Email)
-- ✅ **Exchange configuration system** (Binance inicial, architecture multi-exchange)
-- ✅ **Enhanced JWT management** con multi-provider support
-- ✅ **Protected routes + Exchange validation** (onboarding flow completo)
-- ✅ **User-specific bots** con datos reales del exchange configurado
-- ✅ **Real balance + live prices** desde API exchange del usuario
-- ✅ **Complete user flow**: auth provider → exchange setup → bot creation con datos reales
-- ✅ **Multi-exchange ready architecture** (preparado para Binance, KuCoin, Bybit, etc.)
+- ✅ **Complete exchange management** - Sistema tipo 3Commas para gestionar exchanges
+- ✅ **Multi-exchange support** - Binance, Bybit, OKX, KuCoin, etc. con UI selección
+- ✅ **Exchange connection forms** - API keys, whitelisting, validation por exchange
+- ✅ **Backend multi-exchange architecture** - UserExchange model + factory pattern
+- ✅ **Exchange CRUD operations** - Add, edit, delete, test connections
+- ✅ **Enhanced JWT + Exchange session** management multi-provider
+- ✅ **Protected routes + Exchange guards** (onboarding: auth → exchanges → bots)
+- ✅ **Multi-exchange bot creation** - Exchange selector + datos reales por exchange
+- ✅ **Aggregated dashboards** - Balance + bots agrupados por exchange
+- ✅ **Complete user flow**: Auth → Manage Exchanges → Create Bots → Multi-exchange trading
 
 ===============================================================================
                        FASE 1B - BOT CREATION ENHANCED
@@ -487,12 +521,12 @@ ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
 📅 DÍA 5-6: ETAPA 2A - Errores críticos + Estabilidad (✅ Completa)  
 📅 DÍA 7: FASE 0 - Backend Security + Binance Real (✅ Completa)
 📅 DÍA 8: Documentación + Consolidación FASE 0 (✅ Completa)
-📅 DÍA 9-12: FASE 1 - Enhanced Auth + Exchange Integration (🚀 PRÓXIMA)
-📅 DÍA 13: FASE 1B - Bot Creation Enhanced con datos reales (⏳ Próxima)
-📅 DÍA 14-18: ETAPA 2A - Bots IA Inteligentes (⏳ Pendiente)
-📅 DÍA 17-18: ETAPA 3 - Integration & Polish (⏳ Pendiente)
+📅 DÍA 9-13: FASE 1 - Enhanced Auth + Multi-Exchange Management (🚀 PRÓXIMA)
+📅 DÍA 14: FASE 1B - Bot Creation Enhanced con datos reales multi-exchange (⏳ Próxima)
+📅 DÍA 15-19: ETAPA 2A - Bots IA Inteligentes (⏳ Pendiente)
+📅 DÍA 20-21: ETAPA 3 - Integration & Polish (⏳ Pendiente)
 
-TOTAL PROYECTO: 18 días de desarrollo completo
+TOTAL PROYECTO: 21 días de desarrollo completo
 
 ===============================================================================
                               PUNTO DE INICIO ACTUALIZADO
