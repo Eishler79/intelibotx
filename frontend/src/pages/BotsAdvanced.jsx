@@ -53,19 +53,19 @@ export default function BotsAdvanced() {
     }
 
     const runningBots = bots.filter(b => b.status === 'RUNNING');
-    const totalPnL = runningBots.reduce((sum, bot) => sum + (bot.metrics?.realizedPnL || 0), 0);
+    const totalPnL = runningBots.reduce((sum, bot) => sum + Number(bot.metrics?.realizedPnL || 0), 0);
     const avgSharpe = runningBots.length > 0 
-      ? (runningBots.reduce((sum, bot) => sum + parseFloat(bot.metrics?.sharpeRatio || 0), 0) / runningBots.length).toFixed(2)
-      : "0.00";
+      ? Number((runningBots.reduce((sum, bot) => sum + Number(bot.metrics?.sharpeRatio || 0), 0) / runningBots.length).toFixed(2))
+      : 0;
     const avgWinRate = runningBots.length > 0
-      ? (runningBots.reduce((sum, bot) => sum + parseFloat(bot.metrics?.winRate || 0), 0) / runningBots.length).toFixed(1)
-      : "0.0";
+      ? Number((runningBots.reduce((sum, bot) => sum + Number(bot.metrics?.winRate || 0), 0) / runningBots.length).toFixed(1))
+      : 0;
 
     return {
-      totalPnL: totalPnL.toFixed(2),
+      totalPnL: Number(totalPnL.toFixed(2)),
       activeBots: runningBots.length,
-      avgSharpe,
-      avgWinRate
+      avgSharpe: Number(avgSharpe.toFixed(2)),
+      avgWinRate: Number(avgWinRate.toFixed(1))
     };
   };
 
@@ -331,8 +331,13 @@ export default function BotsAdvanced() {
           pnl = -((Math.random() * strategyConfig.avgProfit * 0.4) + (strategyConfig.avgProfit * 0.1));
         }
         
-        const price = (Math.random() * 10000 + 45000).toFixed(2);
-        const quantity = ((bot.stake * (bot.riskPercentage || 1) / 100) / parseFloat(price)).toFixed(6);
+        // Asegurar que pnl sea un número válido
+        pnl = isNaN(pnl) ? 0 : Number(pnl);
+        
+        const price = Number((Math.random() * 10000 + 45000).toFixed(2));
+        const stake = Number(bot.stake) || 1000;
+        const risk = Number(bot.riskPercentage) || 1;
+        const quantity = Number(((stake * risk / 100) / price).toFixed(6));
         
         // Actualizar métricas del bot
         setBots(prevBots => 
@@ -341,7 +346,7 @@ export default function BotsAdvanced() {
               ...b,
               metrics: {
                 ...b.metrics,
-                realizedPnL: (parseFloat(b.metrics?.realizedPnL || 0) + pnl).toFixed(2),
+                realizedPnL: Number((Number(b.metrics?.realizedPnL || 0) + pnl).toFixed(2)),
                 totalTrades: (b.metrics?.totalTrades || 0) + 1
               }
             } : b
@@ -349,7 +354,7 @@ export default function BotsAdvanced() {
         );
         
         console.log(`🎯 SEÑAL: ${signal}`);
-        console.log(`📊 ${bot.symbol} ${tradeType} | Precio: $${price} | PnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`);
+        console.log(`📊 ${bot.symbol} ${tradeType} | Precio: $${price} | PnL: ${pnl >= 0 ? '+' : ''}$${Number(pnl).toFixed(2)}`);
       }
     }, strategyConfig.frequency);
     
@@ -755,7 +760,7 @@ export default function BotsAdvanced() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Take Profit: {newBotData.takeProfit}% 
                     <span className="text-green-400 ml-2">
-                      (+${((newBotData.stake * newBotData.takeProfit) / 100).toFixed(2)} USDT)
+                      (+${(Number(newBotData.stake || 0) * Number(newBotData.takeProfit || 0) / 100).toFixed(2)} USDT)
                     </span>
                   </label>
                   <input 
@@ -774,7 +779,7 @@ export default function BotsAdvanced() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Stop Loss: {newBotData.stopLoss}% 
                     <span className="text-red-400 ml-2">
-                      (-${((newBotData.stake * newBotData.stopLoss) / 100).toFixed(2)} USDT)
+                      (-${(Number(newBotData.stake || 0) * Number(newBotData.stopLoss || 0) / 100).toFixed(2)} USDT)
                     </span>
                   </label>
                   <input 
@@ -807,7 +812,7 @@ export default function BotsAdvanced() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Riesgo por Trade: {newBotData.riskPercentage}%
                     <span className="text-yellow-400 ml-2">
-                      (${((newBotData.stake * newBotData.riskPercentage) / 100).toFixed(2)} USDT por operación)
+                      (${(Number(newBotData.stake || 0) * Number(newBotData.riskPercentage || 0) / 100).toFixed(2)} USDT por operación)
                     </span>
                   </label>
                   <input 
