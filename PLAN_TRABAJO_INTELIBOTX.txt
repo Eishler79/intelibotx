@@ -138,87 +138,171 @@ ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
 
 🔐 FRONTEND AUTHENTICATION SYSTEM - INTEGRACIÓN CON BACKEND SEGURO:
 
-1.1 LOGIN PAGE + REGISTER PAGE COMPONENTS
-    📍 Archivo: frontend/src/pages/LoginPage.jsx (nuevo)
-    📍 Archivo: frontend/src/pages/RegisterPage.jsx (nuevo)
-    🎯 Objetivo: Interfaz authentication con backend JWT
+1.1 ENHANCED LOGIN/REGISTER PAGE - MULTIPLE AUTH OPTIONS
+    📍 Archivo: frontend/src/pages/AuthPage.jsx (nuevo)
+    📍 Archivo: frontend/src/components/AuthProviders.jsx (nuevo)
+    🎯 Objetivo: Sistema authentication multi-provider según imagen usuario
     ✅ Funcionalidad:
-        - Login form con email/password validation
-        - Register form con confirmación password
-        - Error handling + loading states
+        - **Binance OAuth Login** - Conexión directa con cuenta Binance
+        - **Google OAuth Login** - Sign in with Google
+        - **Apple OAuth Login** - Sign in with Apple ID
+        - **Facebook OAuth Login** - Sign in with Facebook
+        - **Email/Password Login** - Método tradicional con validación
+        - Diseño exacto según screenshot usuario
+        - Auto-setup exchange si login con Binance OAuth
+        - Error handling + loading states por provider
         - Success/failure notifications
         - Redirect to /bots-advanced post-login
-        - Integration con /api/auth/login + /api/auth/register
-    ⏱️ Tiempo: 1 día
-    🧪 Test: Login exitoso → access a /bots-advanced
+    ⏱️ Tiempo: 1.5 días
+    🧪 Test: Cada método auth → access a /bots-advanced
 
-1.2 AUTH CONTEXT + JWT STORAGE
+1.2 EXCHANGE CONFIGURATION SYSTEM
+    📍 Archivo: frontend/src/pages/ExchangeSetup.jsx (nuevo)
+    📍 Archivo: frontend/src/components/BinanceConnector.jsx (nuevo)
+    🎯 Objetivo: Configuración exchanges por usuario (inicialmente Binance)
+    ✅ Funcionalidad:
+        - **Binance Exchange Setup** - API keys configuration
+        - Exchange selection interface (preparado para expansión)
+        - Connection testing con feedback visual
+        - Balance verification y display
+        - Permissions validation (spot/futures)
+        - Security warnings + best practices
+        - Multiple exchanges support architecture
+        - Auto-redirect post successful setup
+    ⏱️ Tiempo: 1 día
+    🧪 Test: Setup Binance → balance display → trading permissions
+
+1.3 AUTH CONTEXT + JWT STORAGE ENHANCED
     📍 Archivo: frontend/src/contexts/AuthContext.jsx (nuevo)
-    🎯 Objetivo: State management global para authentication
+    🎯 Objetivo: State management global multi-provider authentication
     ✅ Funcionalidad:
         - JWT token storage en localStorage
-        - User state management (logged in/out)
+        - Multi-provider user state (email, google, binance, etc.)
+        - User profile data + exchange configurations
         - Auto-login si token válido existe
-        - Token refresh functionality
-        - Logout con cleanup
-        - Provide/consume pattern para components
-    ⏱️ Tiempo: 6 horas
-    🧪 Test: Token persiste entre sesiones browser
+        - Token refresh functionality + OAuth refresh
+        - Logout con cleanup completo
+        - Provider-specific data management
+        - Exchange status tracking
+    ⏱️ Tiempo: 8 horas
+    🧪 Test: Login cualquier provider → data persiste → logout cleanup
 
-1.3 PROTECTED ROUTES IMPLEMENTATION
+1.4 PROTECTED ROUTES + EXCHANGE VALIDATION
     📍 Archivo: frontend/src/components/ProtectedRoute.jsx (nuevo)
+    📍 Archivo: frontend/src/components/ExchangeGuard.jsx (nuevo)
     📍 Archivo: frontend/src/App.jsx (modificar)
-    🎯 Objetivo: Access control para rutas autenticadas
+    🎯 Objetivo: Access control + exchange setup validation
     ✅ Funcionalidad:
         - Wrapper component para rutas protegidas
-        - Redirect a /login si no autenticado
-        - Loading state durante token validation
-        - Integration con AuthContext
-        - Protect /bots-advanced route
-    ⏱️ Tiempo: 4 horas
-    🧪 Test: Access /bots-advanced sin login → redirect a /login
+        - Redirect a /auth si no autenticado
+        - Exchange setup validation para /bots-advanced
+        - Redirect a /exchange-setup si no configurado
+        - Loading states durante validaciones
+        - Multi-step onboarding flow
+        - Integration con AuthContext + Exchange status
+    ⏱️ Tiempo: 6 horas
+    🧪 Test: Usuario sin exchange → redirect setup → post setup access bots
 
-1.4 USER-SPECIFIC BOTS INTEGRATION
+1.5 USER-SPECIFIC BOTS + REAL DATA INTEGRATION
     📍 Archivo: frontend/src/pages/BotsAdvanced.jsx (modificar)
     📍 Archivo: frontend/src/services/api.ts (modificar)
-    🎯 Objetivo: Bots ownership por usuario autenticado
+    🎯 Objetivo: Bots ownership + datos reales exchange usuario
     ✅ Funcionalidad:
         - Headers Authorization: Bearer {token} en API calls
-        - Bot creation con user_id automático
-        - List bots del usuario específico
-        - Real balance display desde /api/auth/binance-account
-        - User info display en header
+        - Bot creation con user_id + exchange_id automático
+        - List bots del usuario específico por exchange
+        - **Real balance display** desde exchange configurado
+        - **Live prices** desde API real exchange usuario
+        - User profile + exchange info en header
+        - Multi-exchange support en interfaz
         - Logout functionality integrado
-    ⏱️ Tiempo: 6 horas
-    🧪 Test: Crear bot → solo visible para usuario logueado
+    ⏱️ Tiempo: 8 horas
+    🧪 Test: Usuario con Binance → balance real → crear bot → datos live
 
-1.5 API KEYS MANAGEMENT UI
-    📍 Archivo: frontend/src/pages/SettingsPage.jsx (nuevo)
-    📍 Archivo: frontend/src/components/ApiKeysManager.jsx (nuevo)
-    🎯 Objetivo: Interfaz personal para configurar API keys
+📊 DELIVERABLES FASE 1 - ENHANCED AUTH + EXCHANGE INTEGRATION:
+- ✅ **Multi-provider auth system** (Binance, Google, Apple, Facebook, Email)
+- ✅ **Exchange configuration system** (Binance inicial, architecture multi-exchange)
+- ✅ **Enhanced JWT management** con multi-provider support
+- ✅ **Protected routes + Exchange validation** (onboarding flow completo)
+- ✅ **User-specific bots** con datos reales del exchange configurado
+- ✅ **Real balance + live prices** desde API exchange del usuario
+- ✅ **Complete user flow**: auth provider → exchange setup → bot creation con datos reales
+- ✅ **Multi-exchange ready architecture** (preparado para Binance, KuCoin, Bybit, etc.)
+
+===============================================================================
+                       FASE 1B - BOT CREATION ENHANCED
+                          STATUS: ⏳ POST-FASE 1
+                          DURACIÓN: 1 día (Día 13)
+                          PRIORIDAD: 🤖 CRÍTICA
+                          OBJETIVO: Bot Creation con Datos Reales Usuario
+===============================================================================
+
+🤖 BOT CREATION SYSTEM - CON ESPECIFICACIONES DETALLADAS USUARIO:
+
+1B.1 ENHANCED BOT CREATION MODAL - DATOS REALES
+    📍 Archivo: frontend/src/components/EnhancedBotCreationModal.jsx (nuevo)
+    📍 Archivo: frontend/src/components/BotConfigForm.jsx (nuevo)
+    🎯 Objetivo: Bot creation según especificaciones exactas usuario
     ✅ Funcionalidad:
-        - Form para update Binance API keys
-        - Test connection button con feedback
-        - Connection status indicator
-        - Balance display si conexión exitosa
-        - Security warnings + best practices
-        - Integration con /api/auth/update-api-keys
+        - **Nombres personalizados** ("Bot Fuerte Austero", "Bot Agresivo Alpha")
+        - **Base currency selection** con balance real display
+        - **Market type**: SPOT/FUTURES con leverage dinámico 1-125x
+        - **Entry management**: Market/Limit/DCA con configuración específica
+        - **Exit management**: TP/SL con tipos (percentage/fixed/trailing/ATR)
+        - **Valores monetarios dinámicos** calculados tiempo real
+        - **Risk management** con validation balance disponible
+        - **Exchange integration** usando datos reales configurado
+        - **Template system** configuraciones predefinidas
+        - **Form validation** comprehensive con feedback UX
     ⏱️ Tiempo: 6 horas
-    🧪 Test: Update keys → test connection → balance display
+    🧪 Test: Crear "Bot Fuerte Austero" → valores monetarios correctos → bot funcional
 
-📊 DELIVERABLES FASE 1 - FRONTEND AUTH:
-- ✅ Login/Register pages funcionales
-- ✅ JWT token management completo
-- ✅ Protected routes implementation
-- ✅ User-specific bots con ownership
-- ✅ Real Binance balance display
-- ✅ API keys management interface
-- ✅ Complete user flow: login → create bot → manage
+1B.2 REAL-TIME CALCULATIONS + VALIDATIONS
+    📍 Archivo: frontend/src/utils/botCalculations.js (nuevo)
+    📍 Archivo: frontend/src/hooks/useRealTimeData.js (nuevo)
+    🎯 Objetivo: Cálculos dinámicos + validaciones con datos reales
+    ✅ Funcionalidad:
+        - **Balance validation** tiempo real desde exchange
+        - **Leverage limits** según exchange y symbol
+        - **Risk calculations** con portfolio impact
+        - **Monetary displays** dinámicos ($25.00 USDT TP, -$15.00 SL)
+        - **Position sizing** automático basado en risk %
+        - **Price validation** límites exchange para orders
+        - **Real price data** para calculations precisos
+        - **Multi-symbol support** con data live
+    ⏱️ Tiempo: 4 horas
+    🧪 Test: Cambiar stake → valores monetarios update → validation balance
+
+1B.3 BOT TEMPLATES + CONFIGURATION PERSISTENCE
+    📍 Archivo: frontend/src/components/BotTemplates.jsx (nuevo)
+    📍 Archivo: frontend/src/services/configTemplates.js (nuevo)
+    🎯 Objetivo: Templates predefinidas + persistencia configuraciones
+    ✅ Funcionalidad:
+        - **Templates predefinidas**: "Conservador", "Agresivo", "Scalper"
+        - **Custom templates** guardadas por usuario
+        - **Configuration history** bots exitosos
+        - **Quick setup** desde template
+        - **Parameter suggestions** basados en historical performance
+        - **Strategy-based defaults** optimizados por tipo
+        - **Import/Export** configuraciones
+        - **Backup/Restore** settings usuario
+    ⏱️ Tiempo: 2 horas
+    🧪 Test: Template "Conservador" → load config → modify → save custom
+
+📊 DELIVERABLES FASE 1B - BOT CREATION ENHANCED:
+- ✅ **Bot creation con especificaciones exactas** según requirements usuario
+- ✅ **Valores monetarios dinámicos** calculados tiempo real
+- ✅ **Multi-market support** SPOT/FUTURES con leverage apropiado
+- ✅ **Entry/Exit management** avanzado con múltiples estrategias
+- ✅ **Real data integration** balances + prices + limits desde exchange
+- ✅ **Template system** configuraciones predefinidas + custom
+- ✅ **Validation comprehensive** balance + risk + exchange limits
+- ✅ **User experience optimizada** con feedback tiempo real
 
 ===============================================================================
                         ETAPA 2A - BOTS IA INTELIGENTES
-                             STATUS: ⏳ POST-FASE 1
-                             DURACIÓN: 4-5 días  
+                             STATUS: ⏳ POST-FASE 1B
+                             DURACIÓN: 5 días (Días 14-18)
                              PRIORIDAD: 🧠 ALTA
                              OBJETIVO: Superior a 3Commas
 ===============================================================================
@@ -403,8 +487,9 @@ ESTRUCTURA: Mantener intelibotx-api/ e intelibotx-ui/ separados
 📅 DÍA 5-6: ETAPA 2A - Errores críticos + Estabilidad (✅ Completa)  
 📅 DÍA 7: FASE 0 - Backend Security + Binance Real (✅ Completa)
 📅 DÍA 8: Documentación + Consolidación FASE 0 (✅ Completa)
-📅 DÍA 9-11: FASE 1 - Frontend Authentication (🚀 PRÓXIMA)
-📅 DÍA 12-16: ETAPA 2A - Bots IA Inteligentes (⏳ Pendiente)
+📅 DÍA 9-12: FASE 1 - Enhanced Auth + Exchange Integration (🚀 PRÓXIMA)
+📅 DÍA 13: FASE 1B - Bot Creation Enhanced con datos reales (⏳ Próxima)
+📅 DÍA 14-18: ETAPA 2A - Bots IA Inteligentes (⏳ Pendiente)
 📅 DÍA 17-18: ETAPA 3 - Integration & Polish (⏳ Pendiente)
 
 TOTAL PROYECTO: 18 días de desarrollo completo
@@ -413,13 +498,15 @@ TOTAL PROYECTO: 18 días de desarrollo completo
                               PUNTO DE INICIO ACTUALIZADO
 ===============================================================================
 
-🚀 PRÓXIMO INICIO: FASE 1 - FRONTEND AUTHENTICATION
+🚀 PRÓXIMO INICIO: FASE 1 - ENHANCED AUTH + EXCHANGE INTEGRATION
 
-📍 PRIMER TASK: LoginPage + RegisterPage Components
-📂 ARCHIVO: /Users/eduardguzman/Documents/TRADING/INTELIBOTX/frontend/src/pages/LoginPage.jsx
-🎯 OBJETIVO: Sistema multi-usuario completo con frontend auth
+📍 PRIMER TASK: Enhanced Login/Register con Multi-Provider Auth
+📂 ARCHIVO: /Users/eduardguzman/Documents/TRADING/INTELIBOTX/frontend/src/pages/AuthPage.jsx
+🎯 OBJETIVO: Sistema auth con Binance, Google, Apple, Facebook + Exchange setup
 
-⏰ SIGUIENTE ACCIÓN: Implementar componentes authentication con backend JWT
+⏰ SIGUIENTE ACCIÓN: Implementar AuthPage según screenshot usuario + OAuth integrations
+
+🔄 FLOW COMPLETO: Auth Provider → Exchange Setup → Bot Creation con Datos Reales
 
 ===============================================================================
                           ESTADO ACTUAL PROYECTO
