@@ -253,6 +253,26 @@ class AuthService:
             )
         
         return credentials
+    
+    def get_token_from_header(self, authorization: Optional[str] = None) -> str:
+        """
+        Extract JWT token from Authorization header
+        """
+        from fastapi import Header, HTTPException, status
+        
+        if not authorization:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authorization header required"
+            )
+        
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authorization header format"
+            )
+        
+        return authorization.split(" ")[1]
 
 
 # Instancia global del servicio

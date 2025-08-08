@@ -1,0 +1,434 @@
+"""
+Exchange Management Routes - InteliBotX
+Rutas para gestión de exchanges por usuario
+"""
+
+import logging
+from typing import List, Dict, Any
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from sqlmodel import Session, select
+from models.user import User
+from models.user_exchange import (
+    UserExchange, 
+    ExchangeConnectionRequest, 
+    ExchangeConnectionResponse,
+    ExchangeTestResponse
+)
+from services.auth_service import AuthService
+from services.encryption_service import EncryptionService
+from services.exchange_factory import ExchangeFactory
+from db.database import get_session
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/user", tags=["exchanges"])
+
+# Services
+auth_service = AuthService()
+encryption_service = EncryptionService()
+exchange_factory = ExchangeFactory(encryption_service)
+
+
+async def get_current_user(session: Session = Depends(get_session), 
+                          authorization: str = Header(...)) -> User:
+    """Dependency para obtener usuario actual"""
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        user_id = token_data.get("user_id")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token"
+            )
+        
+        user = session.get(User, user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return user
+        
+    except Exception as e:
+        logger.error(f"Authentication error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed"
+        )
+
+
+@router.get("/exchanges", response_model=List[ExchangeConnectionResponse])
+async def list_user_exchanges(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+) -> List[ExchangeConnectionResponse]:
+    """Listar exchanges del usuario"""
+    try:
+        statement = select(UserExchange).where(UserExchange.user_id == current_user.id)
+        exchanges = session.exec(statement).all()
+        
+        response_exchanges = []
+        for exchange in exchanges:
+            exchange_response = ExchangeConnectionResponse(
+                id=exchange.id,
+                exchange_name=exchange.exchange_name,
+                connection_name=exchange.connection_name,
+                is_testnet=exchange.is_testnet,
+                status=exchange.status,
+                permissions=exchange.get_permissions(),
+                last_test_at=exchange.last_test_at,
+                error_message=exchange.error_message,
+                created_at=exchange.created_at
+            )
+            response_exchanges.append(exchange_response)
+        
+        return response_exchanges
+        
+    except Exception as e:
+        logger.error(f"Error listing user exchanges: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list exchanges"
+        )
+
+
+@router.post("/exchanges", response_model=ExchangeConnectionResponse)
+async def add_user_exchange(
+    exchange_request: ExchangeConnectionRequest,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+) -> ExchangeConnectionResponse:
+    """Agregar nuevo exchange para usuario"""
+    try:
+        # Validate exchange is supported
+        if not exchange_factory.is_exchange_supported(exchange_request.exchange_name):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Exchange {exchange_request.exchange_name} is not supported"
+            )
+        
+        # Check if connection name already exists for user
+        existing_statement = select(UserExchange).where(
+            UserExchange.user_id == current_user.id,
+            UserExchange.connection_name == exchange_request.connection_name
+        )
+        existing_exchange = session.exec(existing_statement).first()
+        if existing_exchange:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Connection name '{exchange_request.connection_name}' already exists"
+            )
+        
+        # Encrypt credentials
+        encrypted_api_key = encryption_service.encrypt_api_key(exchange_request.api_key)
+        encrypted_api_secret = encryption_service.encrypt_api_key(exchange_request.api_secret)
+        
+        if not encrypted_api_key or not encrypted_api_secret:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to encrypt API credentials"
+            )
+        
+        # Encrypt passphrase if provided
+        encrypted_passphrase = None
+        if exchange_request.passphrase:
+            encrypted_passphrase = encryption_service.encrypt_api_key(exchange_request.passphrase)
+        
+        # Create UserExchange record
+        user_exchange = UserExchange(
+            user_id=current_user.id,
+            exchange_name=exchange_request.exchange_name.lower(),
+            connection_name=exchange_request.connection_name,
+            encrypted_api_key=encrypted_api_key,
+            encrypted_api_secret=encrypted_api_secret,
+            encrypted_passphrase=encrypted_passphrase,
+            is_testnet=exchange_request.is_testnet,
+            status="inactive"  # Will be updated after connection test
+        )
+        
+        session.add(user_exchange)
+        session.commit()
+        session.refresh(user_exchange)
+        
+        # Test connection immediately
+        connector = exchange_factory.create_connector(
+            user_exchange.exchange_name,
+            user_exchange.encrypted_api_key,
+            user_exchange.encrypted_api_secret,
+            user_exchange.is_testnet
+        )
+        
+        if connector:
+            test_result = connector.test_connection()
+            if test_result.get("success"):
+                user_exchange.status = "active"
+                if test_result.get("permissions"):
+                    user_exchange.set_permissions({
+                        "can_trade": test_result.get("can_trade", False),
+                        "can_withdraw": test_result.get("can_withdraw", False),
+                        "can_deposit": test_result.get("can_deposit", False),
+                        "permissions": test_result.get("permissions", [])
+                    })
+            else:
+                user_exchange.status = "error"
+                user_exchange.error_message = test_result.get("error_message", "Connection test failed")
+            
+            user_exchange.last_test_at = datetime.utcnow()
+            session.commit()
+        
+        # Return response
+        return ExchangeConnectionResponse(
+            id=user_exchange.id,
+            exchange_name=user_exchange.exchange_name,
+            connection_name=user_exchange.connection_name,
+            is_testnet=user_exchange.is_testnet,
+            status=user_exchange.status,
+            permissions=user_exchange.get_permissions(),
+            last_test_at=user_exchange.last_test_at,
+            error_message=user_exchange.error_message,
+            created_at=user_exchange.created_at
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error adding user exchange: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add exchange: {str(e)}"
+        )
+
+
+@router.put("/exchanges/{exchange_id}", response_model=ExchangeConnectionResponse)
+async def update_user_exchange(
+    exchange_id: int,
+    exchange_request: ExchangeConnectionRequest,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+) -> ExchangeConnectionResponse:
+    """Actualizar exchange del usuario"""
+    try:
+        # Get existing exchange
+        user_exchange = session.get(UserExchange, exchange_id)
+        if not user_exchange or user_exchange.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Exchange not found"
+            )
+        
+        # Update fields
+        user_exchange.exchange_name = exchange_request.exchange_name.lower()
+        user_exchange.connection_name = exchange_request.connection_name
+        user_exchange.is_testnet = exchange_request.is_testnet
+        
+        # Update credentials if provided
+        if exchange_request.api_key:
+            user_exchange.encrypted_api_key = encryption_service.encrypt_api_key(exchange_request.api_key)
+        if exchange_request.api_secret:
+            user_exchange.encrypted_api_secret = encryption_service.encrypt_api_key(exchange_request.api_secret)
+        if exchange_request.passphrase:
+            user_exchange.encrypted_passphrase = encryption_service.encrypt_api_key(exchange_request.passphrase)
+        
+        user_exchange.update_timestamp()
+        session.commit()
+        
+        return ExchangeConnectionResponse(
+            id=user_exchange.id,
+            exchange_name=user_exchange.exchange_name,
+            connection_name=user_exchange.connection_name,
+            is_testnet=user_exchange.is_testnet,
+            status=user_exchange.status,
+            permissions=user_exchange.get_permissions(),
+            last_test_at=user_exchange.last_test_at,
+            error_message=user_exchange.error_message,
+            created_at=user_exchange.created_at
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error updating user exchange: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update exchange"
+        )
+
+
+@router.delete("/exchanges/{exchange_id}")
+async def delete_user_exchange(
+    exchange_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+) -> Dict[str, Any]:
+    """Eliminar exchange del usuario"""
+    try:
+        user_exchange = session.get(UserExchange, exchange_id)
+        if not user_exchange or user_exchange.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Exchange not found"
+            )
+        
+        session.delete(user_exchange)
+        session.commit()
+        
+        return {"message": "Exchange deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error deleting user exchange: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete exchange"
+        )
+
+
+@router.post("/exchanges/{exchange_id}/test", response_model=ExchangeTestResponse)
+async def test_exchange_connection(
+    exchange_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+) -> ExchangeTestResponse:
+    """Probar conexión con exchange"""
+    try:
+        user_exchange = session.get(UserExchange, exchange_id)
+        if not user_exchange or user_exchange.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Exchange not found"
+            )
+        
+        # Create connector
+        connector = exchange_factory.create_connector(
+            user_exchange.exchange_name,
+            user_exchange.encrypted_api_key,
+            user_exchange.encrypted_api_secret,
+            user_exchange.is_testnet
+        )
+        
+        if not connector:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create exchange connector"
+            )
+        
+        # Test connection
+        test_result = connector.test_connection()
+        
+        # Update exchange status
+        if test_result.get("success"):
+            user_exchange.status = "active"
+            user_exchange.error_message = None
+            
+            # Update permissions
+            if test_result.get("permissions"):
+                user_exchange.set_permissions({
+                    "can_trade": test_result.get("can_trade", False),
+                    "can_withdraw": test_result.get("can_withdraw", False),
+                    "can_deposit": test_result.get("can_deposit", False),
+                    "permissions": test_result.get("permissions", [])
+                })
+        else:
+            user_exchange.status = "error"
+            user_exchange.error_message = test_result.get("error_message", "Connection test failed")
+        
+        user_exchange.last_test_at = datetime.utcnow()
+        session.commit()
+        
+        # Get additional info if connection successful
+        account_info = None
+        balance_info = None
+        
+        if test_result.get("success"):
+            try:
+                account_result = connector.get_account_info()
+                if account_result.get("success"):
+                    account_info = account_result.get("data")
+                
+                balance_result = connector.get_balance()
+                if balance_result.get("success"):
+                    balance_info = balance_result
+                    
+            except Exception as e:
+                logger.warning(f"Error getting additional exchange info: {e}")
+        
+        return ExchangeTestResponse(
+            success=test_result.get("success", False),
+            exchange_name=user_exchange.exchange_name,
+            connection_name=user_exchange.connection_name,
+            account_info=account_info,
+            balance_info=balance_info,
+            permissions=user_exchange.get_permissions(),
+            error_message=user_exchange.error_message
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error testing exchange connection: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to test connection: {str(e)}"
+        )
+
+
+@router.get("/exchanges/{exchange_id}/balance")
+async def get_exchange_balance(
+    exchange_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+) -> Dict[str, Any]:
+    """Obtener balance del exchange"""
+    try:
+        user_exchange = session.get(UserExchange, exchange_id)
+        if not user_exchange or user_exchange.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Exchange not found"
+            )
+        
+        if user_exchange.status != "active":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Exchange connection is not active"
+            )
+        
+        # Create connector
+        connector = exchange_factory.create_connector(
+            user_exchange.exchange_name,
+            user_exchange.encrypted_api_key,
+            user_exchange.encrypted_api_secret,
+            user_exchange.is_testnet
+        )
+        
+        if not connector:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create exchange connector"
+            )
+        
+        # Get balance
+        balance_result = connector.get_balance()
+        if not balance_result.get("success"):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=balance_result.get("error_message", "Failed to get balance")
+            )
+        
+        return balance_result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting exchange balance: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get exchange balance"
+        )

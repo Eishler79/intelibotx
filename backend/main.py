@@ -30,6 +30,7 @@ async def startup_event():
         from sqlmodel import create_engine, SQLModel
         from models.bot_config import BotConfig
         from models.user import User, UserSession
+        from models.user_exchange import UserExchange
         
         # Temporarily disable trading models for Railway deployment
         # These will be enabled after auth system is stable
@@ -133,6 +134,7 @@ async def initialize_database():
         # Import models individually to ensure they're registered
         from models.user import User, UserSession
         from models.bot_config import BotConfig
+        from models.user_exchange import UserExchange
         
         # Create only essential tables for auth system
         SQLModel.metadata.create_all(engine)
@@ -209,6 +211,7 @@ async def initialize_auth_only():
         # Import models
         from models.user import User, UserSession
         from models.bot_config import BotConfig
+        from models.user_exchange import UserExchange
         
         # Create only essential tables
         SQLModel.metadata.create_all(engine)
@@ -320,6 +323,14 @@ try:
     print("✅ Real bots routes loaded")
 except Exception as e:
     print(f"⚠️ Could not load real bots routes: {e}")
+
+# Load exchange management routes (FASE 1.2)
+try:
+    from routes.exchanges import router as exchanges_router
+    app.include_router(exchanges_router)
+    print("✅ Exchange management routes loaded")
+except Exception as e:
+    print(f"⚠️ Could not load exchange routes: {e}")
 
 # Temporarily disable trading history routes for Railway deployment
 try:
