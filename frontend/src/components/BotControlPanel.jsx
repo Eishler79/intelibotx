@@ -17,12 +17,30 @@ import {
 
 export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
   const [parameters, setParameters] = useState({
+    // Parámetros básicos del bot creado
+    name: bot?.name || bot?.symbol || 'Bot',
+    symbol: bot?.symbol || 'BTCUSDT',
+    strategy: bot?.strategy || 'Smart Scalper',
+    interval: bot?.interval || '15m',
+    stake: bot?.stake || 100,
+    base_currency: bot?.base_currency || 'USDT',
+    market_type: bot?.market_type || 'SPOT',
+    leverage: bot?.leverage || 1,
+    
+    // Parámetros de riesgo
     takeProfit: bot?.take_profit || 2.5,
     stopLoss: bot?.stop_loss || 1.5,
     riskPercentage: bot?.risk_percentage || 1.0,
-    positionSize: bot?.position_size || 100,
-    trailingStopEnabled: bot?.trailing_stop_enabled || false,
-    adaptiveMode: bot?.adaptive_mode || true,
+    
+    // Parámetros avanzados de órdenes
+    dca_levels: bot?.dca_levels || 3,
+    entry_order_type: bot?.entry_order_type || 'MARKET',
+    exit_order_type: bot?.exit_order_type || 'MARKET',
+    tp_order_type: bot?.tp_order_type || 'LIMIT',
+    sl_order_type: bot?.sl_order_type || 'STOP_MARKET',
+    trailing_stop: bot?.trailing_stop || false,
+    
+    // Parámetros operacionales
     maxOpenPositions: bot?.max_open_positions || 3,
     cooldownMinutes: bot?.cooldown_minutes || 30,
     marketConditionFilter: bot?.market_condition_filter || true,
@@ -99,9 +117,11 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
             <div>
               <CardTitle className="text-xl flex items-center gap-2">
                 <Settings className="text-blue-400" size={24} />
-                Control Panel - {bot?.symbol}
+                Configurar Bot - {bot?.name || bot?.symbol}
               </CardTitle>
-              <p className="text-gray-400 mt-1">Ajuste dinámico de parámetros en tiempo real</p>
+              <p className="text-gray-400 mt-1">
+                Edita todos los parámetros de tu bot y ve el impacto monetario en tiempo real
+              </p>
             </div>
             <Button 
               variant="ghost" 
@@ -114,79 +134,267 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
         </CardHeader>
         
         <CardContent className="space-y-6">
-          {/* Estado del Bot */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-              <Activity className="mx-auto mb-2 text-green-400" size={20} />
-              <p className="text-xs text-gray-400">Estado</p>
-              <Badge className="mt-1 bg-green-500/20 text-green-400">
-                {bot?.status || 'RUNNING'}
-              </Badge>
+          {/* Configuración Básica del Bot */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Settings className="text-blue-400" size={20} />
+              Configuración Básica
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Nombre del Bot</Label>
+                <input
+                  type="text"
+                  value={parameters.name}
+                  onChange={(e) => handleParameterChange('name', e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="Nombre personalizado del bot"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Estrategia</Label>
+                <select
+                  value={parameters.strategy}
+                  onChange={(e) => handleParameterChange('strategy', e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="Smart Scalper">Smart Scalper - IA Multi-timeframe</option>
+                  <option value="Trend Hunter">Trend Hunter - Detección de Tendencias IA</option>
+                  <option value="Manipulation Detector">Manipulation Detector - Anti-Whales IA</option>
+                  <option value="News Sentiment">News Sentiment - IA + Análisis de Noticias</option>
+                  <option value="Volatility Master">Volatility Master - IA Adaptativa</option>
+                </select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Capital (Stake)</Label>
+                <input
+                  type="number"
+                  value={parameters.stake}
+                  onChange={(e) => handleParameterChange('stake', parseFloat(e.target.value))}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  min="0.01"
+                  step="0.01"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Timeframe</Label>
+                <select
+                  value={parameters.interval}
+                  onChange={(e) => handleParameterChange('interval', e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="1m">1 minuto</option>
+                  <option value="5m">5 minutos</option>
+                  <option value="15m">15 minutos</option>
+                  <option value="30m">30 minutos</option>
+                  <option value="1h">1 hora</option>
+                  <option value="4h">4 horas</option>
+                </select>
+              </div>
             </div>
-            <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-              <DollarSign className="mx-auto mb-2 text-blue-400" size={20} />
-              <p className="text-xs text-gray-400">Balance</p>
-              <p className="font-semibold text-blue-400">${bot?.balance || '1,200'}</p>
-            </div>
-            <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-              <TrendingUp className="mx-auto mb-2 text-purple-400" size={20} />
-              <p className="text-xs text-gray-400">PnL Hoy</p>
-              <p className="font-semibold text-purple-400">+$45.30</p>
-            </div>
-            <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-              <Target className="mx-auto mb-2 text-yellow-400" size={20} />
-              <p className="text-xs text-gray-400">Trades</p>
-              <p className="font-semibold text-yellow-400">12</p>
+          </div>
+
+          {/* Estado del Bot - Datos Reales */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Activity className="text-green-400" size={20} />
+              Estado del Bot - Tiempo Real
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
+                <Activity className="mx-auto mb-2 text-green-400" size={20} />
+                <p className="text-xs text-gray-400">Estado</p>
+                <Badge className={`mt-1 ${
+                  bot?.status === 'RUNNING' ? 'bg-green-500/20 text-green-400' :
+                  bot?.status === 'PAUSED' ? 'bg-yellow-500/20 text-yellow-400' :
+                  'bg-gray-500/20 text-gray-400'
+                }`}>
+                  {bot?.status || 'STOPPED'}
+                </Badge>
+              </div>
+              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
+                <DollarSign className="mx-auto mb-2 text-blue-400" size={20} />
+                <p className="text-xs text-gray-400">Balance Exchange</p>
+                <p className="font-semibold text-blue-400">
+                  ${(bot?.exchange_balance || 1000).toFixed(2)} {parameters.base_currency}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {bot?.exchange_name || 'Binance'}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
+                <TrendingUp className="mx-auto mb-2 text-purple-400" size={20} />
+                <p className="text-xs text-gray-400">PnL Hoy</p>
+                <p className={`font-semibold ${
+                  (bot?.daily_pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {(bot?.daily_pnl || 0) >= 0 ? '+' : ''}${(bot?.daily_pnl || 0).toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date().toLocaleDateString('es-ES')}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
+                <Target className="mx-auto mb-2 text-yellow-400" size={20} />
+                <p className="text-xs text-gray-400">Trades Hoy</p>
+                <p className="font-semibold text-yellow-400">
+                  {bot?.daily_trades || 0}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Órdenes ejecutadas
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Controles de Riesgo */}
           <div>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Shield className="text-red-400" size={20} />
+                Risk Management
+              </h3>
+              <p className="text-sm text-gray-400 mt-1">
+                🎯 <strong>Gestión de riesgo:</strong> Controla cuánto puedes ganar o perder en cada operación. 
+                Los valores se calculan dinámicamente sobre tu capital actual.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <SliderInput
+                  label="Take Profit"
+                  value={parameters.takeProfit}
+                  min={0.5}
+                  max={10}
+                  step={0.1}
+                  suffix="%"
+                  onChange={(value) => handleParameterChange('takeProfit', value)}
+                  icon={TrendingUp}
+                />
+                <p className="text-xs text-green-400">
+                  ≈ +${(parameters.stake * parameters.takeProfit / 100).toFixed(2)} {parameters.base_currency} por operación
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <SliderInput
+                  label="Stop Loss"
+                  value={parameters.stopLoss}
+                  min={0.5}
+                  max={5}
+                  step={0.1}
+                  suffix="%"
+                  onChange={(value) => handleParameterChange('stopLoss', value)}
+                  icon={AlertTriangle}
+                />
+                <p className="text-xs text-red-400">
+                  ≈ -${(parameters.stake * parameters.stopLoss / 100).toFixed(2)} {parameters.base_currency} por operación
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <SliderInput
+                  label="Risk per Trade"
+                  value={parameters.riskPercentage}
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                  suffix="%"
+                  onChange={(value) => handleParameterChange('riskPercentage', value)}
+                  icon={Shield}
+                />
+                <p className="text-xs text-yellow-400">
+                  🎯 Porcentaje del capital que arriesgas por operación
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <SliderInput
+                  label="Capital por Trade"
+                  value={parameters.stake}
+                  min={10}
+                  max={5000}
+                  step={10}
+                  suffix={` ${parameters.base_currency}`}
+                  onChange={(value) => handleParameterChange('stake', value)}
+                  icon={DollarSign}
+                />
+                <p className="text-xs text-blue-400">
+                  💰 Capital utilizado por cada operación del bot
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Configuración de Órdenes */}
+          <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Shield className="text-red-400" size={20} />
-              Risk Management
+              <Target className="text-orange-400" size={20} />
+              Gestión de Órdenes
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SliderInput
-                label="Take Profit"
-                value={parameters.takeProfit}
-                min={0.5}
-                max={10}
-                step={0.1}
-                suffix="%"
-                onChange={(value) => handleParameterChange('takeProfit', value)}
-                icon={TrendingUp}
-              />
-              <SliderInput
-                label="Stop Loss"
-                value={parameters.stopLoss}
-                min={0.5}
-                max={5}
-                step={0.1}
-                suffix="%"
-                onChange={(value) => handleParameterChange('stopLoss', value)}
-                icon={AlertTriangle}
-              />
-              <SliderInput
-                label="Risk per Trade"
-                value={parameters.riskPercentage}
-                min={0.1}
-                max={5}
-                step={0.1}
-                suffix="%"
-                onChange={(value) => handleParameterChange('riskPercentage', value)}
-                icon={Shield}
-              />
-              <SliderInput
-                label="Position Size"
-                value={parameters.positionSize}
-                min={10}
-                max={1000}
-                step={10}
-                suffix="$"
-                onChange={(value) => handleParameterChange('positionSize', value)}
-                icon={DollarSign}
-              />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Tipo de Orden Entrada</Label>
+                <select
+                  value={parameters.entry_order_type}
+                  onChange={(e) => handleParameterChange('entry_order_type', e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="MARKET">MARKET - Ejecución inmediata</option>
+                  <option value="LIMIT">LIMIT - Precio específico</option>
+                  <option value="STOP_LIMIT">STOP LIMIT - Con activación</option>
+                </select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Tipo de Orden Salida</Label>
+                <select
+                  value={parameters.exit_order_type}
+                  onChange={(e) => handleParameterChange('exit_order_type', e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="MARKET">MARKET - Ejecución inmediata</option>
+                  <option value="LIMIT">LIMIT - Precio específico</option>
+                </select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Niveles DCA</Label>
+                <input
+                  type="number"
+                  value={parameters.dca_levels}
+                  onChange={(e) => handleParameterChange('dca_levels', parseInt(e.target.value))}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  min="1"
+                  max="10"
+                />
+                <p className="text-xs text-gray-400">
+                  📈 Número de niveles de promediado de costos
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  Trailing Stop
+                  <div className={`w-3 h-3 rounded-full ${
+                    parameters.trailing_stop ? 'bg-green-400' : 'bg-gray-500'
+                  }`}></div>
+                </Label>
+                <select
+                  value={parameters.trailing_stop ? 'true' : 'false'}
+                  onChange={(e) => handleParameterChange('trailing_stop', e.target.value === 'true')}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="false">Desactivado</option>
+                  <option value="true">Activado</option>
+                </select>
+                <p className="text-xs text-gray-400">
+                  🎯 Stop loss que sigue el precio favorable
+                </p>
+              </div>
             </div>
           </div>
 
@@ -246,9 +454,19 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   onChange={(value) => handleParameterChange('cooldownMinutes', value)}
                   icon={Settings}
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  ⏱️ Tiempo de espera entre operaciones para evitar overtrading
-                </p>
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-2">
+                  <p className="text-xs text-blue-400 font-medium mb-1">
+                    ⏱️ <strong>Cooldown explicado:</strong>
+                  </p>
+                  <p className="text-xs text-gray-300">
+                    Tiempo de espera entre operaciones para evitar overtrading. 
+                    Si está en <strong>{parameters.cooldownMinutes} minutos</strong>, el bot esperará ese tiempo 
+                    antes de hacer la siguiente operación, protegiendo tu capital de operaciones impulsivas.
+                  </p>
+                  <p className="text-xs text-yellow-400 mt-1">
+                    💰 <strong>Impacto monetario:</strong> Menos operaciones = menor riesgo pero menor frecuencia de ganancias
+                  </p>
+                </div>
               </div>
             </div>
           </div>
