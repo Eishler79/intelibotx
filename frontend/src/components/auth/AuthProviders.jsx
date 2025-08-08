@@ -81,28 +81,28 @@ const AuthProviders = ({ onSuccess }) => {
 
   return (
     <div className="space-y-4">
-      {/* Binance OAuth - Featured prominently like in screenshot */}
+      {/* Binance OAuth - Estilo azul */}
       <AuthButton
         provider="binance"
-        bgColor="#f7931a"
-        textColor="#0a0e27"
-        hoverBg="#e8841a"
+        bgColor="linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)"
+        textColor="#ffffff"
+        hoverBg="linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)"
         label="Binance"
         icon={
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg" style={{ background: '#0a0e27' }}>
-            <svg className="w-6 h-6" style={{ color: '#f7931a' }} fill="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.2)' }}>
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2L13.09 8.26L22 9L13.09 15.74L12 22L10.91 15.74L2 15L10.91 8.26L12 2Z"/>
             </svg>
           </div>
         }
       />
 
-      {/* OKX - Second featured option like in screenshot */}
+      {/* OKX - Estilo azul */}
       <AuthButton
         provider="okx"
-        bgColor="#2a2f4a"
+        bgColor="rgba(30, 58, 138, 0.6)"
         textColor="#ffffff"
-        hoverBg="#3a3f5a"
+        hoverBg="rgba(30, 58, 138, 0.8)"
         label="OKX"
         icon={
           <div className="flex items-center justify-center w-8 h-8">
@@ -124,17 +124,17 @@ const AuthProviders = ({ onSuccess }) => {
           disabled={loadingProvider === 'google'}
           className="p-4 rounded-lg transition-all duration-300 flex items-center justify-center disabled:opacity-50"
           style={{
-            background: '#2a2f4a',
-            border: '1px solid #3a3f5a'
+            background: 'rgba(30, 58, 138, 0.4)',
+            border: '1px solid rgba(59, 130, 246, 0.5)'
           }}
           onMouseEnter={(e) => {
             if (loadingProvider !== 'google') {
-              e.target.style.background = '#3a3f5a';
+              e.target.style.background = 'rgba(30, 58, 138, 0.6)';
             }
           }}
-          onMouseLeave={(e) => {
+          onBlur={(e) => {
             if (loadingProvider !== 'google') {
-              e.target.style.background = '#2a2f4a';
+              e.target.style.background = 'rgba(30, 58, 138, 0.4)';
             }
           }}
         >
