@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const BotTemplates = ({ onSelectTemplate, onClose }) => {
+const BotTemplates = ({ isOpen, onSelectTemplate, onClose }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   const predefinedTemplates = [
@@ -189,6 +189,8 @@ const BotTemplates = ({ onSelectTemplate, onClose }) => {
     if (riskPercentage <= 1.5) return { level: 'Medio', color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
     return { level: 'Alto', color: 'text-red-400', bg: 'bg-red-500/20' };
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

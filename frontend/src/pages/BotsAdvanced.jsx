@@ -212,8 +212,11 @@ export default function BotsAdvanced() {
   };
 
   const handleTemplateSelected = (template) => {
+    console.log('Template seleccionado:', template);
     setShowTemplates(false);
-    setTimeout(() => setShowEnhancedModal(true), 100);
+    // Mostrar mensaje de éxito en lugar de abrir otro modal inmediatamente
+    setSuccessMessage(`✅ Template "${template.name}" seleccionado. Usa "🚀 Bot Enhanced" para crear con esta configuración.`);
+    setTimeout(() => setSuccessMessage(null), 5000);
   };
 
   const handleDeleteBot = async (botId) => {
