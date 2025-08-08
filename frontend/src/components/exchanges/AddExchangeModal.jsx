@@ -15,12 +15,12 @@ const AddExchangeModal = ({ isOpen, onClose, onExchangeAdded }) => {
   const [error, setError] = useState('');
 
   const exchanges = [
-    { name: 'binance', label: 'Binance', color: '#F0B90B' },
-    { name: 'bybit', label: 'Bybit', color: '#FF6A00' },
-    { name: 'okx', label: 'OKX', color: '#0052FF' },
-    { name: 'kucoin', label: 'KuCoin', color: '#20D090' },
-    { name: 'kraken', label: 'Kraken', color: '#5741D9' },
-    { name: 'huobi', label: 'Huobi', color: '#2EABDC' }
+    { name: 'binance', label: 'BINANCE', color: '#F0B90B', logo: '🟨' },
+    { name: 'bybit', label: 'BYBIT', color: '#FF6A00', logo: 'BY' },
+    { name: 'okx', label: 'OKX', color: '#0052FF', logo: '◼◼' },
+    { name: 'kucoin', label: 'KUCOIN', color: '#20D090', logo: 'KC' },
+    { name: 'kraken', label: 'KRAKEN', color: '#5741D9', logo: '🐙' },
+    { name: 'coinbase', label: 'COINBASE', color: '#0052FF', logo: 'CB' }
   ];
 
   const handleExchangeSelect = (exchangeName) => {
@@ -105,52 +105,53 @@ const AddExchangeModal = ({ isOpen, onClose, onExchangeAdded }) => {
           {/* Exchange Selection */}
           <div className="mb-6">
             <h3 className="text-white text-lg font-semibold mb-4">Selecciona un Exchange</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-4">
               {exchanges.map((exchange) => (
                 <button
                   key={exchange.name}
                   onClick={() => handleExchangeSelect(exchange.name)}
-                  className={`p-4 rounded-lg border-2 transition-all duration-300 ${
+                  className={`p-6 rounded-lg border transition-all duration-300 bg-gray-800/30 hover:bg-gray-700/50 ${
                     selectedExchange === exchange.name
-                      ? 'border-blue-500 bg-blue-500/20'
-                      : 'border-gray-600 hover:border-gray-500 bg-gray-800/50'
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-gray-600 hover:border-gray-500'
                   }`}
+                  style={{ minHeight: '80px' }}
                 >
-                  <div className="flex flex-col items-center space-y-2">
-                    {/* Exchange Icon */}
-                    <div className="w-12 h-12 flex items-center justify-center rounded-lg" style={{ backgroundColor: `${exchange.color}20` }}>
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
                       {exchange.name === 'binance' && (
-                        <svg className="w-8 h-8" style={{ color: exchange.color }} fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2L13.09 8.26L22 9L13.09 15.74L12 22L10.91 15.74L2 15L10.91 8.26L12 2Z"/>
-                        </svg>
+                        <div className="flex items-center justify-center space-x-1">
+                          <div className="w-4 h-4 bg-yellow-500 rounded-sm"></div>
+                          <span className="text-yellow-500 font-bold text-lg">BINANCE</span>
+                        </div>
                       )}
                       {exchange.name === 'bybit' && (
-                        <div className="text-xl font-bold" style={{ color: exchange.color }}>B</div>
+                        <span className="text-white font-bold text-lg">BYBIT</span>
                       )}
                       {exchange.name === 'okx' && (
-                        <div className="grid grid-cols-2 gap-1">
-                          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: exchange.color }}></div>
-                          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: exchange.color }}></div>
-                          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: exchange.color }}></div>
-                          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: exchange.color }}></div>
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="grid grid-cols-2 gap-0.5">
+                            <div className="w-1.5 h-1.5 bg-white"></div>
+                            <div className="w-1.5 h-1.5 bg-white"></div>
+                            <div className="w-1.5 h-1.5 bg-white"></div>
+                            <div className="w-1.5 h-1.5 bg-white"></div>
+                          </div>
+                          <span className="text-white font-bold text-lg">OKX</span>
                         </div>
                       )}
                       {exchange.name === 'kucoin' && (
-                        <div className="text-xl font-bold" style={{ color: exchange.color }}>K</div>
+                        <div className="flex items-center justify-center space-x-1">
+                          <span className="text-green-400 font-bold text-lg">K</span>
+                          <span className="text-green-400 font-bold text-lg">KUCOIN</span>
+                        </div>
                       )}
                       {exchange.name === 'kraken' && (
-                        <svg className="w-8 h-8" style={{ color: exchange.color }} fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-                          <path d="M8 12l2-3h4l2 3-2 3h-4l-2-3z"/>
-                        </svg>
+                        <span className="text-white font-bold text-lg">KRAKEN</span>
                       )}
-                      {exchange.name === 'huobi' && (
-                        <div className="text-xl font-bold" style={{ color: exchange.color }}>H</div>
+                      {exchange.name === 'coinbase' && (
+                        <span className="text-blue-400 font-bold text-lg">COINBASE</span>
                       )}
                     </div>
-                    
-                    {/* Exchange Name */}
-                    <div className="text-white font-medium text-center">{exchange.label}</div>
                   </div>
                 </button>
               ))}
