@@ -28,22 +28,13 @@ export default function BotsAdvanced() {
   const [selectedBot, setSelectedBot] = useState(null);
   const [controlPanelBot, setControlPanelBot] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEnhancedModal, setShowEnhancedModal] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedBotId, setSelectedBotId] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   
-  const [newBotData, setNewBotData] = useState({
-    symbol: 'BTCUSDT',
-    strategy: 'Smart Scalper',
-    stake: 1000,
-    takeProfit: 2.5,
-    stopLoss: 1.5,
-    riskPercentage: 1.0,
-    marketType: 'spot'
-  });
 
   // Calcular métricas dinámicas basadas en bots reales
   const calculateDynamicMetrics = () => {
@@ -118,78 +109,6 @@ export default function BotsAdvanced() {
     }
   };
 
-  const handleCreateBot = async () => {
-    try {
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
-      
-      // Enviar datos al backend
-      const response = await fetch(`${BASE_URL}/api/create-bot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          symbol: newBotData.symbol,
-          strategy: newBotData.strategy,
-          stake: newBotData.stake,
-          take_profit: newBotData.takeProfit,
-          stop_loss: newBotData.stopLoss,
-          risk_percentage: newBotData.riskPercentage,
-          market_type: newBotData.marketType,
-          interval: '15m'
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Crear bot para el frontend con métricas
-        const newBot = {
-          id: result.bot.id,
-          symbol: result.bot.symbol,
-          strategy: result.bot.strategy,
-          stake: result.bot.stake,
-          takeProfit: result.bot.take_profit,
-          stopLoss: result.bot.stop_loss,
-          riskPercentage: result.bot.risk_percentage || newBotData.riskPercentage,
-          marketType: newBotData.marketType,
-          status: 'STOPPED',
-          metrics: getAdvancedMetrics({})
-        };
-        
-        setBots(prevBots => [...prevBots, newBot]);
-        setShowCreateModal(false);
-        
-        // Si es el primer bot, seleccionarlo para historial
-        if (bots.length === 0) {
-          setSelectedBotId(newBot.id);
-        }
-        
-        // Reset form
-        setNewBotData({
-          symbol: 'BTCUSDT',
-          strategy: 'Smart Scalper', 
-          stake: 1000,
-          takeProfit: 2.5,
-          stopLoss: 1.5,
-          riskPercentage: 1.0,
-          marketType: 'spot'
-        });
-        
-        console.log('✅ Bot creado exitosamente:', result.message);
-        setSuccessMessage(`✅ ${result.message}`);
-        setTimeout(() => setSuccessMessage(null), 3000);
-      } else {
-        const error = await response.json();
-        throw new Error(error.detail || 'Error del servidor');
-      }
-      
-    } catch (error) {
-      console.error('❌ Error creando bot:', error);
-      setSuccessMessage(`❌ Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(null), 5000);
-    }
-  };
 
   // Handlers para nuevos componentes Enhanced
   const handleEnhancedBotCreated = (newBot) => {
@@ -213,10 +132,14 @@ export default function BotsAdvanced() {
 
   const handleTemplateSelected = (template) => {
     console.log('Template seleccionado:', template);
+    setSelectedTemplate(template);
     setShowTemplates(false);
-    // Mostrar mensaje de éxito en lugar de abrir otro modal inmediatamente
-    setSuccessMessage(`✅ Template "${template.name}" seleccionado. Usa "🚀 Bot Enhanced" para crear con esta configuración.`);
-    setTimeout(() => setSuccessMessage(null), 5000);
+    // Abrir directamente el modal Enhanced con la configuración del template
+    setTimeout(() => {
+      setShowEnhancedModal(true);
+    }, 100);
+    setSuccessMessage(`✅ Template "${template.name}" cargado en el formulario.`);
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const handleDeleteBot = async (botId) => {
@@ -534,16 +457,10 @@ export default function BotsAdvanced() {
           </div>
           <div className="flex space-x-3">
             <Button 
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => setShowEnhancedModal(true)}
               className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
             >
-              + Crear Bot IA
-            </Button>
-            <Button 
-              onClick={() => setShowEnhancedModal(true)}
-              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
-            >
-              🚀 Bot Enhanced
+              🚀 Crear Bot Enhanced
             </Button>
             <Button 
               onClick={() => setShowTemplates(true)}
@@ -735,163 +652,6 @@ export default function BotsAdvanced() {
           </div>
         )}
 
-        {/* Modal de Creación */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <Card className="bg-gray-900 border-gray-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    🤖 Crear Bot IA Inteligente
-                  </CardTitle>
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setShowCreateModal(false)}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    ✕
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Símbolo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Par de Trading</label>
-                  <select 
-                    value={newBotData.symbol}
-                    onChange={(e) => setNewBotData(prev => ({...prev, symbol: e.target.value}))}
-                    className="w-full bg-gray-800 border-gray-600 rounded-lg px-3 py-2 text-white"
-                  >
-                    <option value="BTCUSDT">BTC/USDT</option>
-                    <option value="ETHUSDT">ETH/USDT</option>
-                    <option value="BNBUSDT">BNB/USDT</option>
-                    <option value="ADAUSDT">ADA/USDT</option>
-                    <option value="SOLUSDT">SOL/USDT</option>
-                  </select>
-                </div>
-
-                {/* Estrategia */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Estrategia IA</label>
-                  <select 
-                    value={newBotData.strategy}
-                    onChange={(e) => setNewBotData(prev => ({...prev, strategy: e.target.value}))}
-                    className="w-full bg-gray-800 border-gray-600 rounded-lg px-3 py-2 text-white"
-                  >
-                    <option value="Smart Scalper">Smart Scalper - IA Multi-timeframe</option>
-                    <option value="Trend Hunter">Trend Hunter - Detección de Tendencias IA</option>
-                    <option value="Manipulation Detector">Manipulation Detector - Anti-Whales IA</option>
-                    <option value="News Sentiment">News Sentiment - IA + Análisis de Noticias</option>
-                    <option value="Volatility Master">Volatility Master - IA Adaptativa</option>
-                  </select>
-                </div>
-
-                {/* Capital */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Capital (USDT): ${newBotData.stake}
-                  </label>
-                  <input 
-                    type="range"
-                    min="100"
-                    max="10000"
-                    step="100"
-                    value={newBotData.stake}
-                    onChange={(e) => setNewBotData(prev => ({...prev, stake: parseInt(e.target.value)}))}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Take Profit */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Take Profit: {newBotData.takeProfit}% 
-                    <span className="text-green-400 ml-2">
-                      (+${(Number(newBotData.stake || 0) * Number(newBotData.takeProfit || 0) / 100).toFixed(2)} USDT)
-                    </span>
-                  </label>
-                  <input 
-                    type="range"
-                    min="0.5"
-                    max="10"
-                    step="0.1"
-                    value={newBotData.takeProfit}
-                    onChange={(e) => setNewBotData(prev => ({...prev, takeProfit: parseFloat(e.target.value)}))}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Stop Loss */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Stop Loss: {newBotData.stopLoss}% 
-                    <span className="text-red-400 ml-2">
-                      (-${(Number(newBotData.stake || 0) * Number(newBotData.stopLoss || 0) / 100).toFixed(2)} USDT)
-                    </span>
-                  </label>
-                  <input 
-                    type="range"
-                    min="0.5"
-                    max="5"
-                    step="0.1"
-                    value={newBotData.stopLoss}
-                    onChange={(e) => setNewBotData(prev => ({...prev, stopLoss: parseFloat(e.target.value)}))}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Tipo de Mercado */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Tipo de Mercado</label>
-                  <select 
-                    value={newBotData.marketType}
-                    onChange={(e) => setNewBotData(prev => ({...prev, marketType: e.target.value}))}
-                    className="w-full bg-gray-800 border-gray-600 rounded-lg px-3 py-2 text-white"
-                  >
-                    <option value="spot">Spot - Trading sin apalancamiento</option>
-                    <option value="futures">Futures - Trading con apalancamiento</option>
-                    <option value="margin">Margin - Trading con margen</option>
-                  </select>
-                </div>
-
-                {/* Riesgo por Trade */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Riesgo por Trade: {newBotData.riskPercentage}%
-                    <span className="text-yellow-400 ml-2">
-                      (${(Number(newBotData.stake || 0) * Number(newBotData.riskPercentage || 0) / 100).toFixed(2)} USDT por operación)
-                    </span>
-                  </label>
-                  <input 
-                    type="range"
-                    min="0.1"
-                    max="5"
-                    step="0.1"
-                    value={newBotData.riskPercentage}
-                    onChange={(e) => setNewBotData(prev => ({...prev, riskPercentage: parseFloat(e.target.value)}))}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <Button 
-                    onClick={() => setShowCreateModal(false)}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    onClick={handleCreateBot}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500"
-                  >
-                    🚀 Crear Bot Inteligente
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Panel de Control Dinámico */}
         {controlPanelBot && (
@@ -938,8 +698,12 @@ export default function BotsAdvanced() {
         {/* Enhanced Bot Creation Modal */}
         <EnhancedBotCreationModal
           isOpen={showEnhancedModal}
-          onClose={() => setShowEnhancedModal(false)}
+          onClose={() => {
+            setShowEnhancedModal(false);
+            setSelectedTemplate(null);
+          }}
           onBotCreated={handleEnhancedBotCreated}
+          selectedTemplate={selectedTemplate}
         />
 
         {/* Bot Templates Modal */}

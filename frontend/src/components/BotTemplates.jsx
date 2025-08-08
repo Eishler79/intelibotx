@@ -89,68 +89,12 @@ const BotTemplates = ({ isOpen, onSelectTemplate, onClose }) => {
       ]
     },
     {
-      id: 'dca_master',
-      name: 'DCA Master',
-      description: 'Estrategia de promediado de costos para acumulación a largo plazo',
-      icon: '📈',
-      config: {
-        strategy: 'DCA Bot',
-        take_profit: 3.0,
-        stop_loss: 8.0,
-        risk_percentage: 1.0,
-        leverage: 1,
-        market_type: 'SPOT',
-        dca_levels: 7,
-        interval: '1h',
-        entry_order_type: 'LIMIT',
-        exit_order_type: 'LIMIT',
-        tp_order_type: 'LIMIT',
-        sl_order_type: 'STOP_LIMIT',
-        trailing_stop: false
-      },
-      characteristics: [
-        'Riesgo: 1.0% por operación',
-        'R:R ratio: 0.375:1',
-        'DCA profundo (7 niveles)',
-        'Timeframe: 1 hora',
-        'Enfoque acumulativo'
-      ]
-    },
-    {
-      id: 'grid_trader',
-      name: 'Grid Trader Pro',
-      description: 'Bot de cuadrícula para mercados laterales y volatilidad',
-      icon: '🔲',
-      config: {
-        strategy: 'Grid Bot',
-        take_profit: 2.0,
-        stop_loss: 3.0,
-        risk_percentage: 1.2,
-        leverage: 1,
-        market_type: 'SPOT',
-        dca_levels: 4,
-        interval: '30m',
-        entry_order_type: 'LIMIT',
-        exit_order_type: 'LIMIT',
-        tp_order_type: 'LIMIT',
-        sl_order_type: 'STOP_LIMIT',
-        trailing_stop: false
-      },
-      characteristics: [
-        'Riesgo: 1.2% por operación',
-        'R:R ratio: 0.67:1',
-        'Ideal para mercados laterales',
-        'Grid balanceado',
-        'DCA moderado (4 niveles)'
-      ]
-    },
-    {
       id: 'futures_hunter',
       name: 'Futures Hunter',
       description: 'Especializado en futures con alto apalancamiento controlado',
       icon: '🎯',
       config: {
-        strategy: 'Trend Hunter',
+        strategy: 'Volatility Master',
         take_profit: 4.0,
         stop_loss: 2.0,
         risk_percentage: 1.8,
@@ -170,6 +114,62 @@ const BotTemplates = ({ isOpen, onSelectTemplate, onClose }) => {
         'Leverage: 5x controlado',
         'Futures USDT',
         'Trailing stop inteligente'
+      ]
+    },
+    {
+      id: 'manipulation_detector',
+      name: 'Manipulation Detector',
+      description: 'Detecta movimientos de ballenas y manipulación de mercado',
+      icon: '🔍',
+      config: {
+        strategy: 'Manipulation Detector',
+        take_profit: 3.5,
+        stop_loss: 1.8,
+        risk_percentage: 1.5,
+        leverage: 2,
+        market_type: 'SPOT',
+        dca_levels: 2,
+        interval: '30m',
+        entry_order_type: 'LIMIT',
+        exit_order_type: 'MARKET',
+        tp_order_type: 'LIMIT',
+        sl_order_type: 'STOP_MARKET',
+        trailing_stop: true
+      },
+      characteristics: [
+        'Riesgo: 1.5% por operación',
+        'R:R ratio: 1.94:1',
+        'Detección anti-ballenas',
+        'Protección contra manipulación',
+        'Timeframe: 30 minutos'
+      ]
+    },
+    {
+      id: 'news_sentiment',
+      name: 'News Sentiment Bot',
+      description: 'Bot que opera basado en sentimiento de noticias y redes sociales',
+      icon: '📰',
+      config: {
+        strategy: 'News Sentiment',
+        take_profit: 5.0,
+        stop_loss: 2.5,
+        risk_percentage: 2.2,
+        leverage: 1,
+        market_type: 'SPOT',
+        dca_levels: 1,
+        interval: '1h',
+        entry_order_type: 'MARKET',
+        exit_order_type: 'MARKET',
+        tp_order_type: 'LIMIT',
+        sl_order_type: 'STOP_MARKET',
+        trailing_stop: false
+      },
+      characteristics: [
+        'Riesgo: 2.2% por operación',
+        'R:R ratio: 2:1',
+        'Análisis de noticias en tiempo real',
+        'Sentiment de redes sociales',
+        'Timeframe: 1 hora'
       ]
     }
   ];

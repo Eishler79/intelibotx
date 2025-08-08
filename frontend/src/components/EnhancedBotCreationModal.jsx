@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated }) => {
+const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTemplate }) => {
   const { userExchanges, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -31,6 +31,30 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated }) => {
     trailing_stop: false
   });
 
+  // Pre-fill form with template data when template is selected
+  useEffect(() => {
+    if (selectedTemplate) {
+      const { config } = selectedTemplate;
+      setFormData(prev => ({
+        ...prev,
+        name: selectedTemplate.name || '',
+        strategy: config.strategy || prev.strategy,
+        take_profit: config.take_profit || prev.take_profit,
+        stop_loss: config.stop_loss || prev.stop_loss,
+        risk_percentage: config.risk_percentage || prev.risk_percentage,
+        market_type: config.market_type || prev.market_type,
+        leverage: config.leverage || prev.leverage,
+        dca_levels: config.dca_levels || prev.dca_levels,
+        interval: config.interval || prev.interval,
+        entry_order_type: config.entry_order_type || prev.entry_order_type,
+        exit_order_type: config.exit_order_type || prev.exit_order_type,
+        tp_order_type: config.tp_order_type || prev.tp_order_type,
+        sl_order_type: config.sl_order_type || prev.sl_order_type,
+        trailing_stop: config.trailing_stop !== undefined ? config.trailing_stop : prev.trailing_stop
+      }));
+    }
+  }, [selectedTemplate]);
+
   // Cargar datos reales cuando se selecciona exchange
   useEffect(() => {
     if (selectedExchange && formData.symbol) {
@@ -47,11 +71,27 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated }) => {
         symbol: formData.symbol
       });
       
-      // Mock data por ahora - será reemplazado con datos reales
+      // Mock data dinámico basado en el símbolo seleccionado
+      const mockPrices = {
+        'BTCUSDT': 43250.50,
+        'ETHUSDT': 2650.75,
+        'BNBUSDT': 315.20,
+        'ADAUSDT': 0.485,
+        'SOLUSDT': 98.35,
+        'DOGEUSDT': 0.085,
+        'XRPUSDT': 0.635,
+        'DOTUSDT': 7.25,
+        'AVAXUSDT': 38.90,
+        'LINKUSDT': 14.75,
+        'MATICUSDT': 0.895,
+        'UNIUSDT': 6.35
+      };
+      
       setRealTimeData({
-        currentPrice: 43250.50,
+        currentPrice: mockPrices[formData.symbol] || 100.00,
         balance: 1000.00,
-        leverageLimits: { min: 1, max: 125 }
+        leverageLimits: { min: 1, max: 125 },
+        symbol: formData.symbol
       });
     } catch (err) {
       console.error('Error loading real-time data:', err);
@@ -122,7 +162,9 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated }) => {
     setError('');
 
     try {
-      const response = await fetch('/api/create-bot', {
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
+      
+      const response = await fetch(`${BASE_URL}/api/create-bot`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -249,15 +291,27 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated }) => {
                 {/* Symbol */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Símbolo
+                    Par de Trading
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="symbol"
                     value={formData.symbol}
                     onChange={handleInputChange}
                     className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                  />
+                  >
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="ADAUSDT">ADA/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="DOGEUSDT">DOGE/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
+                    <option value="DOTUSDT">DOT/USDT</option>
+                    <option value="AVAXUSDT">AVAX/USDT</option>
+                    <option value="LINKUSDT">LINK/USDT</option>
+                    <option value="MATICUSDT">MATIC/USDT</option>
+                    <option value="UNIUSDT">UNI/USDT</option>
+                  </select>
                 </div>
 
                 {/* Market Type y Leverage */}
@@ -272,16 +326,19 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated }) => {
                       onChange={handleInputChange}
                       className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                     >
-                      <option value="SPOT">SPOT</option>
-                      <option value="FUTURES_USDT">FUTURES USDT</option>
-                      <option value="FUTURES_COIN">FUTURES COIN</option>
+                      <option value="SPOT">SPOT - Trading sin apalancamiento</option>
+                      <option value="FUTURES_USDT">FUTURES USDT - Perpetuos USDT</option>
+                      <option value="FUTURES_COIN">FUTURES COIN - Perpetuos Coin</option>
+                      <option value="MARGIN">MARGIN - Trading con margen</option>
+                      <option value="ISOLATED_MARGIN">ISOLATED MARGIN - Margen aislado</option>
+                      <option value="CROSS_MARGIN">CROSS MARGIN - Margen cruzado</option>
                     </select>
                   </div>
                   
-                  {formData.market_type.includes('FUTURES') && (
+                  {(formData.market_type.includes('FUTURES') || formData.market_type.includes('MARGIN')) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Leverage
+                        Leverage {formData.market_type.includes('FUTURES') ? '(1-125x)' : '(1-10x)'}
                       </label>
                       <input
                         type="number"
@@ -289,7 +346,7 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated }) => {
                         value={formData.leverage}
                         onChange={handleInputChange}
                         min="1"
-                        max="125"
+                        max={formData.market_type.includes('FUTURES') ? "125" : "10"}
                         className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                       />
                     </div>
@@ -386,20 +443,21 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated }) => {
                     onChange={handleInputChange}
                     className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                   >
-                    <option value="Smart Scalper">Smart Scalper</option>
-                    <option value="Trend Hunter">Trend Hunter</option>
-                    <option value="Grid Bot">Grid Bot</option>
-                    <option value="DCA Bot">DCA Bot</option>
+                    <option value="Smart Scalper">Smart Scalper - IA Multi-timeframe</option>
+                    <option value="Trend Hunter">Trend Hunter - Detección de Tendencias IA</option>
+                    <option value="Manipulation Detector">Manipulation Detector - Anti-Whales IA</option>
+                    <option value="News Sentiment">News Sentiment - IA + Análisis de Noticias</option>
+                    <option value="Volatility Master">Volatility Master - IA Adaptativa</option>
                   </select>
                 </div>
 
                 {/* Datos en Tiempo Real */}
                 {realTimeData && selectedExchange && (
                   <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-4">
-                    <h4 className="text-blue-400 font-medium text-sm mb-2">Datos en Tiempo Real</h4>
+                    <h4 className="text-blue-400 font-medium text-sm mb-2">Datos en Tiempo Real - {formData.symbol}</h4>
                     <div className="text-xs space-y-1">
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Precio Actual:</span>
+                        <span className="text-gray-400">Precio {formData.symbol}:</span>
                         <span className="text-white">${realTimeData.currentPrice.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
@@ -409,6 +467,10 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated }) => {
                       <div className="flex justify-between">
                         <span className="text-gray-400">Exchange:</span>
                         <span className="text-blue-400">{selectedExchange.exchange_name.toUpperCase()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Mercado:</span>
+                        <span className="text-yellow-400">{formData.market_type}</span>
                       </div>
                     </div>
                   </div>
