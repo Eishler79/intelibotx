@@ -15,6 +15,7 @@ import SmartTrade from "../pages/SmartTrade";
 import SmartIntelligence from "../pages/SmartIntelligence";
 import Portfolio from "../pages/Portfolio";
 import BotsAdvanced from "../pages/BotsAdvanced";
+import BotsEnhanced from "../pages/BotsEnhanced";
 import ExchangeManagement from "../pages/ExchangeManagement";
 import Layout from "../components/Layout";
 import BacktestViewer from "../pages/BacktestViewer";
@@ -40,6 +41,7 @@ const App = () => {
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/bots" element={<BotsAdvanced />} />
             <Route path="/bots-advanced" element={<BotsAdvanced />} />
+            <Route path="/bots-enhanced" element={<BotsEnhanced />} />
             <Route path="/exchanges" element={<ExchangeManagement />} />
             <Route path="/backtest-viewer" element={<BacktestViewer symbol="BTCUSDT" />} />
           </Route>
