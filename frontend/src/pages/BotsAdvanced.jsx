@@ -8,6 +8,8 @@ import AdvancedMetrics from "@/components/AdvancedMetrics";
 import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
 import LiveTradingFeed from "@/components/LiveTradingFeed";
 import TradingHistory from "../components/TradingHistory";
+import EnhancedBotCreationModal from "../components/EnhancedBotCreationModal";
+import BotTemplates from "../components/BotTemplates";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -27,6 +29,8 @@ export default function BotsAdvanced() {
   const [controlPanelBot, setControlPanelBot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEnhancedModal, setShowEnhancedModal] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedBotId, setSelectedBotId] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -185,6 +189,31 @@ export default function BotsAdvanced() {
       setSuccessMessage(`❌ Error: ${error.message}`);
       setTimeout(() => setSuccessMessage(null), 5000);
     }
+  };
+
+  // Handlers para nuevos componentes Enhanced
+  const handleEnhancedBotCreated = (newBot) => {
+    const botData = newBot.bot || newBot;
+    setBots(prevBots => [...prevBots, {
+      id: botData.id,
+      symbol: botData.symbol,
+      strategy: botData.strategy,
+      stake: botData.stake,
+      takeProfit: botData.take_profit,
+      stopLoss: botData.stop_loss,
+      riskPercentage: botData.risk_percentage || 1.0,
+      marketType: botData.market_type || 'spot',
+      status: 'STOPPED',
+      metrics: getAdvancedMetrics({})
+    }]);
+    setShowEnhancedModal(false);
+    setSuccessMessage(`✅ ${botData.name || 'Bot Enhanced'} creado exitosamente`);
+    setTimeout(() => setSuccessMessage(null), 5000);
+  };
+
+  const handleTemplateSelected = (template) => {
+    setShowTemplates(false);
+    setTimeout(() => setShowEnhancedModal(true), 100);
   };
 
   const handleDeleteBot = async (botId) => {
@@ -500,12 +529,27 @@ export default function BotsAdvanced() {
             </h1>
             <p className="text-gray-400 mt-2">Dashboard avanzado superior a 3Commas</p>
           </div>
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-          >
-            + Crear Bot IA
-          </Button>
+          <div className="flex space-x-3">
+            <Button 
+              onClick={() => setShowCreateModal(true)}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+            >
+              + Crear Bot IA
+            </Button>
+            <Button 
+              onClick={() => setShowEnhancedModal(true)}
+              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+            >
+              🚀 Bot Enhanced
+            </Button>
+            <Button 
+              onClick={() => setShowTemplates(true)}
+              variant="outline"
+              className="border-purple-500 text-purple-400 hover:bg-purple-500/10"
+            >
+              📋 Templates
+            </Button>
+          </div>
         </div>
 
         {/* Tabs de navegación */}
@@ -887,6 +931,20 @@ export default function BotsAdvanced() {
             </div>
           </div>
         )}
+
+        {/* Enhanced Bot Creation Modal */}
+        <EnhancedBotCreationModal
+          isOpen={showEnhancedModal}
+          onClose={() => setShowEnhancedModal(false)}
+          onBotCreated={handleEnhancedBotCreated}
+        />
+
+        {/* Bot Templates Modal */}
+        <BotTemplates
+          isOpen={showTemplates}
+          onClose={() => setShowTemplates(false)}
+          onSelectTemplate={handleTemplateSelected}
+        />
       </div>
     </div>
   );
