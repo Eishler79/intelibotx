@@ -18,8 +18,11 @@ export const AuthProvider = ({ children }) => {
   const [authProvider, setAuthProvider] = useState(null); // 'email', 'google', 'binance', etc.
   const [userExchanges, setUserExchanges] = useState([]); // User's configured exchanges
 
-  // API base URL
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  // API base URL - Fix temporal para producción
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+    (window.location.hostname === 'localhost' ? 
+      'http://localhost:8000' : 
+      'https://intelibotx-production.up.railway.app');
 
   // Función para hacer llamadas API autenticadas
   const authenticatedFetch = async (url, options = {}) => {
