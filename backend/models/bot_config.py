@@ -13,6 +13,9 @@ class BotConfig(SQLModel, table=True):
     # Usuario propietario (NUEVO - CRÍTICO)
     user_id: int = Field(foreign_key="user.id", index=True, description="ID del usuario propietario")
     
+    # Exchange asociado (NUEVO - INTEGRACIÓN)
+    exchange_id: Optional[int] = Field(default=None, foreign_key="userexchange.id", description="ID del exchange configurado del usuario")
+    
     # Configuración básica del bot (MEJORADA)
     name: str = Field(description="Nombre personalizado del bot (ej. 'Bot Fuerte Austero')")
     symbol: str = Field(index=True, description="Par de trading, ejemplo: BTCUSDT")

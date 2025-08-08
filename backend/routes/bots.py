@@ -1,12 +1,15 @@
 # 📦 Importaciones base
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import HTMLResponse
 from services.backtest_bot import run_backtest_and_plot
 from analytics.strategy_evaluator import StrategyEvaluator  # ✅ ARREGLADO: Usar clase correcta
 from models.bot_config import BotConfig  # 🆕 NUEVO: Acceso a configuración del bot
+from models.user_exchange import UserExchange  # 🆕 NUEVO: Para integración con exchanges
 from sqlmodel import Session, select
 from utils.symbol_validator import validate_symbol  # ✅ EXISTENTE: validador robusto
 from db.database import engine  # ✅ ARREGLADO: Usar database.py consolidado
+from services.exchange_factory import ExchangeFactory  # 🆕 NUEVO: Para conectar con exchanges reales
+from services.auth_service import AuthService  # 🆕 NUEVO: Para autenticación
 from typing import List
 import pandas as pd  # ✅ NUEVO: Para cargar datos históricos
 
