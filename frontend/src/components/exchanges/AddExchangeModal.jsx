@@ -117,41 +117,59 @@ const AddExchangeModal = ({ isOpen, onClose, onExchangeAdded }) => {
                   }`}
                   style={{ minHeight: '80px' }}
                 >
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
+                  <div className="flex flex-col items-center justify-center h-full space-y-3">
+                    {/* Exchange Icon */}
+                    <div className="w-10 h-10 flex items-center justify-center">
                       {exchange.name === 'binance' && (
-                        <div className="flex items-center justify-center space-x-1">
-                          <div className="w-4 h-4 bg-yellow-500 rounded-sm"></div>
-                          <span className="text-yellow-500 font-bold text-lg">BINANCE</span>
-                        </div>
+                        <svg className="w-10 h-10" viewBox="0 0 24 24" fill="#F0B90B">
+                          <path d="M12 2L13.09 8.26L22 9L13.09 15.74L12 22L10.91 15.74L2 15L10.91 8.26L12 2Z"/>
+                        </svg>
                       )}
                       {exchange.name === 'bybit' && (
-                        <span className="text-white font-bold text-lg">BYBIT</span>
+                        <svg className="w-10 h-10" viewBox="0 0 24 24" fill="#FF6A00">
+                          <rect x="2" y="2" width="8" height="8" rx="2"/>
+                          <rect x="14" y="2" width="8" height="8" rx="2"/>
+                          <rect x="2" y="14" width="8" height="8" rx="2"/>
+                          <rect x="14" y="14" width="8" height="8" rx="2"/>
+                        </svg>
                       )}
                       {exchange.name === 'okx' && (
-                        <div className="flex items-center justify-center space-x-2">
-                          <div className="grid grid-cols-2 gap-0.5">
-                            <div className="w-1.5 h-1.5 bg-white"></div>
-                            <div className="w-1.5 h-1.5 bg-white"></div>
-                            <div className="w-1.5 h-1.5 bg-white"></div>
-                            <div className="w-1.5 h-1.5 bg-white"></div>
-                          </div>
-                          <span className="text-white font-bold text-lg">OKX</span>
-                        </div>
+                        <svg className="w-10 h-10" viewBox="0 0 24 24" fill="white">
+                          <rect x="2" y="2" width="6" height="6" rx="1"/>
+                          <rect x="9" y="2" width="6" height="6" rx="1"/>
+                          <rect x="16" y="2" width="6" height="6" rx="1"/>
+                          <rect x="2" y="9" width="6" height="6" rx="1"/>
+                          <rect x="9" y="9" width="6" height="6" rx="1"/>
+                          <rect x="16" y="9" width="6" height="6" rx="1"/>
+                          <rect x="2" y="16" width="6" height="6" rx="1"/>
+                          <rect x="9" y="16" width="6" height="6" rx="1"/>
+                          <rect x="16" y="16" width="6" height="6" rx="1"/>
+                        </svg>
                       )}
                       {exchange.name === 'kucoin' && (
-                        <div className="flex items-center justify-center space-x-1">
-                          <span className="text-green-400 font-bold text-lg">K</span>
-                          <span className="text-green-400 font-bold text-lg">KUCOIN</span>
-                        </div>
+                        <svg className="w-10 h-10" viewBox="0 0 24 24" fill="#20D090">
+                          <path d="M12 2L22 7V17L12 22L2 17V7L12 2Z"/>
+                          <path d="M8 9L12 7L16 9V15L12 17L8 15V9Z" fill="white"/>
+                        </svg>
                       )}
                       {exchange.name === 'kraken' && (
-                        <span className="text-white font-bold text-lg">KRAKEN</span>
+                        <svg className="w-10 h-10" viewBox="0 0 24 24" fill="#5741D9">
+                          <circle cx="12" cy="12" r="10"/>
+                          <path d="M8 12L10 8H14L16 12L14 16H10L8 12Z" fill="white"/>
+                        </svg>
                       )}
                       {exchange.name === 'coinbase' && (
-                        <span className="text-blue-400 font-bold text-lg">COINBASE</span>
+                        <svg className="w-10 h-10" viewBox="0 0 24 24" fill="#0052FF">
+                          <circle cx="12" cy="12" r="10"/>
+                          <rect x="8" y="8" width="8" height="8" rx="2" fill="white"/>
+                        </svg>
                       )}
                     </div>
+                    
+                    {/* Exchange Name */}
+                    <span className="text-white font-bold text-sm uppercase tracking-wide">
+                      {exchange.label}
+                    </span>
                   </div>
                 </button>
               ))}
