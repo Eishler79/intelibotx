@@ -19,8 +19,10 @@ const ExchangeManagement = () => {
   useEffect(() => {
     if (isAuthenticated) {
       loadUserExchanges().finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
-  }, [isAuthenticated, loadUserExchanges]);
+  }, [isAuthenticated]);
 
   const handleAddExchange = () => {
     setShowAddModal(true);
@@ -126,7 +128,7 @@ const ExchangeManagement = () => {
                   <ExchangeCard
                     key={exchange.id}
                     exchange={exchange}
-                    onDelete={() => handleDeleteExchange(exchange.id, exchange.exchange_display_name)}
+                    onDelete={() => handleDeleteExchange(exchange.id, exchange.connection_name)}
                     onTest={() => handleTestConnection(exchange.id)}
                     onEdit={() => {
                       // TODO: Implement edit functionality
@@ -187,12 +189,11 @@ const ExchangeManagement = () => {
         )}
 
         {/* Add Exchange Modal */}
-        {showAddModal && (
-          <AddExchangeModal
-            onClose={() => setShowAddModal(false)}
-            onSuccess={handleExchangeAdded}
-          />
-        )}
+        <AddExchangeModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onExchangeAdded={handleExchangeAdded}
+        />
       </div>
     </div>
   );
