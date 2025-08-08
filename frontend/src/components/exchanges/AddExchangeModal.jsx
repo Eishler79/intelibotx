@@ -116,11 +116,42 @@ const AddExchangeModal = ({ isOpen, onClose, onExchangeAdded }) => {
                       : 'border-gray-600 hover:border-gray-500 bg-gray-800/50'
                   }`}
                 >
-                  <div className="text-white font-medium">{exchange.label}</div>
-                  <div 
-                    className="w-full h-1 rounded mt-2"
-                    style={{ backgroundColor: exchange.color }}
-                  />
+                  <div className="flex flex-col items-center space-y-2">
+                    {/* Exchange Icon */}
+                    <div className="w-12 h-12 flex items-center justify-center rounded-lg" style={{ backgroundColor: `${exchange.color}20` }}>
+                      {exchange.name === 'binance' && (
+                        <svg className="w-8 h-8" style={{ color: exchange.color }} fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2L13.09 8.26L22 9L13.09 15.74L12 22L10.91 15.74L2 15L10.91 8.26L12 2Z"/>
+                        </svg>
+                      )}
+                      {exchange.name === 'bybit' && (
+                        <div className="text-xl font-bold" style={{ color: exchange.color }}>B</div>
+                      )}
+                      {exchange.name === 'okx' && (
+                        <div className="grid grid-cols-2 gap-1">
+                          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: exchange.color }}></div>
+                          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: exchange.color }}></div>
+                          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: exchange.color }}></div>
+                          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: exchange.color }}></div>
+                        </div>
+                      )}
+                      {exchange.name === 'kucoin' && (
+                        <div className="text-xl font-bold" style={{ color: exchange.color }}>K</div>
+                      )}
+                      {exchange.name === 'kraken' && (
+                        <svg className="w-8 h-8" style={{ color: exchange.color }} fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                          <path d="M8 12l2-3h4l2 3-2 3h-4l-2-3z"/>
+                        </svg>
+                      )}
+                      {exchange.name === 'huobi' && (
+                        <div className="text-xl font-bold" style={{ color: exchange.color }}>H</div>
+                      )}
+                    </div>
+                    
+                    {/* Exchange Name */}
+                    <div className="text-white font-medium text-center">{exchange.label}</div>
+                  </div>
                 </button>
               ))}
             </div>
