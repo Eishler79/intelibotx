@@ -137,6 +137,10 @@ async def get_bots():
 async def create_bot(bot_data: dict):
     """Crear un nuevo bot - TEMPORAL: user_id fijo para compatibility"""
     try:
+        # DEBUG: Log received data
+        print(f"📥 Backend recibió datos: name={bot_data.get('name')}, leverage={bot_data.get('leverage')}, market_type={bot_data.get('market_type')}")
+        print(f"📥 Bot data completo: {bot_data}")
+        
         with Session(engine) as session:
             # TEMPORAL: user_id fijo mientras implementamos auth completo
             # En el futuro se obtendrá del JWT token
@@ -173,7 +177,9 @@ async def create_bot(bot_data: dict):
                 stop_loss=bot_data.get("stop_loss", 1.5),
                 dca_levels=bot_data.get("dca_levels", 3),
                 risk_percentage=bot_data.get("risk_percentage", 1.0),
-                market_type=bot_data.get("market_type", "spot")
+                market_type=bot_data.get("market_type", "spot"),
+                leverage=bot_data.get("leverage", 1),  # ✅ FIX: Add leverage field
+                margin_type=bot_data.get("margin_type", "ISOLATED")  # ✅ FIX: Add margin_type field
             )
             
             session.add(bot)

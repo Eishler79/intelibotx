@@ -164,6 +164,14 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     try {
       const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
       
+      // DEBUG: Log data being sent to backend
+      console.log('📤 Datos enviados al backend:', {
+        name: formData.name,
+        leverage: formData.leverage,
+        market_type: formData.market_type,
+        formDataCompleto: formData
+      });
+      
       const response = await fetch(`${BASE_URL}/api/create-bot`, {
         method: 'POST',
         headers: {

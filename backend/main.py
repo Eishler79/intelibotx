@@ -492,7 +492,9 @@ except Exception as e:
                     stop_loss=bot_data.get("stop_loss", 1.5),
                     dca_levels=bot_data.get("dca_levels", 3),
                     risk_percentage=bot_data.get("risk_percentage", 1.0),
-                    market_type=bot_data.get("market_type", "spot")
+                    market_type=bot_data.get("market_type", "spot"),
+                    leverage=bot_data.get("leverage", 1),  # ✅ FIX: Add leverage field
+                    margin_type=bot_data.get("margin_type", "ISOLATED")  # ✅ FIX: Add margin_type field
                 )
                 
                 session.add(bot)

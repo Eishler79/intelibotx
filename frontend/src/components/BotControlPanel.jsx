@@ -22,6 +22,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
   useEffect(() => {
     if (bot) {
       console.log('🔍 Cargando datos del bot:', bot);
+      console.log('🔍 Campos específicos - name:', bot.name, 'leverage:', bot.leverage, 'market_type:', bot.market_type);
       setParameters({
         // Parámetros básicos del bot creado (DATOS REALES)
         name: bot.name || `Bot ${bot.symbol}` || 'Bot',

@@ -113,15 +113,23 @@ export default function BotsAdvanced() {
   // Handlers para nuevos componentes Enhanced
   const handleEnhancedBotCreated = (newBot) => {
     const botData = newBot.bot || newBot;
+    console.log('🚀 Bot creado recibido:', botData);
     setBots(prevBots => [...prevBots, {
       id: botData.id,
+      name: botData.name,  // ✅ FIX: Add missing name field
       symbol: botData.symbol,
       strategy: botData.strategy,
       stake: botData.stake,
-      takeProfit: botData.take_profit,
-      stopLoss: botData.stop_loss,
+      take_profit: botData.take_profit,  // ✅ FIX: Use correct field name
+      stop_loss: botData.stop_loss,  // ✅ FIX: Use correct field name
+      takeProfit: botData.take_profit,  // Keep both for compatibility
+      stopLoss: botData.stop_loss,  // Keep both for compatibility
       riskPercentage: botData.risk_percentage || 1.0,
+      risk_percentage: botData.risk_percentage || 1.0,
       marketType: botData.market_type || 'spot',
+      market_type: botData.market_type || 'spot',  // ✅ FIX: Use correct field name
+      leverage: botData.leverage || 1,  // ✅ FIX: Add missing leverage field
+      margin_type: botData.margin_type || 'ISOLATED',  // ✅ FIX: Add missing margin_type field
       status: 'STOPPED',
       metrics: getAdvancedMetrics({})
     }]);
@@ -401,13 +409,20 @@ export default function BotsAdvanced() {
           const botsData = await response.json();
           const processedBots = botsData.map(bot => ({
             id: bot.id,
+            name: bot.name,  // ✅ FIX: Add name field
             symbol: bot.symbol,
             strategy: bot.strategy,
             stake: bot.stake,
-            takeProfit: bot.take_profit,
-            stopLoss: bot.stop_loss,
+            take_profit: bot.take_profit,  // ✅ FIX: Use correct field name
+            stop_loss: bot.stop_loss,  // ✅ FIX: Use correct field name
+            takeProfit: bot.take_profit,  // Keep both for compatibility
+            stopLoss: bot.stop_loss,  // Keep both for compatibility
             riskPercentage: bot.risk_percentage,
+            risk_percentage: bot.risk_percentage,
             marketType: bot.market_type,
+            market_type: bot.market_type,  // ✅ FIX: Use correct field name
+            leverage: bot.leverage || 1,  // ✅ FIX: Add leverage field
+            margin_type: bot.margin_type || 'ISOLATED',  // ✅ FIX: Add margin_type field
             status: getBotStatus(bot),
             metrics: getAdvancedMetrics(bot)
           }));
