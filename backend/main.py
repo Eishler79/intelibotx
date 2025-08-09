@@ -31,10 +31,10 @@ async def startup_event():
         from models.bot_config import BotConfig
         from models.user import User, UserSession
         from models.user_exchange import UserExchange
+        from models.trading_order import TradingOrder
         
-        # Temporarily disable trading models for Railway deployment
-        # These will be enabled after auth system is stable
-        print("⏸️ Trading models temporarily disabled for Railway deployment")
+        # Trading models re-enabled for real data functionality
+        print("✅ Trading models loaded for real data functionality")
         
         DATABASE_URL = "sqlite:///./intelibotx.db"  # Renamed for security system
         engine = create_engine(DATABASE_URL, echo=False)
