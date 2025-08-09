@@ -403,6 +403,18 @@ export default function BotsAdvanced() {
               // Calcular Sharpe aproximado basado en performance
               const newSharpe = newPnL > 0 ? Math.min((newPnL / Math.abs(currentPnL || 1)) * 0.5, 3.0).toFixed(2) : '0.00';
               
+              // Calcular Max Drawdown real
+              const currentMaxDrawdown = Number(b.metrics?.maxDrawdown || 0);
+              const currentPeak = Number(b.metrics?.peak || b.stake || 0);
+              const newBalance = Number(b.stake || 0) + newPnL;
+              
+              // Actualizar peak si el balance actual es mayor
+              const newPeak = Math.max(currentPeak, newBalance);
+              
+              // Calcular drawdown actual desde el peak
+              const currentDrawdown = newPeak > 0 ? ((newPeak - newBalance) / newPeak * 100) : 0;
+              const newMaxDrawdown = Math.max(currentMaxDrawdown, currentDrawdown);
+              
               // NUEVO: Crear registro de trade para historial en vivo
               const newTradeRecord = {
                 id: Date.now() + Math.random(),
@@ -432,7 +444,9 @@ export default function BotsAdvanced() {
                   totalLosses: newLosses,
                   winRate: newWinRate,
                   sharpeRatio: newSharpe,
-                  profitFactor: newWins > 0 && newLosses > 0 ? (newWins / newLosses).toFixed(2) : '1.00'
+                  profitFactor: newWins > 0 && newLosses > 0 ? (newWins / newLosses).toFixed(2) : '1.00',
+                  maxDrawdown: newMaxDrawdown.toFixed(1),
+                  peak: newPeak
                 }
               };
             }
