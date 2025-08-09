@@ -2,7 +2,7 @@
 Modelo para órdenes de trading con historial detallado
 """
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Column, JSON
 from datetime import datetime
 from typing import Optional
 from enum import Enum
@@ -104,8 +104,8 @@ class Trade(SQLModel, table=True):
     pnl_percentage: Optional[float] = None
     
     # Información del mercado
-    entry_market_conditions: dict = Field(default_factory=dict)  # JSON con RSI, EMAs, etc.
-    exit_market_conditions: Optional[dict] = None
+    entry_market_conditions: Optional[dict] = Field(default_factory=dict, sa_column=Column(JSON))  # JSON con RSI, EMAs, etc.
+    exit_market_conditions: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     
     # Timestamps
     opened_at: datetime = Field(default_factory=datetime.now)
@@ -155,8 +155,8 @@ class TradingSession(SQLModel, table=True):
     ending_balance: Optional[float] = None
     
     # Información adicional
-    strategy_distribution: dict = Field(default_factory=dict)  # Cuántos trades por estrategia
-    symbol_distribution: dict = Field(default_factory=dict)   # Cuántos trades por símbolo
+    strategy_distribution: Optional[dict] = Field(default_factory=dict, sa_column=Column(JSON))  # Cuántos trades por estrategia
+    symbol_distribution: Optional[dict] = Field(default_factory=dict, sa_column=Column(JSON))   # Cuántos trades por símbolo
 
 # Funciones auxiliares para cálculos
 class TradingMetrics:
