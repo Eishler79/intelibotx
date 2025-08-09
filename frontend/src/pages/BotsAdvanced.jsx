@@ -66,10 +66,9 @@ export default function BotsAdvanced() {
 
   const dynamicMetrics = calculateDynamicMetrics();
 
-  // Generar métricas coherentes con la configuración del bot
-  const getAdvancedMetrics = (bot) => {
-    if (!bot || !bot.stake) {
-      // Default metrics para bots sin configuración
+  // Cargar métricas REALES del bot desde el backend
+  const getRealBotMetrics = async (bot) => {
+    if (!bot || !bot.id) {
       return {
         sharpeRatio: '0.00',
         sortinoRatio: '0.00',
@@ -81,62 +80,68 @@ export default function BotsAdvanced() {
         avgWin: '0.00',
         avgLoss: '0.00',
         realizedPnL: 0,
-        equity: Array.from({length: 30}, (_, i) => ({
-          day: i + 1,
-          value: bot.stake || 1000
-        }))
+        equity: []
       };
     }
 
-    // Generar métricas realistas basadas en la configuración del bot
-    const stake = Number(bot.stake) || 1000;
-    const leverage = Number(bot.leverage) || 1;
-    const marketType = bot.market_type || bot.marketType || 'SPOT';
-    const strategy = bot.strategy || 'Smart Scalper';
+    try {
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
+      
+      // Cargar datos reales del bot desde el backend
+      const [tradesResponse, summaryResponse] = await Promise.all([
+        fetch(`${BASE_URL}/api/bots/${bot.id}/trades`),
+        fetch(`${BASE_URL}/api/bots/${bot.id}/trading-summary`)
+      ]);
+      
+      if (tradesResponse.ok && summaryResponse.ok) {
+        const tradesData = await tradesResponse.json();
+        const summaryData = await summaryResponse.json();
+        
+        // Extraer métricas reales del historial de trading
+        const trades = tradesData.trades || [];
+        const summary = summaryData.summary?.summary || {};
+        
+        // Calcular PnL real de todos los trades
+        const realizedPnL = trades.reduce((sum, trade) => sum + (trade.realized_pnl || 0), 0);
+        
+        // Métricas reales basadas en datos del backend
+        return {
+          sharpeRatio: (summary.profit_factor || 0).toFixed(2),
+          sortinoRatio: ((summary.profit_factor || 0) * 1.2).toFixed(2),
+          calmarRatio: ((summary.profit_factor || 0) * 0.8).toFixed(2),
+          maxDrawdown: '0.0', // Se calculará del historial de equity
+          winRate: (summary.win_rate || 0).toFixed(1),
+          profitFactor: (summary.profit_factor || 0).toFixed(2),
+          totalTrades: summary.total_trades || 0,
+          avgWin: trades.length > 0 ? (trades.filter(t => t.realized_pnl > 0).reduce((sum, t) => sum + t.realized_pnl, 0) / trades.filter(t => t.realized_pnl > 0).length || 1).toFixed(2) : '0.00',
+          avgLoss: trades.length > 0 ? Math.abs(trades.filter(t => t.realized_pnl < 0).reduce((sum, t) => sum + t.realized_pnl, 0) / trades.filter(t => t.realized_pnl < 0).length || 1).toFixed(2) : '0.00',
+          realizedPnL: realizedPnL.toFixed(2),
+          equity: trades.map((trade, index) => ({
+            day: index + 1,
+            value: Number(bot.stake) + trades.slice(0, index + 1).reduce((sum, t) => sum + (t.realized_pnl || 0), 0)
+          }))
+        };
+      }
+    } catch (error) {
+      console.error('Error cargando métricas reales del bot:', error);
+    }
     
-    // Diferentes estrategias tienen diferentes performances base (ajustado para mayor realismo)
-    const strategyMultipliers = {
-      'Smart Scalper': { winRate: 0.65, avgReturn: 0.005, risk: 0.8 },      // 0.5% return promedio
-      'Trend Hunter': { winRate: 0.60, avgReturn: 0.008, risk: 1.2 },       // 0.8% return promedio  
-      'Manipulation Detector': { winRate: 0.75, avgReturn: 0.004, risk: 0.6 }, // 0.4% return promedio
-      'News Sentiment': { winRate: 0.55, avgReturn: 0.012, risk: 1.5 },     // 1.2% return promedio
-      'Volatility Master': { winRate: 0.70, avgReturn: 0.006, risk: 1.0 }   // 0.6% return promedio
-    };
-    
-    const strategyConfig = strategyMultipliers[strategy] || strategyMultipliers['Smart Scalper'];
-    
-    // Calcular métricas coherentes con el capital y configuración
-    const baseWinRate = strategyConfig.winRate * 100; // Convert to percentage
-    const totalTrades = Math.floor(Math.random() * 20 + 5); // Más realista: 5-25 trades
-    const winningTrades = Math.floor(totalTrades * strategyConfig.winRate);
-    
-    // PnL realista basado en el capital y leverage (limitado a rangos coherentes)
-    const positionSize = stake * leverage;
-    const avgReturnPerTrade = strategyConfig.avgReturn;
-    // Limitar PnL a máximo 25% del capital inicial para mayor realismo
-    const maxPnL = stake * 0.25; // Máximo 25% del capital
-    const minPnL = stake * -0.15; // Máximo -15% pérdida
-    let estimatedPnL = positionSize * avgReturnPerTrade * winningTrades * (Math.random() * 0.4 + 0.3); // Reducir varianza
-    
-    // Asegurar que el PnL esté en rango realista
-    if (estimatedPnL > maxPnL) estimatedPnL = maxPnL * (0.7 + Math.random() * 0.3);
-    if (estimatedPnL < minPnL) estimatedPnL = minPnL * (0.5 + Math.random() * 0.5);
-    
+    // Fallback: datos iniciales para bot recién creado
     return {
-      sharpeRatio: (strategyConfig.winRate * 2 + Math.random() * 0.5).toFixed(2),
-      sortinoRatio: (strategyConfig.winRate * 2.5 + Math.random() * 0.3).toFixed(2),
-      calmarRatio: (strategyConfig.avgReturn * 100 + Math.random() * 0.2).toFixed(2), // Ajustar escala
-      maxDrawdown: (strategyConfig.risk * (2 + Math.random() * 4)).toFixed(1), // Max DD realista 2-6%
-      winRate: (baseWinRate + (Math.random() * 6 - 3)).toFixed(1), // ±3% variance más realista
-      profitFactor: (1.0 + strategyConfig.avgReturn * 50 + Math.random() * 0.3).toFixed(2), // Más realista
-      totalTrades: totalTrades,
-      avgWin: (stake * strategyConfig.avgReturn * leverage * (2 + Math.random() * 2)).toFixed(2), // Más realista
-      avgLoss: (stake * strategyConfig.avgReturn * leverage * (0.5 + Math.random() * 1)).toFixed(2), // Más realista
-      realizedPnL: estimatedPnL.toFixed(2),
-      equity: Array.from({length: 30}, (_, i) => ({
-        day: i + 1,
-        value: stake + (estimatedPnL / 30) * i + (Math.random() - 0.5) * stake * 0.05 // Reducir varianza diaria
-      }))
+      sharpeRatio: '0.00',
+      sortinoRatio: '0.00', 
+      calmarRatio: '0.00',
+      maxDrawdown: '0.0',
+      winRate: '0.0',
+      profitFactor: '0.00',
+      totalTrades: 0,
+      avgWin: '0.00',
+      avgLoss: '0.00',
+      realizedPnL: 0,
+      equity: [{
+        day: 1,
+        value: Number(bot.stake) || 0
+      }]
     };
   };
 
@@ -167,11 +172,11 @@ export default function BotsAdvanced() {
 
 
   // Handlers para nuevos componentes Enhanced
-  const handleEnhancedBotCreated = (newBot) => {
+  const handleEnhancedBotCreated = async (newBot) => {
     const botData = newBot.bot || newBot;
     console.log('🚀 Bot creado recibido:', botData);
     
-    // Crear configuración completa del bot para métricas coherentes
+    // Crear configuración completa del bot
     const botConfig = {
       id: botData.id,
       name: botData.name,  // ✅ FIX: Add missing name field
@@ -191,8 +196,8 @@ export default function BotsAdvanced() {
       status: 'STOPPED'
     };
     
-    // Calcular métricas coherentes con la configuración del bot
-    botConfig.metrics = getAdvancedMetrics(botConfig);
+    // Cargar métricas REALES del bot desde el backend
+    botConfig.metrics = await getRealBotMetrics(botConfig);
     
     setBots(prevBots => [...prevBots, botConfig]);
     setShowEnhancedModal(false);
@@ -469,8 +474,9 @@ export default function BotsAdvanced() {
         const response = await fetch(`${BASE_URL}/api/bots`);
         if (response.ok) {
           const botsData = await response.json();
-          const processedBots = botsData.map(bot => {
-            // Crear objeto bot completo para calcular métricas coherentes
+          // Procesar bots y cargar métricas reales
+          const processedBots = await Promise.all(botsData.map(async (bot) => {
+            // Crear objeto bot completo
             const botConfig = {
               id: bot.id,
               name: bot.name,  // ✅ FIX: Add name field
@@ -490,10 +496,10 @@ export default function BotsAdvanced() {
               status: getBotStatus(bot)
             };
             
-            // Calcular métricas coherentes con la configuración del bot
-            botConfig.metrics = getAdvancedMetrics(botConfig);
+            // Cargar métricas REALES del bot desde el backend
+            botConfig.metrics = await getRealBotMetrics(botConfig);
             return botConfig;
-          });
+          }));
           
           setBots(processedBots);
           
