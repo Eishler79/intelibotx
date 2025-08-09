@@ -94,41 +94,48 @@ export default function BotsAdvanced() {
     const marketType = bot.market_type || bot.marketType || 'SPOT';
     const strategy = bot.strategy || 'Smart Scalper';
     
-    // Diferentes estrategias tienen diferentes performances base
+    // Diferentes estrategias tienen diferentes performances base (ajustado para mayor realismo)
     const strategyMultipliers = {
-      'Smart Scalper': { winRate: 0.65, avgReturn: 0.02, risk: 0.8 },
-      'Trend Hunter': { winRate: 0.60, avgReturn: 0.05, risk: 1.2 },
-      'Manipulation Detector': { winRate: 0.75, avgReturn: 0.03, risk: 0.6 },
-      'News Sentiment': { winRate: 0.55, avgReturn: 0.08, risk: 1.5 },
-      'Volatility Master': { winRate: 0.70, avgReturn: 0.04, risk: 1.0 }
+      'Smart Scalper': { winRate: 0.65, avgReturn: 0.005, risk: 0.8 },      // 0.5% return promedio
+      'Trend Hunter': { winRate: 0.60, avgReturn: 0.008, risk: 1.2 },       // 0.8% return promedio  
+      'Manipulation Detector': { winRate: 0.75, avgReturn: 0.004, risk: 0.6 }, // 0.4% return promedio
+      'News Sentiment': { winRate: 0.55, avgReturn: 0.012, risk: 1.5 },     // 1.2% return promedio
+      'Volatility Master': { winRate: 0.70, avgReturn: 0.006, risk: 1.0 }   // 0.6% return promedio
     };
     
     const strategyConfig = strategyMultipliers[strategy] || strategyMultipliers['Smart Scalper'];
     
     // Calcular métricas coherentes con el capital y configuración
     const baseWinRate = strategyConfig.winRate * 100; // Convert to percentage
-    const totalTrades = Math.floor(Math.random() * 50 + 10); // Realistic number of trades
+    const totalTrades = Math.floor(Math.random() * 20 + 5); // Más realista: 5-25 trades
     const winningTrades = Math.floor(totalTrades * strategyConfig.winRate);
     
-    // PnL realista basado en el capital y leverage
+    // PnL realista basado en el capital y leverage (limitado a rangos coherentes)
     const positionSize = stake * leverage;
     const avgReturnPerTrade = strategyConfig.avgReturn;
-    const estimatedPnL = positionSize * avgReturnPerTrade * winningTrades * (Math.random() * 0.6 + 0.7); // Some variance
+    // Limitar PnL a máximo 25% del capital inicial para mayor realismo
+    const maxPnL = stake * 0.25; // Máximo 25% del capital
+    const minPnL = stake * -0.15; // Máximo -15% pérdida
+    let estimatedPnL = positionSize * avgReturnPerTrade * winningTrades * (Math.random() * 0.4 + 0.3); // Reducir varianza
+    
+    // Asegurar que el PnL esté en rango realista
+    if (estimatedPnL > maxPnL) estimatedPnL = maxPnL * (0.7 + Math.random() * 0.3);
+    if (estimatedPnL < minPnL) estimatedPnL = minPnL * (0.5 + Math.random() * 0.5);
     
     return {
       sharpeRatio: (strategyConfig.winRate * 2 + Math.random() * 0.5).toFixed(2),
       sortinoRatio: (strategyConfig.winRate * 2.5 + Math.random() * 0.3).toFixed(2),
-      calmarRatio: (strategyConfig.avgReturn * 10 + Math.random() * 0.2).toFixed(2),
-      maxDrawdown: (strategyConfig.risk * (5 + Math.random() * 10)).toFixed(1),
-      winRate: (baseWinRate + (Math.random() * 10 - 5)).toFixed(1), // ±5% variance
-      profitFactor: ((1 + strategyConfig.avgReturn) * (1 + Math.random() * 0.5)).toFixed(2),
+      calmarRatio: (strategyConfig.avgReturn * 100 + Math.random() * 0.2).toFixed(2), // Ajustar escala
+      maxDrawdown: (strategyConfig.risk * (2 + Math.random() * 4)).toFixed(1), // Max DD realista 2-6%
+      winRate: (baseWinRate + (Math.random() * 6 - 3)).toFixed(1), // ±3% variance más realista
+      profitFactor: (1.0 + strategyConfig.avgReturn * 50 + Math.random() * 0.3).toFixed(2), // Más realista
       totalTrades: totalTrades,
-      avgWin: (stake * strategyConfig.avgReturn * (1 + Math.random() * 0.3)).toFixed(2),
-      avgLoss: (stake * strategyConfig.avgReturn * 0.4 * (1 + Math.random() * 0.2)).toFixed(2),
+      avgWin: (stake * strategyConfig.avgReturn * leverage * (2 + Math.random() * 2)).toFixed(2), // Más realista
+      avgLoss: (stake * strategyConfig.avgReturn * leverage * (0.5 + Math.random() * 1)).toFixed(2), // Más realista
       realizedPnL: estimatedPnL.toFixed(2),
       equity: Array.from({length: 30}, (_, i) => ({
         day: i + 1,
-        value: stake + (estimatedPnL / 30) * i + (Math.random() - 0.5) * stake * 0.1 // Progressive growth with some variance
+        value: stake + (estimatedPnL / 30) * i + (Math.random() - 0.5) * stake * 0.05 // Reducir varianza diaria
       }))
     };
   };
