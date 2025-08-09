@@ -140,7 +140,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
               <Settings className="text-blue-400" size={20} />
               Configuración Básica
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Nombre del Bot</Label>
                 <input
@@ -179,6 +179,35 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 />
               </div>
               
+              {(parameters.market_type === 'FUTURES_USDT' || parameters.market_type === 'FUTURES_COIN') && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Leverage</Label>
+                  <input
+                    type="number"
+                    value={parameters.leverage}
+                    onChange={(e) => handleParameterChange('leverage', parseInt(e.target.value))}
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    min="1"
+                    max="125"
+                  />
+                  <p className="text-xs text-orange-400">
+                    ⚠️ Apalancamiento: Multiplica ganancias Y pérdidas por {parameters.leverage}x
+                  </p>
+                </div>
+              )}
+              
+              {parameters.market_type === 'SPOT' && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Mercado SPOT</Label>
+                  <div className="p-3 bg-gray-700 border border-gray-600 rounded-lg">
+                    <p className="text-white">Sin Apalancamiento</p>
+                  </div>
+                  <p className="text-xs text-green-400">
+                    ✓ Menor riesgo: Solo puedes perder lo que inviertas
+                  </p>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Timeframe</Label>
                 <select
@@ -193,6 +222,39 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   <option value="1h">1 hora</option>
                   <option value="4h">4 horas</option>
                 </select>
+              </div>
+            </div>
+            
+            {/* Información del Exchange y Market Type */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+              <h4 className="text-blue-400 font-semibold mb-3 flex items-center gap-2">
+                <DollarSign size={16} />
+                Configuración de Mercado Actual
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-xs text-gray-400">Exchange</Label>
+                  <p className="text-white font-medium">
+                    {bot?.exchange_name || 'BINANCE'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-400">Tipo de Mercado</Label>
+                  <p className="text-white font-medium">
+                    {parameters.market_type === 'FUTURES_USDT' ? 'FUTURES USDT' :
+                     parameters.market_type === 'FUTURES_COIN' ? 'FUTURES COIN' :
+                     parameters.market_type === 'SPOT' ? 'SPOT' : parameters.market_type}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-400">Apalancamiento</Label>
+                  <p className="text-white font-medium">
+                    {parameters.leverage}x
+                    {parameters.market_type === 'SPOT' && (
+                      <span className="text-gray-400 text-xs ml-1">(No aplica)</span>
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -275,7 +337,10 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   icon={TrendingUp}
                 />
                 <p className="text-xs text-green-400">
-                  ≈ +${(parameters.stake * parameters.takeProfit / 100).toFixed(2)} {parameters.base_currency} por operación
+                  ≈ +${((parameters.stake * parameters.leverage) * parameters.takeProfit / 100).toFixed(2)} {parameters.base_currency} por operación
+                  {parameters.leverage > 1 && (
+                    <span className="text-yellow-400 ml-1">({parameters.leverage}x leverage aplicado)</span>
+                  )}
                 </p>
               </div>
               
@@ -291,7 +356,10 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   icon={AlertTriangle}
                 />
                 <p className="text-xs text-red-400">
-                  ≈ -${(parameters.stake * parameters.stopLoss / 100).toFixed(2)} {parameters.base_currency} por operación
+                  ≈ -${((parameters.stake * parameters.leverage) * parameters.stopLoss / 100).toFixed(2)} {parameters.base_currency} por operación
+                  {parameters.leverage > 1 && (
+                    <span className="text-yellow-400 ml-1">({parameters.leverage}x leverage aplicado)</span>
+                  )}
                 </p>
               </div>
               
@@ -362,7 +430,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
               </div>
               
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Niveles DCA</Label>
+                <Label className="text-sm font-medium">Niveles DCA (Dollar Cost Average)</Label>
                 <input
                   type="number"
                   value={parameters.dca_levels}
@@ -371,9 +439,31 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   min="1"
                   max="10"
                 />
-                <p className="text-xs text-gray-400">
-                  📈 Número de niveles de promediado de costos
-                </p>
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 mt-2">
+                  <p className="text-xs text-purple-400 font-medium mb-1">
+                    🤖 <strong>DCA en la IA del Bot:</strong>
+                  </p>
+                  <p className="text-xs text-gray-300 mb-2">
+                    Cuando el precio va <strong>en contra</strong> de tu posición inicial, la IA del bot 
+                    <strong>compra más a precios más bajos</strong> (promediando el costo).
+                  </p>
+                  <p className="text-xs text-yellow-400 mb-1">
+                    📊 <strong>Ejemplo con {parameters.dca_levels} niveles:</strong>
+                  </p>
+                  <ul className="text-xs text-gray-300 space-y-1">
+                    <li>• <strong>Nivel 1:</strong> Compra inicial a $100 (${parameters.stake})</li>
+                    <li>• <strong>Nivel 2:</strong> Si baja a $95, compra más (${(parameters.stake * 1.2).toFixed(0)})</li>
+                    {parameters.dca_levels >= 3 && (
+                      <li>• <strong>Nivel 3:</strong> Si baja a $90, compra más (${(parameters.stake * 1.5).toFixed(0)})</li>
+                    )}
+                    {parameters.dca_levels >= 4 && (
+                      <li className="text-gray-400">• ... y así hasta {parameters.dca_levels} niveles</li>
+                    )}
+                  </ul>
+                  <p className="text-xs text-green-400 mt-2">
+                    🎯 <strong>Resultado:</strong> Precio promedio más bajo = Mayor ganancia cuando se recupere
+                  </p>
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -405,13 +495,6 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
               Configuración Avanzada
             </h3>
             <div className="space-y-3">
-              <SwitchControl
-                label="Trailing Stop"
-                checked={parameters.trailingStopEnabled}
-                onChange={(checked) => handleParameterChange('trailingStopEnabled', checked)}
-                icon={Target}
-                description="Ajusta automáticamente el stop loss siguiendo el precio"
-              />
               <SwitchControl
                 label="Modo Adaptativo"
                 checked={parameters.adaptiveMode}
