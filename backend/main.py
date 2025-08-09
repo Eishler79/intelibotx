@@ -332,11 +332,11 @@ try:
 except Exception as e:
     print(f"⚠️ Could not load exchange routes: {e}")
 
-# Temporarily disable trading history routes for Railway deployment
+# Load trading history routes (RE-ENABLED for real bot data)
 try:
-    # from routes.trading_history import router as trading_history_router
-    # app.include_router(trading_history_router)
-    print("⏸️ Trading history routes temporarily disabled for Railway deployment")
+    from routes.trading_history import router as trading_history_router
+    app.include_router(trading_history_router)
+    print("✅ Trading history routes loaded successfully")
 except Exception as e:
     print(f"⚠️ Could not load trading history routes: {e}")
     
