@@ -36,7 +36,7 @@ export default function BotsAdvanced() {
   const [successMessage, setSuccessMessage] = useState(null);
   
 
-  // Calcular métricas dinámicas basadas en bots reales
+  // Calcular métricas dinámicas basadas en bots reales (CORREGIDO)
   const calculateDynamicMetrics = () => {
     if (bots.length === 0) {
       return {
@@ -48,17 +48,31 @@ export default function BotsAdvanced() {
     }
 
     const runningBots = bots.filter(b => b.status === 'RUNNING');
-    const totalPnL = runningBots.reduce((sum, bot) => sum + Number(bot.metrics?.realizedPnL || 0), 0);
-    const avgSharpe = runningBots.length > 0 
-      ? Number((runningBots.reduce((sum, bot) => sum + Number(bot.metrics?.sharpeRatio || 0), 0) / runningBots.length).toFixed(2))
-      : 0;
-    const avgWinRate = runningBots.length > 0
-      ? Number((runningBots.reduce((sum, bot) => sum + Number(bot.metrics?.winRate || 0), 0) / runningBots.length).toFixed(1))
-      : 0;
+    
+    // CORREGIDO: Sumar todos los bots (tanto RUNNING como otros con trades)
+    const allActiveBots = bots.filter(b => b.metrics?.totalTrades > 0 || b.status === 'RUNNING');
+    
+    const totalPnL = allActiveBots.reduce((sum, bot) => {
+      const botPnL = Number(bot.metrics?.realizedPnL || 0);
+      return sum + botPnL;
+    }, 0);
+    
+    // CORREGIDO: Calcular Win Rate basado en trades reales del bot
+    const avgWinRate = allActiveBots.length > 0 ? allActiveBots.reduce((sum, bot) => {
+      const botTrades = Number(bot.metrics?.totalTrades || 0);
+      const botWinRate = botTrades > 0 ? Number(bot.metrics?.winRate || 0) : 0;
+      return sum + botWinRate;
+    }, 0) / allActiveBots.length : 0;
+    
+    // CORREGIDO: Calcular Sharpe basado en performance real
+    const avgSharpe = allActiveBots.length > 0 ? allActiveBots.reduce((sum, bot) => {
+      const botSharpe = Number(bot.metrics?.sharpeRatio || 0);
+      return sum + botSharpe;
+    }, 0) / allActiveBots.length : 0;
 
     return {
       totalPnL: Number(totalPnL.toFixed(2)),
-      activeBots: runningBots.length,
+      activeBots: runningBots.length, // Solo RUNNING para bots activos
       avgSharpe: Number(avgSharpe.toFixed(2)),
       avgWinRate: Number(avgWinRate.toFixed(1))
     };
@@ -369,18 +383,61 @@ export default function BotsAdvanced() {
         const risk = Number(bot.riskPercentage) || 1;
         const quantity = Number(((stake * risk / 100) / price).toFixed(6));
         
-        // Actualizar métricas del bot
+        // Actualizar métricas del bot (MEJORADO con Win Rate y historial)
         setBots(prevBots => 
-          prevBots.map(b => 
-            b.id === botId ? {
-              ...b,
-              metrics: {
-                ...b.metrics,
-                realizedPnL: Number((Number(b.metrics?.realizedPnL || 0) + pnl).toFixed(2)),
-                totalTrades: (b.metrics?.totalTrades || 0) + 1
-              }
-            } : b
-          )
+          prevBots.map(b => {
+            if (b.id === botId) {
+              const currentPnL = Number(b.metrics?.realizedPnL || 0);
+              const newPnL = Number((currentPnL + pnl).toFixed(2));
+              const currentTrades = (b.metrics?.totalTrades || 0) + 1;
+              
+              // Calcular wins y losses
+              const currentWins = Number(b.metrics?.totalWins || 0);
+              const newWins = pnl > 0 ? currentWins + 1 : currentWins;
+              const currentLosses = Number(b.metrics?.totalLosses || 0); 
+              const newLosses = pnl <= 0 ? currentLosses + 1 : currentLosses;
+              
+              // Calcular Win Rate real
+              const newWinRate = currentTrades > 0 ? ((newWins / currentTrades) * 100).toFixed(1) : '0.0';
+              
+              // Calcular Sharpe aproximado basado en performance
+              const newSharpe = newPnL > 0 ? Math.min((newPnL / Math.abs(currentPnL || 1)) * 0.5, 3.0).toFixed(2) : '0.00';
+              
+              // NUEVO: Crear registro de trade para historial en vivo
+              const newTradeRecord = {
+                id: Date.now() + Math.random(),
+                botId: botId,
+                symbol: bot.symbol,
+                strategy: bot.strategy,
+                type: tradeType,
+                signal: signal,
+                pnl: pnl,
+                timestamp: new Date(),
+                price: price,
+                quantity: quantity
+              };
+              
+              // Mantener historial de últimos 50 trades
+              const currentHistory = b.liveTradeHistory || [];
+              const newHistory = [newTradeRecord, ...currentHistory].slice(0, 50);
+              
+              return {
+                ...b,
+                liveTradeHistory: newHistory,
+                metrics: {
+                  ...b.metrics,
+                  realizedPnL: newPnL,
+                  totalTrades: currentTrades,
+                  totalWins: newWins,
+                  totalLosses: newLosses,
+                  winRate: newWinRate,
+                  sharpeRatio: newSharpe,
+                  profitFactor: newWins > 0 && newLosses > 0 ? (newWins / newLosses).toFixed(2) : '1.00'
+                }
+              };
+            }
+            return b;
+          })
         );
         
         console.log(`🎯 SEÑAL: ${signal}`);

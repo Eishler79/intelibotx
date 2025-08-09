@@ -276,13 +276,13 @@ export default function ProfessionalBotsTable({
                   {/* TP/SL */}
                   <td className="px-4 py-4 text-right">
                     <div className="font-semibold text-green-400">
-                      +{bot.takeProfit || 0}%
+                      +{bot.take_profit || bot.takeProfit || 0}%
                     </div>
                     <div className="text-xs text-red-400">
-                      -{bot.stopLoss || 0}%
+                      -{bot.stop_loss || bot.stopLoss || 0}%
                     </div>
                     <div className="text-xs text-gray-400">
-                      ${((bot.stake || 0) * ((bot.takeProfit || 0) / 100)).toFixed(2)}
+                      ${((bot.stake || 0) * ((bot.take_profit || bot.takeProfit || 0) / 100)).toFixed(2)}
                     </div>
                   </td>
 

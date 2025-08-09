@@ -18,22 +18,21 @@ export default function LiveTradingFeed({ bots }) {
     const runningBots = bots.filter(bot => bot.status === 'RUNNING');
     setActiveBots(runningBots);
 
-    // Simular trades en tiempo real para bots activos
-    if (runningBots.length > 0) {
-      const interval = setInterval(() => {
-        if (Math.random() > 0.6) { // 40% chance de generar trade
-          const randomBot = runningBots[Math.floor(Math.random() * runningBots.length)];
-          const newTrade = generateMockTrade(randomBot);
-          
-          setTrades(prevTrades => {
-            const newTrades = [newTrade, ...prevTrades.slice(0, 19)]; // Mantener últimos 20
-            return newTrades;
-          });
-        }
-      }, 15000); // Cada 15 segundos
+    // CORREGIDO: Leer trades reales de los bots en lugar de generar independientes
+    // Los trades ahora se generan en BotsAdvanced.jsx y se almacenan en bot.liveTradeHistory
+    const allLiveTrades = bots.reduce((allTrades, bot) => {
+      if (bot.liveTradeHistory && Array.isArray(bot.liveTradeHistory)) {
+        return [...allTrades, ...bot.liveTradeHistory];
+      }
+      return allTrades;
+    }, []);
 
-      return () => clearInterval(interval);
-    }
+    // Ordenar por timestamp y tomar últimos 20
+    const sortedTrades = allLiveTrades
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 20);
+
+    setTrades(sortedTrades);
   }, [bots]);
 
   const generateMockTrade = (bot) => {
