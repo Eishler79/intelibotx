@@ -16,36 +16,44 @@ import {
 } from "lucide-react";
 
 export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
-  const [parameters, setParameters] = useState({
-    // Parámetros básicos del bot creado
-    name: bot?.name || bot?.symbol || 'Bot',
-    symbol: bot?.symbol || 'BTCUSDT',
-    strategy: bot?.strategy || 'Smart Scalper',
-    interval: bot?.interval || '15m',
-    stake: bot?.stake || 100,
-    base_currency: bot?.base_currency || 'USDT',
-    market_type: bot?.market_type || 'SPOT',
-    leverage: bot?.leverage || 1,
-    
-    // Parámetros de riesgo
-    takeProfit: bot?.take_profit || 2.5,
-    stopLoss: bot?.stop_loss || 1.5,
-    riskPercentage: bot?.risk_percentage || 1.0,
-    
-    // Parámetros avanzados de órdenes
-    dca_levels: bot?.dca_levels || 3,
-    entry_order_type: bot?.entry_order_type || 'MARKET',
-    exit_order_type: bot?.exit_order_type || 'MARKET',
-    tp_order_type: bot?.tp_order_type || 'LIMIT',
-    sl_order_type: bot?.sl_order_type || 'STOP_MARKET',
-    trailing_stop: bot?.trailing_stop || false,
-    
-    // Parámetros operacionales
-    maxOpenPositions: bot?.max_open_positions || 3,
-    cooldownMinutes: bot?.cooldown_minutes || 30,
-    marketConditionFilter: bot?.market_condition_filter || true,
-    volatilityThreshold: bot?.volatility_threshold || 0.8,
-  });
+  const [parameters, setParameters] = useState({});
+  
+  // Efecto para cargar los datos reales del bot cuando se abre el modal
+  useEffect(() => {
+    if (bot) {
+      console.log('🔍 Cargando datos del bot:', bot);
+      setParameters({
+        // Parámetros básicos del bot creado (DATOS REALES)
+        name: bot.name || `Bot ${bot.symbol}` || 'Bot',
+        symbol: bot.symbol || 'BTCUSDT',
+        strategy: bot.strategy || 'Smart Scalper',
+        interval: bot.interval || '15m',
+        stake: Number(bot.stake) || 100,
+        base_currency: bot.base_currency || 'USDT',
+        market_type: bot.market_type || bot.marketType || 'SPOT',
+        leverage: Number(bot.leverage) || 1,
+        
+        // Parámetros de riesgo (DATOS REALES)
+        takeProfit: Number(bot.take_profit || bot.takeProfit) || 2.5,
+        stopLoss: Number(bot.stop_loss || bot.stopLoss) || 1.5,
+        riskPercentage: Number(bot.risk_percentage || bot.riskPercentage) || 1.0,
+        
+        // Parámetros avanzados de órdenes
+        dca_levels: Number(bot.dca_levels) || 3,
+        entry_order_type: bot.entry_order_type || 'MARKET',
+        exit_order_type: bot.exit_order_type || 'MARKET',
+        tp_order_type: bot.tp_order_type || 'LIMIT',
+        sl_order_type: bot.sl_order_type || 'STOP_MARKET',
+        trailing_stop: bot.trailing_stop || false,
+        
+        // Parámetros operacionales
+        maxOpenPositions: bot.max_open_positions || 3,
+        cooldownMinutes: bot.cooldown_minutes || 30,
+        marketConditionFilter: bot.market_condition_filter !== false,
+        volatilityThreshold: bot.volatility_threshold || 0.8,
+      });
+    }
+  }, [bot]);
 
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -117,11 +125,15 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
             <div>
               <CardTitle className="text-xl flex items-center gap-2">
                 <Settings className="text-blue-400" size={24} />
-                Configurar Bot - {bot?.name || bot?.symbol}
+                Configurar Bot - {parameters.name || bot?.name || bot?.symbol}
               </CardTitle>
               <p className="text-gray-400 mt-1">
                 Edita todos los parámetros de tu bot y ve el impacto monetario en tiempo real
               </p>
+              {/* DEBUG INFO - Remover en producción */}
+              <div className="text-xs text-yellow-400 mt-1">
+                Debug: Market={parameters.market_type} | Leverage={parameters.leverage} | TP={parameters.takeProfit} | SL={parameters.stopLoss}
+              </div>
             </div>
             <Button 
               variant="ghost" 
@@ -179,28 +191,28 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 />
               </div>
               
-              {(parameters.market_type === 'FUTURES_USDT' || parameters.market_type === 'FUTURES_COIN') && (
+              {(parameters.market_type === 'FUTURES_USDT' || parameters.market_type === 'FUTURES_COIN' || parameters.market_type?.includes('FUTURES')) && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Leverage</Label>
+                  <Label className="text-sm font-medium">Leverage (Apalancamiento)</Label>
                   <input
                     type="number"
-                    value={parameters.leverage}
+                    value={parameters.leverage || 1}
                     onChange={(e) => handleParameterChange('leverage', parseInt(e.target.value))}
                     className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                     min="1"
                     max="125"
                   />
                   <p className="text-xs text-orange-400">
-                    ⚠️ Apalancamiento: Multiplica ganancias Y pérdidas por {parameters.leverage}x
+                    ⚠️ Apalancamiento {parameters.leverage}x: Multiplica ganancias Y pérdidas
                   </p>
                 </div>
               )}
               
-              {parameters.market_type === 'SPOT' && (
+              {(parameters.market_type === 'SPOT' || !parameters.market_type?.includes('FUTURES')) && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Mercado SPOT</Label>
                   <div className="p-3 bg-gray-700 border border-gray-600 rounded-lg">
-                    <p className="text-white">Sin Apalancamiento</p>
+                    <p className="text-white">1x - Sin Apalancamiento</p>
                   </div>
                   <p className="text-xs text-green-400">
                     ✓ Menor riesgo: Solo puedes perder lo que inviertas
@@ -243,15 +255,19 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   <p className="text-white font-medium">
                     {parameters.market_type === 'FUTURES_USDT' ? 'FUTURES USDT' :
                      parameters.market_type === 'FUTURES_COIN' ? 'FUTURES COIN' :
-                     parameters.market_type === 'SPOT' ? 'SPOT' : parameters.market_type}
+                     parameters.market_type === 'SPOT' ? 'SPOT' : 
+                     (parameters.market_type || 'SPOT')}
                   </p>
                 </div>
                 <div>
                   <Label className="text-xs text-gray-400">Apalancamiento</Label>
                   <p className="text-white font-medium">
-                    {parameters.leverage}x
-                    {parameters.market_type === 'SPOT' && (
-                      <span className="text-gray-400 text-xs ml-1">(No aplica)</span>
+                    {parameters.leverage || 1}x
+                    {(parameters.market_type === 'SPOT' || !parameters.market_type?.includes('FUTURES')) && (
+                      <span className="text-gray-400 text-xs ml-1">(No aplica en SPOT)</span>
+                    )}
+                    {parameters.market_type?.includes('FUTURES') && parameters.leverage > 1 && (
+                      <span className="text-yellow-400 text-xs ml-1">(Activo)</span>
                     )}
                   </p>
                 </div>
@@ -337,8 +353,8 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   icon={TrendingUp}
                 />
                 <p className="text-xs text-green-400">
-                  ≈ +${((parameters.stake * parameters.leverage) * parameters.takeProfit / 100).toFixed(2)} {parameters.base_currency} por operación
-                  {parameters.leverage > 1 && (
+                  ≈ +${(((parameters.stake || 0) * (parameters.leverage || 1)) * (parameters.takeProfit || 0) / 100).toFixed(2)} {parameters.base_currency || 'USDT'} por operación
+                  {(parameters.leverage || 1) > 1 && (
                     <span className="text-yellow-400 ml-1">({parameters.leverage}x leverage aplicado)</span>
                   )}
                 </p>
@@ -356,8 +372,8 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   icon={AlertTriangle}
                 />
                 <p className="text-xs text-red-400">
-                  ≈ -${((parameters.stake * parameters.leverage) * parameters.stopLoss / 100).toFixed(2)} {parameters.base_currency} por operación
-                  {parameters.leverage > 1 && (
+                  ≈ -${(((parameters.stake || 0) * (parameters.leverage || 1)) * (parameters.stopLoss || 0) / 100).toFixed(2)} {parameters.base_currency || 'USDT'} por operación
+                  {(parameters.leverage || 1) > 1 && (
                     <span className="text-yellow-400 ml-1">({parameters.leverage}x leverage aplicado)</span>
                   )}
                 </p>
