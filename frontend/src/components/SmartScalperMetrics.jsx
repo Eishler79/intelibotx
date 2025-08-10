@@ -96,6 +96,15 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             sma_20: 1000, // No disponible en WebSocket
             status: wsData.volume_spike ? 'SPIKE_DETECTED' : 'NORMAL'
           };
+
+          // 🧠 SMART SCALPER MULTI-ALGORITMO DATA
+          const smartScalperAdvanced = {
+            algorithm_used: wsData.algorithm_used || 'Basic RSI',
+            conditions_met: wsData.conditions_met || [],
+            market_condition: wsData.market_condition || 'sideways',
+            risk_score: wsData.risk_score || 0.5,
+            confidence: wsData.confidence || 0.5
+          };
           
           signal = {
             type: wsData.signal || 'HOLD',
@@ -273,6 +282,23 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             conditions_met: signal.conditions,
             timestamp: signal.timestamp,
             entry_quality: signal.quality
+          },
+
+          // 🧠 Smart Scalper Multi-Algorithm (NEW)
+          advanced: typeof smartScalperAdvanced !== 'undefined' ? {
+            algorithm_used: smartScalperAdvanced.algorithm_used,
+            conditions_met: smartScalperAdvanced.conditions_met,
+            market_condition: smartScalperAdvanced.market_condition,
+            risk_score: smartScalperAdvanced.risk_score,
+            confidence: smartScalperAdvanced.confidence,
+            data_source: 'websocket_realtime'
+          } : {
+            algorithm_used: 'Basic RSI',
+            conditions_met: [],
+            market_condition: 'unknown',
+            risk_score: 0.5,
+            confidence: 0.5,
+            data_source: 'fallback'
           },
 
           // Performance Specific to Smart Scalper
@@ -541,6 +567,88 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
     </Card>
   );
 
+  // 🧠 Smart Scalper Multi-Algorithm Component (NEW)
+  const SmartScalperAdvanced = ({ advanced }) => {
+    const getMarketConditionColor = () => {
+      switch (advanced.market_condition?.toLowerCase()) {
+        case 'trending_up': return 'text-green-400';
+        case 'trending_down': return 'text-red-400';
+        case 'high_volatility': return 'text-orange-400';
+        case 'low_volatility': return 'text-blue-400';
+        case 'breakout': return 'text-purple-400';
+        default: return 'text-gray-400';
+      }
+    };
+
+    const getRiskColor = () => {
+      if (advanced.risk_score < 0.3) return 'text-green-400';
+      if (advanced.risk_score < 0.7) return 'text-yellow-400';
+      return 'text-red-400';
+    };
+
+    return (
+      <Card className="bg-gray-800/50 border-gray-700/50 col-span-2">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Award className="text-purple-400" size={20} />
+              <span className="text-purple-400 font-semibold">Multi-Algorithm</span>
+            </div>
+            <Badge className={`text-xs ${
+              advanced.data_source === 'websocket_realtime' 
+                ? 'bg-green-500/20 text-green-400' 
+                : 'bg-gray-500/20 text-gray-400'
+            }`}>
+              {advanced.data_source === 'websocket_realtime' ? '🔥 LIVE' : 'FALLBACK'}
+            </Badge>
+          </div>
+
+          <div className="space-y-2">
+            <div>
+              <p className="text-gray-400 text-xs">Algorithm Used</p>
+              <p className="text-sm font-semibold text-blue-400">{advanced.algorithm_used}</p>
+            </div>
+
+            <div>
+              <p className="text-gray-400 text-xs">Market Condition</p>
+              <p className={`text-sm font-semibold ${getMarketConditionColor()}`}>
+                {advanced.market_condition?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-gray-400 text-xs">Risk Score</p>
+                <p className={`text-sm font-bold ${getRiskColor()}`}>
+                  {(advanced.risk_score * 100).toFixed(0)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs">Confidence</p>
+                <p className="text-sm font-bold text-blue-400">
+                  {(advanced.confidence * 100).toFixed(0)}%
+                </p>
+              </div>
+            </div>
+
+            {advanced.conditions_met && advanced.conditions_met.length > 0 && (
+              <div>
+                <p className="text-gray-400 text-xs mb-1">Conditions Met</p>
+                <div className="flex flex-wrap gap-1">
+                  {advanced.conditions_met.map((condition, idx) => (
+                    <Badge key={idx} className="text-xs bg-blue-500/20 text-blue-400">
+                      {condition.replace('_', ' ')}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   // Obtener datos WebSocket actuales para la UI
   const wsData = getSymbolData(bot?.symbol);
 
@@ -630,6 +738,22 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           <VolumeSpikeMeter volume={metrics.volume} />
           <SignalGenerator signal={metrics.signal} />
           <LatencyMonitor execution={executionMetrics} />
+        </div>
+      </div>
+
+      {/* 🧠 Smart Scalper Multi-Algorithm (NEW) */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Award className="text-purple-400" size={20} />
+          Smart Scalper Multi-Algorithm Engine
+          {metrics.advanced?.data_source === 'websocket_realtime' && (
+            <Badge className="ml-2 bg-green-500/20 text-green-400 text-xs">
+              🔥 LIVE DATA
+            </Badge>
+          )}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SmartScalperAdvanced advanced={metrics.advanced} />
         </div>
       </div>
 

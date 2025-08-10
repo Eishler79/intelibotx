@@ -24,6 +24,9 @@ from services.ta_alternative import (
     calculate_atr, detect_volume_spike, calculate_volume_sma
 )
 
+# Smart Scalper Multi-Algorithm Engine
+from services.smart_scalper_algorithms import SmartScalperEngine
+
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -62,6 +65,11 @@ class RealtimeTechnicalIndicators:
     atr: float
     smart_scalper_signal: str  # BUY, SELL, HOLD
     confidence: float
+    # Smart Scalper Multi-Algorithm metadata
+    algorithm_used: Optional[str] = None
+    conditions_met: Optional[List[str]] = None
+    market_condition: Optional[str] = None
+    risk_score: Optional[float] = None
 
 class BinanceWebSocketService:
     """Servicio WebSocket para datos en tiempo real de Binance"""
@@ -82,7 +90,11 @@ class BinanceWebSocketService:
         self.connections: Dict[str, Any] = {}  # stream_name -> websocket
         self.is_running = False
         
+        # Smart Scalper Multi-Algorithm Engine
+        self.smart_scalper_engine = SmartScalperEngine()
+        
         logger.info(f"✅ BinanceWebSocketService {'testnet' if use_testnet else 'mainnet'} inicializado")
+        logger.info("🧠 Smart Scalper Multi-Algoritmo integrado")
 
     async def subscribe_kline_stream(self, symbol: str, interval: str = "1m") -> str:
         """
@@ -206,75 +218,40 @@ class BinanceWebSocketService:
             # Detectar spike de volumen usando función alternativa
             volume_spike, volume_ratio = detect_volume_spike(volumes)
             
-            # Generar señal Smart Scalper
-            signal, confidence = self._generate_smart_scalper_signal(
-                rsi, rsi_status, volume_spike, volume_ratio, atr, closes[-1]
+            # 🧠 Generar señal usando Smart Scalper Multi-Algoritmo
+            smart_signal = self.smart_scalper_engine.generate_signal(
+                symbol, highs, lows, closes, volumes
             )
             
             return RealtimeTechnicalIndicators(
                 symbol=symbol,
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=smart_signal.timestamp,
                 rsi=round(rsi, 2),
                 rsi_status=rsi_status,
                 volume_sma=round(volume_sma, 2),
                 volume_ratio=round(volume_ratio, 2),
                 volume_spike=volume_spike,
-                macd=round(macd[-1], 6),
-                macd_signal=round(macd_signal[-1], 6),
-                macd_histogram=round(macd_hist[-1], 6),
+                macd=round(macd, 6),
+                macd_signal=round(macd_signal, 6),
+                macd_histogram=round(macd_hist, 6),
                 ema_9=round(ema_9, 6),
                 ema_21=round(ema_21, 6),
                 ema_50=round(ema_50, 6),
                 atr=round(atr, 6),
-                smart_scalper_signal=signal,
-                confidence=round(confidence, 3)
+                smart_scalper_signal=smart_signal.signal,
+                confidence=round(smart_signal.confidence, 3),
+                # Smart Scalper Multi-Algorithm metadata
+                algorithm_used=smart_signal.algorithm_used,
+                conditions_met=smart_signal.conditions_met,
+                market_condition=smart_signal.market_condition.value,
+                risk_score=round(smart_signal.risk_score, 3)
             )
             
         except Exception as e:
             logger.error(f"❌ Error calculando indicadores {symbol}: {e}")
             raise
 
-    def _generate_smart_scalper_signal(self, rsi: float, rsi_status: str, 
-                                     volume_spike: bool, volume_ratio: float, 
-                                     atr: float, current_price: float) -> tuple[str, float]:
-        """Generar señal Smart Scalper basada en algoritmo documentado"""
-        
-        # Condiciones principales del algoritmo
-        rsi_oversold = rsi < 30
-        rsi_overbought = rsi > 70
-        volume_confirmed = volume_spike
-        
-        # Evaluación de volatilidad (ATR bajo es mejor para scalping)
-        volatility_acceptable = atr < (current_price * 0.002)  # ATR < 0.2% del precio
-        
-        signal = "HOLD"
-        confidence = 0.5
-        
-        # Señal de compra
-        if rsi_oversold and volume_confirmed:
-            signal = "BUY"
-            confidence = 0.85 if volatility_acceptable else 0.75
-        elif rsi_oversold:
-            signal = "WEAK_BUY"
-            confidence = 0.65
-        
-        # Señal de venta
-        elif rsi_overbought and volume_confirmed:
-            signal = "SELL"
-            confidence = 0.82 if volatility_acceptable else 0.72
-        elif rsi_overbought:
-            signal = "WEAK_SELL"
-            confidence = 0.62
-        
-        # Ajustar confianza por volumen adicional
-        if volume_ratio > 2.0:
-            confidence += 0.05
-        elif volume_ratio > 3.0:
-            confidence += 0.10
-        
-        confidence = min(confidence, 0.95)  # Cap en 95%
-        
-        return signal, confidence
+# ✅ Función eliminada - Usando Smart Scalper Multi-Algoritmo
 
     async def subscribe_multiple_symbols(self, symbols: List[str], interval: str = "1m") -> List[str]:
         """Suscribirse a múltiples símbolos simultáneamente"""
