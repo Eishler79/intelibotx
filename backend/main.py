@@ -300,13 +300,7 @@ try:
 except Exception as e:
     print(f"⚠️ Could not load testnet routes: {e}")
 
-# Load smart trade routes
-try:
-    from routes.smart_trade_routes import router as smart_trade_router
-    app.include_router(smart_trade_router, prefix="/api")
-    print("✅ Smart trade routes loaded")
-except Exception as e:
-    print(f"⚠️ Could not load smart trade routes: {e}")
+# Smart trade routes removed - now using Smart Scalper Engine in bots.py
 
 # Load bots routes last (newest/most complex)
 try:

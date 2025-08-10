@@ -16,5 +16,41 @@
     "reason": "Score bajo, se\u00f1ales bajistas predominantes",
     "timestamp": "2025-07-03T17:05:55.726877",
     "status": "executed_sell"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "stake": 20.0,
+    "action": "short",
+    "reason": "Score bajo, se\u00f1ales bajistas predominantes",
+    "timestamp": "2025-08-10T23:30:40.231183",
+    "status": "executed_sell"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "stake": 20.0,
+    "action": "short",
+    "reason": "Score bajo, se\u00f1ales bajistas predominantes",
+    "timestamp": "2025-08-10T23:30:54.401013",
+    "status": "executed_sell"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "stake": 20.0,
+    "action": "short",
+    "reason": "Score bajo, se\u00f1ales bajistas predominantes",
+    "timestamp": "2025-08-10T23:31:43.869102",
+    "status": "executed_sell"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "stake": 20.0,
+    "action": "short",
+    "reason": "Score bajo, se\u00f1ales bajistas predominantes",
+    "timestamp": "2025-08-10T23:32:02.723779",
+    "status": "executed_sell"
   }
 ]
