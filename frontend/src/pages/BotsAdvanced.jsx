@@ -598,36 +598,36 @@ export default function BotsAdvanced() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0D0F1C] text-white p-6">
+      <div className="min-h-screen bg-intelibot-bg-primary text-intelibot-text-primary p-6">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-intelibot-accent-gold"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0F1C] text-white p-6">
+    <div className="min-h-screen bg-gradient-intelibot-primary text-intelibot-text-primary p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header con Tabs */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-intelibot-accent-gold to-intelibot-accent-gold-hover bg-clip-text text-transparent">
               🤖 InteliBots AI
             </h1>
-            <p className="text-gray-400 mt-2">Dashboard avanzado superior a 3Commas</p>
+            <p className="text-intelibot-text-secondary mt-2">Dashboard avanzado superior a 3Commas</p>
           </div>
           <div className="flex space-x-3">
             <Button 
               onClick={() => setShowEnhancedModal(true)}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+              className="bg-gradient-intelibot-gold text-intelibot-text-on-gold shadow-intelibot-gold hover:scale-105 transition-transform"
             >
               🚀 Crear Bot Enhanced
             </Button>
             <Button 
               onClick={() => setShowTemplates(true)}
               variant="outline"
-              className="border-purple-500 text-purple-400 hover:bg-purple-500/10"
+              className="border-intelibot-accent-gold text-intelibot-accent-gold hover:bg-intelibot-accent-gold-light"
             >
               📋 Templates
             </Button>
@@ -639,14 +639,14 @@ export default function BotsAdvanced() {
           <Button
             variant={activeTab === 'dashboard' ? 'default' : 'outline'}
             onClick={() => setActiveTab('dashboard')}
-            className={activeTab === 'dashboard' ? 'bg-blue-600 text-white' : 'text-gray-300 border-gray-600 hover:text-white'}
+            className={activeTab === 'dashboard' ? 'bg-intelibot-accent-gold text-intelibot-text-on-gold' : 'text-intelibot-text-secondary border-intelibot-border-secondary hover:text-intelibot-accent-gold'}
           >
             Dashboard IA
           </Button>
           <Button
             variant={activeTab === 'history' ? 'default' : 'outline'}
             onClick={() => setActiveTab('history')}
-            className={activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-gray-300 border-gray-600 hover:text-white'}
+            className={activeTab === 'history' ? 'bg-intelibot-accent-gold text-intelibot-text-on-gold' : 'text-intelibot-text-secondary border-intelibot-border-secondary hover:text-intelibot-accent-gold'}
             disabled={!selectedBotId}
           >
             Historial de Trading
@@ -658,52 +658,52 @@ export default function BotsAdvanced() {
           <>
             {/* Métricas Globales DINÁMICAS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <Card className="bg-gray-900/50 border-gray-700/50 backdrop-blur-sm">
+              <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-gray-400 text-sm">Total PnL</p>
-                      <p className={`text-2xl font-bold ${parseFloat(dynamicMetrics.totalPnL) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <p className="text-intelibot-text-muted text-sm">Total PnL</p>
+                      <p className={`text-2xl font-bold ${parseFloat(dynamicMetrics.totalPnL) >= 0 ? 'text-intelibot-success-green' : 'text-intelibot-error-red'}`}>
                         {parseFloat(dynamicMetrics.totalPnL) >= 0 ? '+' : ''}${dynamicMetrics.totalPnL}
                       </p>
                     </div>
-                    <TrendingUp className="text-green-400" size={24} />
+                    <TrendingUp className={parseFloat(dynamicMetrics.totalPnL) >= 0 ? 'text-intelibot-success-green' : 'text-intelibot-error-red'} size={24} />
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-gray-900/50 border-gray-700/50 backdrop-blur-sm">
+              <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-gray-400 text-sm">Bots Activos</p>
-                      <p className="text-2xl font-bold text-blue-400">{dynamicMetrics.activeBots}</p>
+                      <p className="text-intelibot-text-muted text-sm">Bots Activos</p>
+                      <p className="text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.activeBots}</p>
                     </div>
-                    <Activity className="text-blue-400" size={24} />
+                    <Activity className="text-intelibot-accent-gold" size={24} />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900/50 border-gray-700/50 backdrop-blur-sm">
+              <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-gray-400 text-sm">Sharpe Promedio</p>
-                      <p className="text-2xl font-bold text-yellow-400">{dynamicMetrics.avgSharpe}</p>
+                      <p className="text-intelibot-text-muted text-sm">Sharpe Promedio</p>
+                      <p className="text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.avgSharpe}</p>
                     </div>
-                    <BarChart3 className="text-yellow-400" size={24} />
+                    <BarChart3 className="text-intelibot-accent-gold" size={24} />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900/50 border-gray-700/50 backdrop-blur-sm">
+              <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-gray-400 text-sm">Win Rate</p>
-                      <p className="text-2xl font-bold text-purple-400">{dynamicMetrics.avgWinRate}%</p>
+                      <p className="text-intelibot-text-muted text-sm">Win Rate</p>
+                      <p className="text-2xl font-bold text-intelibot-success-green">{dynamicMetrics.avgWinRate}%</p>
                     </div>
-                    <TrendingUp className="text-purple-400" size={24} />
+                    <TrendingUp className="text-intelibot-success-green" size={24} />
                   </div>
                 </CardContent>
               </Card>

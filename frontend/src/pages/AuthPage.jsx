@@ -82,34 +82,28 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)'
-    }}>
+    <div className="min-h-screen bg-gradient-intelibot-primary">
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="max-w-md w-full">
           <div 
-            className="rounded-2xl p-8 shadow-2xl backdrop-blur-xl"
+            className="rounded-2xl p-8 shadow-intelibot-card backdrop-blur-xl border"
             style={{
-              background: 'rgba(30, 58, 138, 0.85)',
+              background: 'rgba(26, 31, 58, 0.85)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
-              boxShadow: '0 8px 32px rgba(30, 58, 138, 0.4)'
+              borderColor: 'rgba(247, 147, 26, 0.3)'
             }}
           >
             {/* Header */}
             <div className="text-center mb-8">
               <div 
-                className="inline-flex items-center justify-center w-16 h-16 rounded-xl mb-4"
-                style={{
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)'
-                }}
+                className="inline-flex items-center justify-center w-16 h-16 rounded-xl mb-4 bg-gradient-intelibot-gold shadow-intelibot-gold"
               >
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold text-white mb-2">InteliBotX</h1>
-              <p className="text-gray-300">
+              <h1 className="text-3xl font-bold text-intelibot-text-primary mb-2">InteliBotX</h1>
+              <p className="text-intelibot-text-secondary">
                 Sign in to your account
               </p>
             </div>
@@ -120,13 +114,13 @@ const AuthPage = () => {
             {/* Divider */}
             <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t" style={{ borderColor: 'rgba(59, 130, 246, 0.3)' }}></div>
+                <div className="w-full border-t border-intelibot-border-primary"></div>
               </div>
               <div className="relative flex justify-center text-sm">
                 <span 
-                  className="px-4 text-sm text-gray-400"
+                  className="px-4 text-sm text-intelibot-text-muted"
                   style={{ 
-                    background: 'rgba(30, 58, 138, 0.85)'
+                    background: 'rgba(26, 31, 58, 0.85)'
                   }}
                 >
                   or
@@ -136,12 +130,12 @@ const AuthPage = () => {
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 rounded-lg bg-red-100 border border-red-200">
+              <div className="mb-6 p-4 rounded-lg bg-intelibot-error-red-light border border-intelibot-error-red">
                 <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 mr-3 text-intelibot-error-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm text-red-700">{error}</span>
+                  <span className="text-sm text-intelibot-error-red">{error}</span>
                 </div>
               </div>
             )}
@@ -237,28 +231,19 @@ const AuthPage = () => {
                 />
               </div>
 
-              {/* Sign In Button */}
+              {/* Sign In Button - TU DORADO FAVORITO */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
-                  color: '#ffffff',
-                  border: 'none'
-                }}
+                className="w-full font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-intelibot-gold text-intelibot-text-on-gold shadow-intelibot-gold hover:shadow-lg hover:scale-105"
                 onMouseEnter={(e) => {
                   if (!loading) {
-                    e.target.style.background = 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)';
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 4px 20px rgba(139, 92, 246, 0.3)';
+                    e.target.style.transform = 'translateY(-1px) scale(1.02)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!loading) {
-                    e.target.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
+                    e.target.style.transform = 'translateY(0) scale(1)';
                   }
                 }}
               >
