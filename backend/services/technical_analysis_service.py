@@ -9,12 +9,18 @@ Eduard Guzmán - InteliBotX
 import asyncio
 import pandas as pd
 import numpy as np
-import talib
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 import logging
 from services.binance_real_data import BinanceRealDataService
+
+# Alternative TA functions (Railway compatible)
+from services.ta_alternative import (
+    calculate_rsi, get_rsi_status, calculate_sma, calculate_ema,
+    calculate_atr, detect_volume_spike, calculate_volume_sma,
+    calculate_bollinger_bands, calculate_price_change
+)
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)

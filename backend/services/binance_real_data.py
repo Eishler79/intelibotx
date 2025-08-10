@@ -16,7 +16,12 @@ import logging
 import time
 import json
 from dataclasses import dataclass
-import talib
+
+# Alternative TA functions (Railway compatible)
+from services.ta_alternative import (
+    calculate_rsi, get_rsi_status, calculate_sma, calculate_ema,
+    calculate_atr, detect_volume_spike, calculate_volume_sma
+)
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -222,39 +227,33 @@ class BinanceRealDataService:
                 logger.warning(f"⚠️ Datos insuficientes para {symbol}, usando fallback")
                 return self._generate_fallback_indicators(symbol)
 
-            # Convertir a arrays numpy para TA-Lib
-            high = df['high'].values
-            low = df['low'].values
-            close = df['close'].values
-            volume = df['volume'].values
+            # Convertir a listas para funciones alternativas (Railway compatible)
+            high = df['high'].tolist()
+            low = df['low'].tolist()
+            close = df['close'].tolist()
+            volume = df['volume'].tolist()
 
-            # 📊 RSI (14 períodos)
-            rsi = talib.RSI(close, timeperiod=14)
-            current_rsi = rsi[-1] if not np.isnan(rsi[-1]) else 50.0
+            # 📊 RSI (14 períodos) - usando función alternativa
+            current_rsi = calculate_rsi(close, period=14)
 
-            # 📈 MACD
-            macd, macd_signal, macd_hist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
-            current_macd = macd[-1] if not np.isnan(macd[-1]) else 0.0
-            current_macd_signal = macd_signal[-1] if not np.isnan(macd_signal[-1]) else 0.0
-            current_macd_hist = macd_hist[-1] if not np.isnan(macd_hist[-1]) else 0.0
+            # 📈 MACD - simplificado con EMAs
+            ema_12 = calculate_ema(close, 12)
+            ema_26 = calculate_ema(close, 26)
+            current_macd = ema_12 - ema_26
+            current_macd_signal = calculate_ema([current_macd] * 9, 9)  # Aproximación
+            current_macd_hist = current_macd - current_macd_signal
 
-            # 📊 EMAs
-            ema_9 = talib.EMA(close, timeperiod=9)
-            ema_21 = talib.EMA(close, timeperiod=21)
-            ema_50 = talib.EMA(close, timeperiod=50)
+            # 📊 EMAs - usando funciones alternativas
+            current_ema_9 = calculate_ema(close, 9)
+            current_ema_21 = calculate_ema(close, 21)
+            current_ema_50 = calculate_ema(close, 50)
 
-            current_ema_9 = ema_9[-1] if not np.isnan(ema_9[-1]) else close[-1]
-            current_ema_21 = ema_21[-1] if not np.isnan(ema_21[-1]) else close[-1]
-            current_ema_50 = ema_50[-1] if not np.isnan(ema_50[-1]) else close[-1]
-
-            # 📊 Volume Analysis
-            volume_sma = talib.SMA(volume, timeperiod=20)
-            current_volume_sma = volume_sma[-1] if not np.isnan(volume_sma[-1]) else volume[-1]
+            # 📊 Volume Analysis - usando función alternativa
+            current_volume_sma = calculate_volume_sma(volume, period=20)
             current_volume_ratio = volume[-1] / current_volume_sma if current_volume_sma > 0 else 1.0
 
-            # ⚡ ATR (Average True Range)
-            atr = talib.ATR(high, low, close, timeperiod=14)
-            current_atr = atr[-1] if not np.isnan(atr[-1]) else close[-1] * 0.01
+            # ⚡ ATR (Average True Range) - usando función alternativa
+            current_atr = calculate_atr(high, low, close, period=14)
 
             # 📈 Volatility
             volatility = current_atr / close[-1] if close[-1] > 0 else 0.01

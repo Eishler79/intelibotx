@@ -10,7 +10,6 @@ import asyncio
 import json
 import logging
 import websockets
-import talib
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Any, Optional, Callable
@@ -18,6 +17,12 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 from collections import deque
 import os
+
+# Alternative TA functions (Railway compatible)
+from services.ta_alternative import (
+    calculate_rsi, get_rsi_status, calculate_sma, calculate_ema,
+    calculate_atr, detect_volume_spike, calculate_volume_sma
+)
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -172,33 +177,34 @@ class BinanceWebSocketService:
             if len(klines) < 50:
                 raise ValueError(f"Insuficientes datos para cálculo: {len(klines)}")
             
-            # Convertir a arrays para TA-Lib
-            closes = np.array([k.close_price for k in klines])
-            highs = np.array([k.high_price for k in klines])
-            lows = np.array([k.low_price for k in klines])
-            volumes = np.array([k.volume for k in klines])
+            # Convertir a listas para funciones alternativas
+            closes = [k.close_price for k in klines]
+            highs = [k.high_price for k in klines]
+            lows = [k.low_price for k in klines]
+            volumes = [k.volume for k in klines]
             
-            # Calcular indicadores
-            rsi = talib.RSI(closes, timeperiod=14)[-1]
-            volume_sma = talib.SMA(volumes, timeperiod=20)[-1]
+            # Calcular indicadores usando funciones alternativas (Railway compatible)
+            rsi = calculate_rsi(closes, period=14)
+            volume_sma = calculate_volume_sma(volumes, period=20)
             volume_ratio = volumes[-1] / volume_sma if volume_sma > 0 else 1.0
             
-            macd, macd_signal, macd_hist = talib.MACD(closes)
-            ema_9 = talib.EMA(closes, timeperiod=9)[-1]
-            ema_21 = talib.EMA(closes, timeperiod=21)[-1]
-            ema_50 = talib.EMA(closes, timeperiod=50)[-1]
-            atr = talib.ATR(highs, lows, closes, timeperiod=14)[-1]
+            # Simplificar MACD para Railway (usar EMAs)
+            ema_12 = calculate_ema(closes, 12)
+            ema_26 = calculate_ema(closes, 26)
+            macd = ema_12 - ema_26
+            macd_signal = calculate_ema([macd] * 9, 9)  # Aproximación simple
+            macd_hist = macd - macd_signal
             
-            # Determinar estado RSI
-            if rsi < 30:
-                rsi_status = "OVERSOLD"
-            elif rsi > 70:
-                rsi_status = "OVERBOUGHT"
-            else:
-                rsi_status = "NEUTRAL"
+            ema_9 = calculate_ema(closes, 9)
+            ema_21 = calculate_ema(closes, 21)
+            ema_50 = calculate_ema(closes, 50)
+            atr = calculate_atr(highs, lows, closes, period=14)
             
-            # Detectar spike de volumen
-            volume_spike = volume_ratio > 1.5
+            # Determinar estado RSI usando función alternativa
+            rsi_status = get_rsi_status(rsi)
+            
+            # Detectar spike de volumen usando función alternativa
+            volume_spike, volume_ratio = detect_volume_spike(volumes)
             
             # Generar señal Smart Scalper
             signal, confidence = self._generate_smart_scalper_signal(
