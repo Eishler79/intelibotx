@@ -339,6 +339,30 @@ try:
     print("✅ Trading history routes loaded successfully")
 except Exception as e:
     print(f"⚠️ Could not load trading history routes: {e}")
+
+# Load execution metrics routes (NEW - Real trading metrics)
+try:
+    from routes.execution_metrics import router as execution_metrics_router
+    app.include_router(execution_metrics_router)
+    print("✅ Execution metrics routes loaded successfully")
+except Exception as e:
+    print(f"⚠️ Could not load execution metrics routes: {e}")
+
+# Load real trading routes (NEW - Real trading with technical analysis)
+try:
+    from routes.real_trading_routes import router as real_trading_router
+    app.include_router(real_trading_router)
+    print("✅ Real trading routes loaded successfully")
+except Exception as e:
+    print(f"⚠️ Could not load real trading routes: {e}")
+
+# Load WebSocket routes (NEW - Real-time data streaming)
+try:
+    from routes.websocket_routes import router as websocket_router
+    app.include_router(websocket_router)
+    print("✅ WebSocket routes loaded successfully")
+except Exception as e:
+    print(f"⚠️ Could not load WebSocket routes: {e}")
     
     # Fallback endpoints for trading history
     @app.get("/api/bots/{bot_id}/orders")

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import BotControlPanel from "@/components/BotControlPanel";
 import AdvancedMetrics from "@/components/AdvancedMetrics";
+import SmartScalperMetrics from "@/components/SmartScalperMetrics";
+import LatencyMonitor from "@/components/LatencyMonitor";
 import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
 import LiveTradingFeed from "@/components/LiveTradingFeed";
 import TradingHistory from "../components/TradingHistory";
@@ -801,12 +803,19 @@ export default function BotsAdvanced() {
                   />
                 </div>
 
-                {/* Métricas Avanzadas Completas */}
-                <AdvancedMetrics 
-                  bot={selectedBot}
-                  equityData={selectedBot.metrics.equity}
-                  tradeHistory={selectedBot.metrics.trades}
-                />
+                {/* Métricas Específicas por Estrategia */}
+                {selectedBot.strategy === 'Smart Scalper' ? (
+                  <SmartScalperMetrics 
+                    bot={selectedBot}
+                    realTimeData={selectedBot.realTimeData}
+                  />
+                ) : (
+                  <AdvancedMetrics 
+                    bot={selectedBot}
+                    equityData={selectedBot.metrics.equity}
+                    tradeHistory={selectedBot.metrics.trades}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
