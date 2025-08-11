@@ -27,10 +27,11 @@ def create_sample_trading_operations(session: Session, user_id: int = 1):
     # Símbolos que usa el sistema actual
     symbols = ["ETHUSDT", "SOLUSDT", "BTCUSDT", "ADAUSDT", "DOTUSDT"]
     
-    # Algoritmos del Smart Scalper
+    # Algoritmos reales del Smart Scalper (del sistema avanzado probado)
     algorithms = [
-        "EMA_CROSSOVER", "WYCKOFF_SPRING", "RSI_DIVERGENCE", 
-        "LIQUIDITY_GRAB_FADE", "SUPPORT_BOUNCE", "MA_ALIGNMENT"
+        "rsi_oversold", "liquidity_grab_fade", "support_bounce", 
+        "ma_alignment", "bollinger_squeeze", "volume_breakout",
+        "wyckoff_spring", "stop_hunt_reversal", "order_block_retest"
     ]
     
     # Señales típicas

@@ -432,3 +432,180 @@ async def get_exchange_balance(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get exchange balance"
         )
+
+
+@router.get("/exchanges/{exchange_id}/market-types")
+async def get_exchange_market_types(
+    exchange_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+) -> Dict[str, Any]:
+    """
+    🏛️ Obtener tipos de mercado disponibles por exchange
+    
+    Cada exchange tiene diferentes tipos de mercado:
+    - Binance: SPOT, FUTURES, MARGIN, LEVERAGED_TOKENS
+    - ByBit: SPOT, LINEAR, INVERSE, OPTION
+    - KuCoin: SPOT, FUTURES, MARGIN
+    - OKX: SPOT, SWAP, FUTURES, OPTIONS
+    """
+    try:
+        # Get user exchange
+        user_exchange = session.get(UserExchange, exchange_id)
+        if not user_exchange or user_exchange.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Exchange not found"
+            )
+        
+        # Market types by exchange
+        exchange_market_types = {
+            "binance": {
+                "market_types": [
+                    {
+                        "value": "SPOT",
+                        "label": "SPOT - Trading sin apalancamiento",
+                        "description": "Trading tradicional sin apalancamiento",
+                        "max_leverage": 1,
+                        "supports_margin": False
+                    },
+                    {
+                        "value": "FUTURES_USDT",
+                        "label": "FUTURES USDT - Perpetuos USDT",
+                        "description": "Contratos perpetuos liquidados en USDT",
+                        "max_leverage": 125,
+                        "supports_margin": True
+                    },
+                    {
+                        "value": "FUTURES_COIN",
+                        "label": "FUTURES COIN - Perpetuos Coin",
+                        "description": "Contratos perpetuos liquidados en cripto",
+                        "max_leverage": 125,
+                        "supports_margin": True
+                    },
+                    {
+                        "value": "MARGIN",
+                        "label": "MARGIN - Trading con margen",
+                        "description": "Trading con margen cross/isolated",
+                        "max_leverage": 10,
+                        "supports_margin": True
+                    }
+                ]
+            },
+            "bybit": {
+                "market_types": [
+                    {
+                        "value": "SPOT",
+                        "label": "SPOT - Trading sin apalancamiento",
+                        "description": "Trading tradicional sin apalancamiento",
+                        "max_leverage": 1,
+                        "supports_margin": False
+                    },
+                    {
+                        "value": "LINEAR",
+                        "label": "LINEAR - Perpetuos USDT",
+                        "description": "Contratos perpetuos lineales USDT",
+                        "max_leverage": 100,
+                        "supports_margin": True
+                    },
+                    {
+                        "value": "INVERSE",
+                        "label": "INVERSE - Perpetuos Inversos",
+                        "description": "Contratos perpetuos inversos",
+                        "max_leverage": 100,
+                        "supports_margin": True
+                    },
+                    {
+                        "value": "OPTION",
+                        "label": "OPTION - Opciones",
+                        "description": "Trading de opciones",
+                        "max_leverage": 1,
+                        "supports_margin": False
+                    }
+                ]
+            },
+            "kucoin": {
+                "market_types": [
+                    {
+                        "value": "SPOT",
+                        "label": "SPOT - Trading sin apalancamiento",
+                        "description": "Trading tradicional sin apalancamiento",
+                        "max_leverage": 1,
+                        "supports_margin": False
+                    },
+                    {
+                        "value": "FUTURES",
+                        "label": "FUTURES - Contratos Futuros",
+                        "description": "Contratos de futuros con apalancamiento",
+                        "max_leverage": 100,
+                        "supports_margin": True
+                    },
+                    {
+                        "value": "MARGIN",
+                        "label": "MARGIN - Trading con margen",
+                        "description": "Trading con margen",
+                        "max_leverage": 10,
+                        "supports_margin": True
+                    }
+                ]
+            },
+            "okx": {
+                "market_types": [
+                    {
+                        "value": "SPOT",
+                        "label": "SPOT - Trading sin apalancamiento",
+                        "description": "Trading tradicional sin apalancamiento",
+                        "max_leverage": 1,
+                        "supports_margin": False
+                    },
+                    {
+                        "value": "SWAP",
+                        "label": "SWAP - Perpetuos",
+                        "description": "Contratos perpetuos",
+                        "max_leverage": 125,
+                        "supports_margin": True
+                    },
+                    {
+                        "value": "FUTURES",
+                        "label": "FUTURES - Contratos Futuros",
+                        "description": "Contratos de futuros con vencimiento",
+                        "max_leverage": 125,
+                        "supports_margin": True
+                    },
+                    {
+                        "value": "OPTIONS",
+                        "label": "OPTIONS - Opciones",
+                        "description": "Trading de opciones",
+                        "max_leverage": 1,
+                        "supports_margin": False
+                    }
+                ]
+            }
+        }
+        
+        # Get market types for exchange
+        exchange_name = user_exchange.exchange_name.lower()
+        market_types_data = exchange_market_types.get(exchange_name)
+        
+        if not market_types_data:
+            # Fallback para exchanges no mapeados
+            market_types_data = exchange_market_types["binance"]
+            logger.warning(f"Market types not mapped for {exchange_name}, using Binance fallback")
+        
+        return {
+            "success": True,
+            "exchange_id": exchange_id,
+            "exchange_name": user_exchange.exchange_name,
+            "is_testnet": user_exchange.is_testnet,
+            "market_types": market_types_data["market_types"],
+            "total_types": len(market_types_data["market_types"])
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting market types for exchange {exchange_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get market types"
+        )

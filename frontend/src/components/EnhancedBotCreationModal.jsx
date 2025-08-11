@@ -7,6 +7,10 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
   const [error, setError] = useState('');
   const [selectedExchange, setSelectedExchange] = useState(null);
   const [realTimeData, setRealTimeData] = useState(null);
+  const [availableSymbols, setAvailableSymbols] = useState([]);
+  const [symbolsLoading, setSymbolsLoading] = useState(false);
+  const [marketTypes, setMarketTypes] = useState([]);
+  const [marketTypesLoading, setMarketTypesLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -55,6 +59,20 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     }
   }, [selectedTemplate]);
 
+  // Cargar símbolos disponibles cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && availableSymbols.length === 0) {
+      loadAvailableSymbols();
+    }
+  }, [isOpen]);
+
+  // Cargar market types cuando se selecciona exchange
+  useEffect(() => {
+    if (selectedExchange) {
+      loadMarketTypes();
+    }
+  }, [selectedExchange]);
+
   // Cargar datos reales cuando se selecciona exchange
   useEffect(() => {
     if (selectedExchange && formData.symbol) {
@@ -62,39 +80,199 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     }
   }, [selectedExchange, formData.symbol]);
 
+  const loadAvailableSymbols = async () => {
+    setSymbolsLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/available-symbols`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.symbols && Array.isArray(data.symbols)) {
+          // Filtrar solo pares USDT populares para mejor UX
+          const usdtPairs = data.symbols
+            .filter(symbol => symbol.endsWith('USDT'))
+            .sort((a, b) => {
+              // Priorizar pares populares
+              const popular = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT', 'XRPUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT', 'MATICUSDT', 'UNIUSDT', 'DOGEUSDT'];
+              const aIndex = popular.indexOf(a);
+              const bIndex = popular.indexOf(b);
+              
+              if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+              if (aIndex !== -1) return -1;
+              if (bIndex !== -1) return 1;
+              return a.localeCompare(b);
+            });
+          
+          setAvailableSymbols(usdtPairs);
+          console.log(`✅ Loaded ${usdtPairs.length} USDT trading pairs from Binance`);
+        } else {
+          throw new Error('Invalid symbols data format');
+        }
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error loading symbols:', err);
+      setError(`Error cargando pares de trading: ${err.message}`);
+      
+      // Fallback a lista básica si falla la API
+      const fallbackSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT', 'XRPUSDT', 'DOTUSDT'];
+      setAvailableSymbols(fallbackSymbols);
+    } finally {
+      setSymbolsLoading(false);
+    }
+  };
+
+  const loadMarketTypes = async () => {
+    setMarketTypesLoading(true);
+    try {
+      const token = localStorage.getItem('intelibotx_token');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/user/exchanges/${selectedExchange.id}/market-types`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.market_types) {
+          setMarketTypes(data.market_types);
+          console.log(`✅ Loaded ${data.market_types.length} market types for ${data.exchange_name}`);
+          
+          // Si el market_type actual no está en la lista, resetear al primero
+          const currentTypeExists = data.market_types.some(mt => mt.value === formData.market_type);
+          if (!currentTypeExists && data.market_types.length > 0) {
+            setFormData(prev => ({
+              ...prev,
+              market_type: data.market_types[0].value,
+              leverage: data.market_types[0].max_leverage > 1 ? Math.min(prev.leverage, data.market_types[0].max_leverage) : 1
+            }));
+          }
+        } else {
+          throw new Error('Invalid market types data format');
+        }
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error loading market types:', err);
+      setError(`Error cargando tipos de mercado: ${err.message}`);
+      
+      // Fallback a tipos básicos si falla la API
+      const fallbackTypes = [
+        {
+          value: "SPOT",
+          label: "SPOT - Trading sin apalancamiento",
+          description: "Trading tradicional sin apalancamiento",
+          max_leverage: 1,
+          supports_margin: false
+        },
+        {
+          value: "FUTURES_USDT",
+          label: "FUTURES USDT - Perpetuos USDT",
+          description: "Contratos perpetuos liquidados en USDT",
+          max_leverage: 125,
+          supports_margin: true
+        }
+      ];
+      setMarketTypes(fallbackTypes);
+    } finally {
+      setMarketTypesLoading(false);
+    }
+  };
+
   const loadRealTimeData = async () => {
     try {
-      // Aquí iría la lógica para cargar precio actual y balance
-      // desde el exchange seleccionado usando la API
-      console.log('Loading real-time data for:', {
-        exchange: selectedExchange.exchange_name,
-        symbol: formData.symbol
-      });
+      const token = localStorage.getItem('intelibotx_token');
       
-      // Mock data dinámico basado en el símbolo seleccionado
-      const mockPrices = {
-        'BTCUSDT': 43250.50,
-        'ETHUSDT': 2650.75,
-        'BNBUSDT': 315.20,
-        'ADAUSDT': 0.485,
-        'SOLUSDT': 98.35,
-        'DOGEUSDT': 0.085,
-        'XRPUSDT': 0.635,
-        'DOTUSDT': 7.25,
-        'AVAXUSDT': 38.90,
-        'LINKUSDT': 14.75,
-        'MATICUSDT': 0.895,
-        'UNIUSDT': 6.35
-      };
+      // Intentar obtener precio real desde el exchange
+      let currentPrice = null;
+      let balance = 1000.00; // Default balance
+      
+      try {
+        // Obtener precio real desde Binance (fallback a cualquier exchange)
+        const priceResponse = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/binance-price/${formData.symbol}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        if (priceResponse.ok) {
+          const priceData = await priceResponse.json();
+          if (priceData.price) {
+            currentPrice = parseFloat(priceData.price);
+            console.log(`✅ Real price loaded for ${formData.symbol}: $${currentPrice}`);
+          }
+        }
+      } catch (priceErr) {
+        console.warn('Could not load real price, using fallback:', priceErr);
+      }
+      
+      // Si no se pudo obtener precio real, usar fallback inteligente
+      if (!currentPrice) {
+        const fallbackPrices = {
+          'BTCUSDT': 43250.50, 'ETHUSDT': 2650.75, 'BNBUSDT': 315.20,
+          'ADAUSDT': 0.485, 'SOLUSDT': 98.35, 'DOGEUSDT': 0.085,
+          'XRPUSDT': 0.635, 'DOTUSDT': 7.25, 'AVAXUSDT': 38.90,
+          'LINKUSDT': 14.75, 'MATICUSDT': 0.895, 'UNIUSDT': 6.35
+        };
+        currentPrice = fallbackPrices[formData.symbol] || 100.00;
+        console.log(`⚠️ Using fallback price for ${formData.symbol}: $${currentPrice}`);
+      }
+      
+      // Intentar obtener balance del exchange si es posible
+      try {
+        if (selectedExchange) {
+          const balanceResponse = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/user/exchanges/${selectedExchange.id}/balance`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          if (balanceResponse.ok) {
+            const balanceData = await balanceResponse.json();
+            if (balanceData.success && balanceData.balances) {
+              const usdtBalance = balanceData.balances.find(b => b.asset === 'USDT');
+              if (usdtBalance) {
+                balance = parseFloat(usdtBalance.free) || 1000.00;
+                console.log(`✅ Real balance loaded: ${balance} USDT`);
+              }
+            }
+          }
+        }
+      } catch (balanceErr) {
+        console.warn('Could not load real balance, using default:', balanceErr);
+      }
       
       setRealTimeData({
-        currentPrice: mockPrices[formData.symbol] || 100.00,
-        balance: 1000.00,
-        leverageLimits: { min: 1, max: 125 },
-        symbol: formData.symbol
+        currentPrice,
+        balance,
+        symbol: formData.symbol,
+        exchange: selectedExchange?.exchange_name || 'binance',
+        isReal: currentPrice !== null
       });
+      
     } catch (err) {
       console.error('Error loading real-time data:', err);
+      // Fallback completo en caso de error
+      setRealTimeData({
+        currentPrice: 100.00,
+        balance: 1000.00,
+        symbol: formData.symbol,
+        isReal: false
+      });
     }
   };
 
@@ -123,10 +301,33 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    
+    // Manejar cambio de market_type para ajustar leverage dinámicamente
+    if (name === 'market_type') {
+      const selectedType = marketTypes.find(mt => mt.value === value);
+      const maxLeverage = selectedType ? selectedType.max_leverage : 1;
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        leverage: Math.min(prev.leverage, maxLeverage) // Ajustar leverage si excede el máximo
+      }));
+    } else if (name === 'leverage') {
+      // Validar que el leverage no exceda el máximo del market type seleccionado
+      const selectedType = marketTypes.find(mt => mt.value === formData.market_type);
+      const maxLeverage = selectedType ? selectedType.max_leverage : 125;
+      const numValue = Math.min(Math.max(1, parseInt(value) || 1), maxLeverage);
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: numValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
   };
 
   const handleExchangeSelect = (exchange) => {
@@ -299,66 +500,106 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                 {/* Symbol */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Par de Trading
+                    Par de Trading {symbolsLoading && <span className="text-blue-400 text-xs">(Cargando...)</span>}
                   </label>
                   <select
                     name="symbol"
                     value={formData.symbol}
                     onChange={handleInputChange}
-                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    disabled={symbolsLoading}
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white disabled:opacity-50"
                   >
-                    <option value="BTCUSDT">BTC/USDT</option>
-                    <option value="ETHUSDT">ETH/USDT</option>
-                    <option value="BNBUSDT">BNB/USDT</option>
-                    <option value="ADAUSDT">ADA/USDT</option>
-                    <option value="SOLUSDT">SOL/USDT</option>
-                    <option value="DOGEUSDT">DOGE/USDT</option>
-                    <option value="XRPUSDT">XRP/USDT</option>
-                    <option value="DOTUSDT">DOT/USDT</option>
-                    <option value="AVAXUSDT">AVAX/USDT</option>
-                    <option value="LINKUSDT">LINK/USDT</option>
-                    <option value="MATICUSDT">MATIC/USDT</option>
-                    <option value="UNIUSDT">UNI/USDT</option>
+                    {availableSymbols.length > 0 ? (
+                      availableSymbols.map((symbol) => (
+                        <option key={symbol} value={symbol}>
+                          {symbol.replace('USDT', '/USDT')}
+                        </option>
+                      ))
+                    ) : (
+                      // Fallback si no hay símbolos cargados
+                      <>
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                        <option value="ADAUSDT">ADA/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                        <option value="XRPUSDT">XRP/USDT</option>
+                        <option value="DOTUSDT">DOT/USDT</option>
+                      </>
+                    )}
                   </select>
+                  {availableSymbols.length > 0 && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      {availableSymbols.length} pares disponibles desde Binance
+                    </p>
+                  )}
                 </div>
 
                 {/* Market Type y Leverage */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Tipo de Mercado
+                      Tipo de Mercado {marketTypesLoading && <span className="text-blue-400 text-xs">(Cargando...)</span>}
                     </label>
                     <select
                       name="market_type"
                       value={formData.market_type}
                       onChange={handleInputChange}
-                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      disabled={marketTypesLoading || !selectedExchange}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white disabled:opacity-50"
                     >
-                      <option value="SPOT">SPOT - Trading sin apalancamiento</option>
-                      <option value="FUTURES_USDT">FUTURES USDT - Perpetuos USDT</option>
-                      <option value="FUTURES_COIN">FUTURES COIN - Perpetuos Coin</option>
-                      <option value="MARGIN">MARGIN - Trading con margen</option>
-                      <option value="ISOLATED_MARGIN">ISOLATED MARGIN - Margen aislado</option>
-                      <option value="CROSS_MARGIN">CROSS MARGIN - Margen cruzado</option>
+                      {marketTypes.length > 0 ? (
+                        marketTypes.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))
+                      ) : (
+                        // Fallback si no hay tipos cargados
+                        <>
+                          <option value="SPOT">SPOT - Trading sin apalancamiento</option>
+                          <option value="FUTURES_USDT">FUTURES USDT - Perpetuos USDT</option>
+                          <option value="MARGIN">MARGIN - Trading con margen</option>
+                        </>
+                      )}
                     </select>
+                    {!selectedExchange && (
+                      <p className="text-xs text-yellow-400 mt-1">
+                        Selecciona un exchange para ver tipos disponibles
+                      </p>
+                    )}
+                    {selectedExchange && marketTypes.length > 0 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {marketTypes.length} tipos disponibles en {selectedExchange.exchange_name.toUpperCase()}
+                      </p>
+                    )}
                   </div>
                   
-                  {(formData.market_type.includes('FUTURES') || formData.market_type.includes('MARGIN')) && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Leverage {formData.market_type.includes('FUTURES') ? '(1-125x)' : '(1-10x)'}
-                      </label>
-                      <input
-                        type="number"
-                        name="leverage"
-                        value={formData.leverage}
-                        onChange={handleInputChange}
-                        min="1"
-                        max={formData.market_type.includes('FUTURES') ? "125" : "10"}
-                        className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                      />
-                    </div>
-                  )}
+                  {(() => {
+                    const selectedType = marketTypes.find(mt => mt.value === formData.market_type);
+                    const showLeverage = selectedType ? selectedType.supports_margin : false;
+                    const maxLeverage = selectedType ? selectedType.max_leverage : 1;
+                    
+                    return showLeverage && maxLeverage > 1 ? (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Leverage (1-{maxLeverage}x)
+                        </label>
+                        <input
+                          type="number"
+                          name="leverage"
+                          value={formData.leverage}
+                          onChange={handleInputChange}
+                          min="1"
+                          max={maxLeverage.toString()}
+                          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                          Max: {maxLeverage}x para {selectedType ? selectedType.label.split(' - ')[0] : 'este tipo'}
+                        </p>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
 
