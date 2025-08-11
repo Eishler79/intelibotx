@@ -158,9 +158,17 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           
           // 🎯 NUEVO: Obtener análisis completo del Smart Scalper con algoritmo real
           try {
-            smartScalperResponse = await fetch(`${BASE_URL}/api/run-smart-trade/${bot.symbol}?execute=false`, {
-              method: 'GET',
-              headers
+            smartScalperResponse = await fetch(`${BASE_URL}/api/run-smart-trade/${bot.symbol}`, {
+              method: 'POST',
+              headers: {
+                ...headers,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                scalper_mode: true,
+                quantity: 0.001,
+                execute_real: false
+              })
             });
           } catch (error) {
             console.warn('⚠️ Smart Scalper endpoint no disponible:', error);
