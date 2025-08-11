@@ -1,3 +1,4 @@
+// ✅ VERCEL SYNC FIX - File updated to resolve deployment syntax error
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
