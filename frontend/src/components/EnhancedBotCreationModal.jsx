@@ -196,7 +196,7 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
       try {
         // Obtener precio real desde Binance (fallback a cualquier exchange)
         const priceResponse = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/binance-price/${formData.symbol}`,
+          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/auth/binance-price/${formData.symbol}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
