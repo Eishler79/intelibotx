@@ -1,0 +1,13 @@
+VERCEL SYNC FORCE - 2025-08-11T14:15:00Z
+
+Este archivo fuerza un nuevo deployment en Vercel.
+Timestamp: Sun Aug 11 2025 14:15:00
+Commit objetivo: 1d6d1b8
+
+Cambios incluidos:
+- BotsAdvanced.jsx sintaxis corregida
+- LiveTradingFeed APIs persistentes  
+- Dashboard backend funcional
+- Autenticación JWT reparada
+
+Build local exitoso confirmado.
