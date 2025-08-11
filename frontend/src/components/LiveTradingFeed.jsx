@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Activity, 
   TrendingUp, 
@@ -8,25 +9,37 @@ import {
   DollarSign,
   Clock,
   Zap,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal
 } from "lucide-react";
 import { useLiveTradingFeed } from "../services/tradingOperationsService";
 
 export default function LiveTradingFeed({ bots }) {
   const [activeBots, setActiveBots] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [timeFilter, setTimeFilter] = useState(24); // hours
   
-  // 🔄 NUEVA API: Reemplaza lógica de memoria por API persistente
+  // 🔄 NUEVA API: Con paginación implementada
   const runningBotIds = bots.filter(bot => bot.status === 'RUNNING').map(bot => bot.id).join(',');
-  const { feed, loading, error, refetch } = useLiveTradingFeed({
-    limit: 50,
+  const { feed, totalCount, totalPages, loading, error, refetch } = useLiveTradingFeed({
+    page: currentPage,
+    limit: pageSize,
     bot_ids: runningBotIds || undefined,
-    hours: 24
+    hours: timeFilter
   });
 
   useEffect(() => {
     const runningBots = bots.filter(bot => bot.status === 'RUNNING');
     setActiveBots(runningBots);
   }, [bots]);
+
+  // Reset to page 1 when bots or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [runningBotIds, timeFilter, pageSize]);
 
   // ✅ BENEFICIO: Los trades ahora persisten entre sesiones
 
@@ -40,10 +53,29 @@ export default function LiveTradingFeed({ bots }) {
     return ((profitable / feed.length) * 100).toFixed(1);
   };
 
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages || 1, prev + 1));
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+  };
+
+  const handleTimeFilterChange = (hours) => {
+    setTimeFilter(hours);
+    setCurrentPage(1);
+  };
+
   return (
     <Card className="bg-gray-900/50 border-gray-700/50 backdrop-blur-sm">
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-4">
           <CardTitle className="text-lg flex items-center gap-2">
             <Activity className="text-green-400" size={20} />
             Trading en Vivo
@@ -63,6 +95,47 @@ export default function LiveTradingFeed({ bots }) {
               <div className="text-xs text-gray-400">Win: {getWinRate()}%</div>
             </div>
           </div>
+        </div>
+
+        {/* 📊 Controles de filtrado y paginación */}
+        <div className="flex justify-between items-center gap-4">
+          {/* Filtros de tiempo */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">Período:</span>
+            {[1, 6, 24, 168].map(hours => (
+              <Button
+                key={hours}
+                size="sm"
+                variant={timeFilter === hours ? "default" : "outline"}
+                onClick={() => handleTimeFilterChange(hours)}
+                className="text-xs px-2 py-1"
+              >
+                {hours === 1 ? '1h' : hours === 6 ? '6h' : hours === 24 ? '1d' : '7d'}
+              </Button>
+            ))}
+          </div>
+
+          {/* Selector de elementos por página */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">Mostrar:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+              className="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          {/* Info de paginación */}
+          {totalCount > 0 && (
+            <div className="text-sm text-gray-400">
+              {((currentPage - 1) * pageSize + 1)}-{Math.min(currentPage * pageSize, totalCount)} de {totalCount}
+            </div>
+          )}
         </div>
       </CardHeader>
       
@@ -167,6 +240,104 @@ export default function LiveTradingFeed({ bots }) {
                   </div>
                 </div>
               ))
+            )}
+
+            {/* 📄 Controles de navegación de páginas */}
+            {totalPages > 1 && !loading && !error && (
+              <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1"
+                  >
+                    <ChevronLeft size={16} />
+                    Anterior
+                  </Button>
+                  
+                  <div className="flex items-center gap-1 mx-3">
+                    {/* Páginas cercanas */}
+                    {currentPage > 2 && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(1)}
+                          className="px-2"
+                        >
+                          1
+                        </Button>
+                        {currentPage > 3 && <MoreHorizontal size={16} className="text-gray-400" />}
+                      </>
+                    )}
+                    
+                    {currentPage > 1 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        className="px-2"
+                      >
+                        {currentPage - 1}
+                      </Button>
+                    )}
+                    
+                    <Button size="sm" variant="default" className="px-2">
+                      {currentPage}
+                    </Button>
+                    
+                    {currentPage < totalPages && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        className="px-2"
+                      >
+                        {currentPage + 1}
+                      </Button>
+                    )}
+                    
+                    {currentPage < totalPages - 1 && (
+                      <>
+                        {currentPage < totalPages - 2 && <MoreHorizontal size={16} className="text-gray-400" />}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(totalPages)}
+                          className="px-2"
+                        >
+                          {totalPages}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-1"
+                  >
+                    Siguiente
+                    <ChevronRight size={16} />
+                  </Button>
+                </div>
+
+                {/* Refresh button */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={refetch}
+                  className="flex items-center gap-1"
+                  disabled={loading}
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  Actualizar
+                </Button>
+              </div>
             )}
           </div>
         )}

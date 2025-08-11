@@ -215,12 +215,15 @@ export const useTradingOperations = (botId, options = {}) => {
 };
 
 /**
- * Hook para live trading feed
+ * Hook para live trading feed con paginación
  */
 export const useLiveTradingFeed = (options = {}) => {
   const [feed, setFeed] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [totalCount, setTotalCount] = React.useState(0);
+  const [totalPages, setTotalPages] = React.useState(0);
+  const [currentPage, setCurrentPage] = React.useState(1);
 
   const fetchFeed = React.useCallback(async () => {
     try {
@@ -228,7 +231,10 @@ export const useLiveTradingFeed = (options = {}) => {
       const result = await getLiveTradingFeed(options);
       
       if (result.success) {
-        setFeed(result.feed);
+        setFeed(result.feed || []);
+        setTotalCount(result.pagination?.total_count || 0);
+        setTotalPages(result.pagination?.total_pages || 0);
+        setCurrentPage(result.pagination?.current_page || 1);
         setError(null);
       } else {
         throw new Error(result.message || 'Failed to fetch feed');
@@ -244,7 +250,7 @@ export const useLiveTradingFeed = (options = {}) => {
   React.useEffect(() => {
     fetchFeed();
     
-    // Auto-refresh cada 30 segundos
+    // Auto-refresh cada 30 segundos solo si no estamos paginando
     const interval = setInterval(fetchFeed, 30000);
     
     return () => clearInterval(interval);
@@ -254,6 +260,9 @@ export const useLiveTradingFeed = (options = {}) => {
     feed,
     loading,
     error,
+    totalCount,
+    totalPages,
+    currentPage,
     refetch: fetchFeed
   };
 };
