@@ -16,7 +16,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-produc
  */
 export const getDashboardSummary = async () => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('intelibotx_token');
     if (!token) {
       throw new Error('No authentication token found');
     }
@@ -46,7 +46,7 @@ export const getDashboardSummary = async () => {
  */
 export const getBalanceEvolution = async (days = 30, symbol = null) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('intelibotx_token');
     if (!token) {
       throw new Error('No authentication token found');
     }
@@ -80,7 +80,7 @@ export const getBalanceEvolution = async (days = 30, symbol = null) => {
  */
 export const getBotsPerformance = async (days = 7) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('intelibotx_token');
     if (!token) {
       throw new Error('No authentication token found');
     }
@@ -110,7 +110,7 @@ export const getBotsPerformance = async (days = 7) => {
  */
 export const getSymbolsAnalysis = async (days = 7) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('intelibotx_token');
     if (!token) {
       throw new Error('No authentication token found');
     }

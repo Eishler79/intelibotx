@@ -16,7 +16,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-produc
  */
 export const createTradingOperation = async (operationData) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('intelibotx_token');
     if (!token) {
       throw new Error('No authentication token found');
     }
@@ -48,7 +48,7 @@ export const createTradingOperation = async (operationData) => {
  */
 export const getBotTradingOperations = async (botId, options = {}) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('intelibotx_token');
     if (!token) {
       throw new Error('No authentication token found');
     }
@@ -85,7 +85,7 @@ export const getBotTradingOperations = async (botId, options = {}) => {
  */
 export const getTradingOperation = async (tradeId) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('intelibotx_token');
     if (!token) {
       throw new Error('No authentication token found');
     }
@@ -115,7 +115,7 @@ export const getTradingOperation = async (tradeId) => {
  */
 export const getLiveTradingFeed = async (options = {}) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('intelibotx_token');
     if (!token) {
       throw new Error('No authentication token found');
     }
