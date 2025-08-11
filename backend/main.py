@@ -32,6 +32,7 @@ async def startup_event():
         from models.user import User, UserSession
         from models.user_exchange import UserExchange
         from models.trading_order import TradingOrder
+        from routes.trading_operations import TradingOperation
         
         # Trading models re-enabled for real data functionality
         print("✅ Trading models loaded for real data functionality")
@@ -354,6 +355,14 @@ except Exception as e:
 try:
     from routes.websocket_routes import router as websocket_router
     app.include_router(websocket_router)
+    
+    # 🔄 Trading Operations - Sistema de Persistencia
+    try:
+        from routes.trading_operations import router as trading_operations_router
+        app.include_router(trading_operations_router)
+        print("📊 Trading Operations router loaded")
+    except Exception as e:
+        print(f"⚠️  Warning: Could not load Trading Operations router: {e}")
     print("✅ WebSocket routes loaded successfully")
 except Exception as e:
     print(f"⚠️ Could not load WebSocket routes: {e}")
