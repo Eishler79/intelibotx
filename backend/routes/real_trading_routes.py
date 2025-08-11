@@ -6,7 +6,7 @@ APIs para conectar frontend con sistema de trading real
 Eduard Guzmán - InteliBotX
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Header
 from fastapi.responses import JSONResponse
 from typing import Dict, List, Optional, Any
 from datetime import datetime
