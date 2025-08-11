@@ -654,9 +654,6 @@ export default function BotsAdvanced() {
           }
           
           console.log(`✅ Cargados ${botsData.length} bots desde el servidor`);
-        } else {
-          throw new Error('Error al cargar bots del servidor');
-        }
       } catch (error) {
         console.error("Error loading bots:", error);
         setBots([]);

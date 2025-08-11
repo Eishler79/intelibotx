@@ -14,7 +14,7 @@ import {
   ChevronRight,
   MoreHorizontal
 } from "lucide-react";
-import { useLiveTradingFeed } from "../services/tradingOperationsService";
+import { getLiveTradingFeed } from "../services/api";
 
 export default function LiveTradingFeed({ bots }) {
   const [activeBots, setActiveBots] = useState([]);
