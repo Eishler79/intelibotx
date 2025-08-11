@@ -50,6 +50,17 @@ class BotConfig(SQLModel, table=True):
     min_entry_price: Optional[float] = Field(default=None, description="Precio mínimo para entrada")
     max_orders_per_pair: int = Field(default=1, description="Máximo órdenes activas por par")
     
+    # Tipos de órdenes (NUEVO - CRÍTICO PARA ELIMINAR HARDCODING)
+    entry_order_type: str = Field(default="MARKET", description="Tipo orden entrada: MARKET, LIMIT, STOP_LIMIT")
+    exit_order_type: str = Field(default="MARKET", description="Tipo orden salida: MARKET, LIMIT")
+    tp_order_type: str = Field(default="LIMIT", description="Tipo orden Take Profit: LIMIT, MARKET")
+    sl_order_type: str = Field(default="STOP_MARKET", description="Tipo orden Stop Loss: STOP_MARKET, STOP_LIMIT")
+    trailing_stop: bool = Field(default=False, description="Activar trailing stop loss")
+    
+    # Controles operacionales (NUEVO - CRÍTICO PARA ELIMINAR HARDCODING)
+    max_open_positions: int = Field(default=3, description="Máximo posiciones simultáneas del bot")
+    cooldown_minutes: int = Field(default=30, description="Tiempo espera entre operaciones (minutos)")
+    
     # Estado y control
     active: bool = Field(default=True, description="Bot habilitado o no")
     status: str = Field(default="STOPPED", description="Estado actual: STOPPED, RUNNING, PAUSED, ERROR")

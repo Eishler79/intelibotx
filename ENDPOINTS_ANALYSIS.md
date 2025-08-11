@@ -15,12 +15,23 @@
 ### **🤖 Bot Management**
 ```bash
 GET    /api/bots                    # Lista bots del usuario
-POST   /api/create-bot             # Crear nuevo bot  
+POST   /api/create-bot             # Crear nuevo bot ✅ ACTUALIZADO - Risk Management campos  
 PUT    /api/bots/{bot_id}          # Actualizar bot
 DELETE /api/bots/{bot_id}          # Eliminar bot
 POST   /api/bots/{bot_id}/start    # Iniciar bot
 POST   /api/bots/{bot_id}/pause    # Pausar bot
 ```
+
+#### **🆕 ACTUALIZACIÓN CRÍTICA - Eliminación Hardcoding Risk Management (11-Agosto-2025)**
+El endpoint `/api/create-bot` ahora acepta y persiste TODOS los campos de Risk Management:
+- `entry_order_type`: "MARKET", "LIMIT", "STOP_LIMIT"
+- `exit_order_type`: "MARKET", "LIMIT" 
+- `tp_order_type`: "LIMIT", "MARKET"
+- `sl_order_type`: "STOP_MARKET", "STOP_LIMIT"
+- `trailing_stop`: true/false
+- `max_open_positions`: 1-10 posiciones simultáneas
+- `cooldown_minutes`: 5-120 minutos entre operaciones
+- `exchange_id`: FK a UserExchange (opcional)
 
 ### **📊 Trading Analysis**  
 ```bash

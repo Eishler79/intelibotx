@@ -422,6 +422,7 @@ async def create_bot(bot_data: dict):
             # Crear instancia de BotConfig con los datos recibidos
             bot = BotConfig(
                 user_id=default_user_id,  # ✅ FIX: Agregar user_id requerido
+                exchange_id=bot_data.get("exchange_id"),  # ✅ FIX: Agregar exchange_id opcional
                 name=bot_data.get("name", f"{bot_data.get('strategy', 'Smart Scalper')} Bot"),
                 symbol=symbol,
                 base_currency=base_currency,  # ✅ FIX: Required field
@@ -435,7 +436,16 @@ async def create_bot(bot_data: dict):
                 risk_percentage=bot_data.get("risk_percentage", 1.0),
                 market_type=bot_data.get("market_type", "spot"),
                 leverage=bot_data.get("leverage", 1),  # ✅ FIX: Add leverage field
-                margin_type=bot_data.get("margin_type", "ISOLATED")  # ✅ FIX: Add margin_type field
+                margin_type=bot_data.get("margin_type", "ISOLATED"),  # ✅ FIX: Add margin_type field
+                
+                # 🆕 NUEVOS CAMPOS - ELIMINAR HARDCODING EN FRONTEND
+                entry_order_type=bot_data.get("entry_order_type", "MARKET"),
+                exit_order_type=bot_data.get("exit_order_type", "MARKET"),
+                tp_order_type=bot_data.get("tp_order_type", "LIMIT"),
+                sl_order_type=bot_data.get("sl_order_type", "STOP_MARKET"),
+                trailing_stop=bot_data.get("trailing_stop", False),
+                max_open_positions=bot_data.get("max_open_positions", 3),
+                cooldown_minutes=bot_data.get("cooldown_minutes", 30)
             )
             
             session.add(bot)
