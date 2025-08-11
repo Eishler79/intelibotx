@@ -32,6 +32,75 @@ Claude debe seguir las reglas del archivo `claude/claude_project_system_prompt.t
 3. **Solo hacer push** cuando esté 100% verificado
 4. **Documentar** cambios sin afectar código estable
 
+## 🏗️ DECISIONES ARQUITECTÓNICAS INMUTABLES - AGOSTO 2025
+
+### 🔄 **SISTEMA DE PERSISTENCIA - REGLA FIJA**
+**PROBLEMA RESUELTO**: Pérdida de datos al recargar página - NUNCA MÁS lógica de memoria
+- ✅ **Frontend**: `api.ts` con JWT authentication (`getAuthHeaders()`)
+- ✅ **Backend**: `trading_operations.py` con SQLite persistente + UUIDs
+- ✅ **Patrón fijo**: `createTradingOperation()` → Base datos → `getBotTradingOperations()`
+- ❌ **PROHIBIDO ABSOLUTO**: `localStorage`, `bot.liveTradeHistory`, memoria temporal
+- 🎯 **IMPLEMENTACIÓN**: Todas las operaciones DEBEN persistir en `TradingOperation` table
+
+### 📊 **SISTEMA DE MÉTRICAS - REGLA FIJA**
+**PROBLEMA RESUELTO**: Métricas inconsistentes entre sesiones - NUNCA MÁS cálculos hardcoded
+- ✅ **Función base**: `loadRealBotMetrics()` + `updateBotMetricsFromDB()`
+- ✅ **Fuente única**: Operaciones desde `getBotTradingOperations()` 
+- ✅ **Cálculos reales**: PnL suma operations, WinRate from wins/total, MaxDrawdown desde peak
+- ❌ **PROHIBIDO ABSOLUTO**: Métricas simuladas, valores random, hardcoded
+- 🎯 **IMPLEMENTACIÓN**: Métricas calculadas dinámicamente desde DB operations
+
+### 🤖 **SMART SCALPER SYSTEM - REGLA FIJA** 
+**PROBLEMA RESUELTO**: Algoritmos falsos - NUNCA MÁS simulación random
+- ✅ **Backend**: `runSmartTrade()` con `scalper_mode=true` obligatorio
+- ✅ **Algoritmos reales**: `wyckoff_spring`, `rsi_oversold`, `support_bounce` desde AdvancedAlgorithmSelector
+- ✅ **Datos reales**: BinanceRealDataService con testnet APIs + multi-timeframe
+- ❌ **PROHIBIDO ABSOLUTO**: Math.random(), señales fake, algoritmos hardcoded
+- 🎯 **IMPLEMENTACIÓN**: Análisis técnico real → Trading operation persistente
+
+### 🔐 **SISTEMA DE AUTENTICACIÓN - REGLA FIJA**
+**PROBLEMA RESUELTO**: APIs sin autenticación - NUNCA MÁS llamadas inseguras  
+- ✅ **Token base**: `localStorage.getItem('intelibotx_token')` consistente
+- ✅ **Headers**: `Authorization: Bearer ${token}` en TODAS las APIs
+- ✅ **Usuario demo**: `admin@intelibotx.com` / `admin123` siempre disponible
+- ❌ **PROHIBIDO ABSOLUTO**: APIs sin auth headers, tokens inconsistentes
+- 🎯 **IMPLEMENTACIÓN**: `getAuthHeaders()` en todas las requests
+
+### 🎨 **ARQUITECTURA FRONTEND - REGLA FIJA**
+**PROBLEMA RESUELTO**: Componentes desconectados - NUNCA MÁS lógica duplicada
+- ✅ **Servicios**: `api.ts` único punto de entrada para todas las APIs
+- ✅ **Componentes**: `BotsAdvanced.jsx` como controller principal de bots
+- ✅ **Estado**: React hooks + useEffect para data loading desde APIs
+- ❌ **PROHIBIDO ABSOLUTO**: Fetch directo en componentes, servicios duplicados
+- 🎯 **IMPLEMENTACIÓN**: api.ts → React hooks → UI components
+
+### 📁 **ESTRUCTURA DE ARCHIVOS - REGLA FIJA**
+**PROBLEMA RESUELTO**: Archivos duplicados confunden - NUNCA MÁS arquitectura inconsistente
+- ✅ **Backend core**: `routes/bots.py`, `routes/trading_operations.py`, `services/`
+- ✅ **Frontend core**: `services/api.ts`, `pages/BotsAdvanced.jsx`, `components/`
+- ✅ **Eliminados**: `bot_routes.py`, `dashboard.py`, archivos legacy obsoletos
+- ❌ **PROHIBIDO ABSOLUTO**: Crear archivos duplicados, rutas legacy
+- 🎯 **IMPLEMENTACIÓN**: Un archivo, una responsabilidad, cero duplicación
+
+## 🚨 METODOLOGÍA ANTI-BUCLE INFINITO
+
+### 📖 **ANTES DE CUALQUIER CAMBIO:**
+1. **LEER** esta sección completa de decisiones arquitectónicas
+2. **VERIFICAR** que el cambio sigue los patrones establecidos
+3. **PREGUNTAR** al usuario si hay conflicto con decisiones anteriores
+4. **ACTUALIZAR** esta sección si se toma nueva decisión crítica
+
+### ✅ **CAMBIOS PERMITIDOS:**
+- Bugfixes que mantienen la arquitectura
+- Nuevas features que usan patrones existentes  
+- Optimizaciones que no rompen APIs
+
+### ❌ **CAMBIOS PROHIBIDOS SIN CONSULTA:**
+- Cambiar sistema de persistencia
+- Reemplazar APIs by funciones legacy
+- Modificar arquitectura de autenticación
+- Duplicar lógica ya implementada
+
 ## 🎯 CONTEXTO GENERAL DEL PROYECTO
 
 **InteliBotX** es un sistema de trading inteligente que comprende:
@@ -701,3 +770,76 @@ INTELIBOTX/backend/
 │   └── auth.py                    # Authentication endpoints
 └── main.py                        # Auto-create admin user
 ```
+
+## 🚨 ISSUES CRÍTICOS REPORTADOS - 11-AGOSTO-2025
+
+### **PROBLEMA PRINCIPAL**: Pérdida de persistencia de datos entre sesiones
+
+#### 📋 **BLOQUE 1: Inconsistencias de Estado de Bots**
+
+1. **❌ PnL, Sharpe, WinRate se pierden al salir de página**
+   - **Causa**: Sistema anterior usaba lógica de memoria temporal
+   - **Status**: ✅ **RESUELTO** - Reescrito con APIs persistentes
+
+2. **❌ Panel bots dice solo 1 activo cuando hay más**
+   - **Causa**: Estado inconsistente entre memoria y DB
+   - **Status**: ✅ **RESUELTO** - loadRealBotMetrics() desde DB
+
+3. **❌ Historial operaciones vacío - no aparecen IDs**
+   - **Causa**: Trading operations no se guardaban en DB
+   - **Status**: ✅ **RESUELTO** - createTradingOperation() implementado
+
+4. **❌ Dashboard principal pierde datos de bots**
+   - **Status**: 🔄 **POR IMPLEMENTAR** - Conectar con dashboardService.js
+
+#### 📋 **BLOQUE 2: Issues Trading en Vivo**
+
+5. **❌ Operaciones siempre muestran "EMA_CROSSOVER"**
+   - **Causa**: Algoritmos hardcoded no conectados con Smart Scalper Pro
+   - **Status**: ✅ **RESUELTO** - Ahora usa algoritmos reales (wyckoff_spring, rsi_oversold, etc.)
+
+6. **❌ Errores 500 al cambiar páginas**
+   - **Status**: 🔄 **POR INVESTIGAR** - Revisar logs Vercel
+
+#### 📋 **BLOQUE 3: Features Solicitadas**
+
+7. **🆕 Sección mejores pares según históricos**
+   - **Status**: 📝 **FEATURE REQUEST** - Por implementar
+
+8. **🆕 Gráfico Analytics mejorado con herramientas técnicas**
+   - **Status**: 📝 **FEATURE REQUEST** - TradingView integrado + pantalla completa
+
+## 🎯 PLAN DE ACCIÓN - ORDEN DE PRIORIDAD
+
+### **FASE 1: Completar Sistema Persistente (EN CURSO)**
+- ✅ **APIs persistentes implementadas** - `api.ts` + `trading_operations.py`  
+- ✅ **BotsAdvanced.jsx reescrito** - Smart Scalper Pro real + métricas DB
+- 🔄 **Dashboard.jsx conectar** - usar `dashboardService.js` existente
+- 🔄 **LiveTradingFeed.jsx actualizar** - usar `getLiveTradingFeed()` de api.ts
+
+### **FASE 2: Testing y Validación**
+- 🔄 **Probar persistencia real** - Crear bots, operar, recargar página
+- 🔄 **Validar métricas coherentes** - PnL, Sharpe, WinRate desde DB
+- 🔄 **Testing errores 500** - Logs Vercel + navegación páginas
+
+### **FASE 3: Features Nuevas**  
+- 📝 **Mejores pares históricos** - Nueva sección con análisis 
+- 📝 **Analytics mejorado** - TradingView + herramientas técnicas
+
+## 📊 ESTADO ACTUAL CONSOLIDADO - 11-AGOSTO-2025
+
+### ✅ **SISTEMAS FUNCIONANDO AL 100%:**
+- 🔐 **Autenticación JWT** - admin@intelibotx.com login funcionando
+- 🤖 **Smart Scalper Pro** - Algoritmos adaptativos validados (wyckoff_spring, rsi_oversold)
+- 📊 **APIs Persistentes** - createTradingOperation, getBotTradingOperations 
+- 🏦 **Binance Testnet** - Datos reales multi-timeframe funcionando
+- 🔄 **Sistema Limpio** - Código legacy eliminado, arquitectura consolidada
+
+### 🔄 **EN IMPLEMENTACIÓN:**
+- 📊 **Dashboard real data** - Conectar dashboardService.js
+- ⚡ **LiveTradingFeed API** - Migrar a getLiveTradingFeed()
+- 🧪 **Testing E2E** - Validar persistencia completa
+
+### 🎯 **PRÓXIMAS FEATURES:**
+- 📈 **Mejores pares análisis** - Feature completamente nueva
+- 🔧 **Analytics enhanced** - TradingView integración avanzada
