@@ -564,34 +564,6 @@ async def update_bot(bot_id: int, bot_data: dict):
         )
 
 
-@router.delete("/api/bots/{bot_id}")
-async def delete_bot(bot_id: int):
-    """Eliminar un bot"""
-    try:
-        with Session(engine) as session:
-            query = select(BotConfig).where(BotConfig.id == bot_id)
-            bot = session.exec(query).first()
-            
-            if not bot:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Bot con ID {bot_id} no encontrado"
-                )
-            
-            session.delete(bot)
-            session.commit()
-            
-            return {
-                "message": f"✅ Bot {bot_id} eliminado exitosamente"
-            }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error eliminando bot: {str(e)}"
-        )
-
 
 # Control de Bots (para el panel de control dinámico)
 
