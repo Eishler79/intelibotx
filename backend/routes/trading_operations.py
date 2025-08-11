@@ -282,6 +282,7 @@ async def get_trading_operation(
 
 @router.get("/api/trading-feed/live")
 async def get_live_trading_feed(
+    page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     bot_ids: Optional[str] = Query(None),  # Comma-separated bot IDs
     hours: int = Query(24, ge=1, le=168),  # Últimas X horas
@@ -289,14 +290,14 @@ async def get_live_trading_feed(
     current_user: User = Depends(get_current_user)
 ):
     """
-    ⚡ Feed en vivo de todas las operaciones de trading
+    ⚡ Feed en vivo de todas las operaciones de trading con paginación
     
     **Sustituye**: LiveTradingFeed component data source
-    **Beneficio**: Datos persisten + filtros por bots + tiempo real
+    **Beneficio**: Datos persisten + filtros por bots + tiempo real + paginación
     """
     try:
         # Query base
-        query = select(TradingOperation).where(
+        base_query = select(TradingOperation).where(
             TradingOperation.user_id == current_user.id,
             TradingOperation.created_at >= datetime.utcnow() - timedelta(hours=hours)
         )
@@ -305,10 +306,17 @@ async def get_live_trading_feed(
         if bot_ids:
             bot_id_list = [int(x.strip()) for x in bot_ids.split(',') if x.strip().isdigit()]
             if bot_id_list:
-                query = query.where(TradingOperation.bot_id.in_(bot_id_list))
+                base_query = base_query.where(TradingOperation.bot_id.in_(bot_id_list))
         
-        # Ordenar por fecha descendente y limitar
-        query = query.order_by(TradingOperation.created_at.desc()).limit(limit)
+        # Count total para paginación
+        count_query = base_query
+        total_count = len(session.exec(count_query).all())
+        total_pages = (total_count + limit - 1) // limit
+        
+        # Query con paginación
+        query = base_query.order_by(TradingOperation.created_at.desc())
+        offset = (page - 1) * limit
+        query = query.offset(offset).limit(limit)
         
         operations = session.exec(query).all()
         
@@ -317,12 +325,16 @@ async def get_live_trading_feed(
         for op in operations:
             # Calcular tiempo relativo
             time_diff = datetime.utcnow() - op.created_at
-            if time_diff.seconds < 60:
-                time_ago = f"{time_diff.seconds}s ago"
-            elif time_diff.seconds < 3600:
-                time_ago = f"{time_diff.seconds // 60}m ago"
+            total_seconds = int(time_diff.total_seconds())
+            
+            if total_seconds < 60:
+                time_ago = f"{total_seconds}s ago"
+            elif total_seconds < 3600:
+                time_ago = f"{total_seconds // 60}m ago"
+            elif total_seconds < 86400:
+                time_ago = f"{total_seconds // 3600}h ago"
             else:
-                time_ago = f"{time_diff.seconds // 3600}h ago"
+                time_ago = f"{total_seconds // 86400}d ago"
             
             feed_data.append({
                 "id": op.id,
@@ -344,7 +356,14 @@ async def get_live_trading_feed(
         return {
             "success": True,
             "feed": feed_data,
-            "total_operations": len(feed_data),
+            "pagination": {
+                "current_page": page,
+                "total_pages": total_pages,
+                "total_count": total_count,
+                "limit": limit,
+                "has_next": page < total_pages,
+                "has_prev": page > 1
+            },
             "time_window_hours": hours
         }
         

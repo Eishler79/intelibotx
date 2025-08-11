@@ -351,18 +351,26 @@ try:
 except Exception as e:
     print(f"⚠️ Could not load real trading routes: {e}")
 
+# 🔄 Trading Operations - Sistema de Persistencia  
+try:
+    from routes.trading_operations import router as trading_operations_router
+    app.include_router(trading_operations_router)
+    print("📊 Trading Operations router loaded")
+except Exception as e:
+    print(f"⚠️  Warning: Could not load Trading Operations router: {e}")
+
+# 📊 Dashboard Data - Datos Reales para Dashboard
+try:
+    from routes.dashboard_data import router as dashboard_data_router
+    app.include_router(dashboard_data_router)
+    print("📈 Dashboard Data router loaded")
+except Exception as e:
+    print(f"⚠️  Warning: Could not load Dashboard Data router: {e}")
+
 # Load WebSocket routes (NEW - Real-time data streaming)
 try:
     from routes.websocket_routes import router as websocket_router
     app.include_router(websocket_router)
-    
-    # 🔄 Trading Operations - Sistema de Persistencia
-    try:
-        from routes.trading_operations import router as trading_operations_router
-        app.include_router(trading_operations_router)
-        print("📊 Trading Operations router loaded")
-    except Exception as e:
-        print(f"⚠️  Warning: Could not load Trading Operations router: {e}")
     print("✅ WebSocket routes loaded successfully")
 except Exception as e:
     print(f"⚠️ Could not load WebSocket routes: {e}")
