@@ -22,19 +22,64 @@ export default function LiveTradingFeed({ bots }) {
   const [pageSize, setPageSize] = useState(20);
   const [timeFilter, setTimeFilter] = useState(24); // hours
   
-  // 🔄 NUEVA API: Con paginación implementada
+  // 🔄 State para datos del feed
+  const [feed, setFeed] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
   const runningBotIds = bots.filter(bot => bot.status === 'RUNNING').map(bot => bot.id).join(',');
-  const { feed, totalCount, totalPages, loading, error, refetch } = useLiveTradingFeed({
-    page: currentPage,
-    limit: pageSize,
-    bot_ids: runningBotIds || undefined,
-    hours: timeFilter
-  });
 
+  // Load feed data function
+  const loadFeedData = async () => {
+    if (!runningBotIds) {
+      setFeed([]);
+      setTotalCount(0);
+      setTotalPages(1);
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await getLiveTradingFeed({
+        page: currentPage,
+        limit: pageSize,
+        bot_ids: runningBotIds,
+        hours: timeFilter
+      });
+      
+      if (response.success) {
+        setFeed(response.data?.operations || []);
+        setTotalCount(response.data?.total_count || 0);
+        setTotalPages(Math.ceil((response.data?.total_count || 0) / pageSize));
+      } else {
+        setError('Error cargando feed de trading');
+      }
+    } catch (err) {
+      console.error('Error loading feed:', err);
+      setError(err.message || 'Error conectando con API');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Refetch function for manual refresh
+  const refetch = () => {
+    loadFeedData();
+  };
+  
   useEffect(() => {
     const runningBots = bots.filter(bot => bot.status === 'RUNNING');
     setActiveBots(runningBots);
   }, [bots]);
+  
+  // Load feed when dependencies change
+  useEffect(() => {
+    loadFeedData();
+  }, [runningBotIds, currentPage, pageSize, timeFilter]);
 
   // Reset to page 1 when bots or filters change
   useEffect(() => {
@@ -191,48 +236,48 @@ export default function LiveTradingFeed({ bots }) {
             {!loading && !error && feed.length > 0 && (
               feed.map((trade) => (
                 <div 
-                  key={trade.id}
+                  key={trade.id || trade.operation_id}
                   className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full ${
-                      trade.pnl >= 0 ? 'bg-green-400' : 'bg-red-400'
+                      (trade.pnl || 0) >= 0 ? 'bg-green-400' : 'bg-red-400'
                     }`}></div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-white text-sm">{trade.symbol}</span>
+                        <span className="font-semibold text-white text-sm">{trade.symbol || 'N/A'}</span>
                         <Badge 
                           className={`text-xs px-2 py-0 ${
-                            trade.side === 'BUY' 
+                            (trade.side || 'BUY') === 'BUY' 
                               ? 'bg-green-500/20 text-green-400 border-green-500/30' 
                               : 'bg-red-500/20 text-red-400 border-red-500/30'
                           }`}
                         >
-                          {trade.side}
+                          {trade.side || 'BUY'}
                         </Badge>
-                        {trade.algorithm_used && (
+                        {(trade.algorithm_used || trade.algorithm) && (
                           <span className="text-xs text-yellow-400 px-1 py-0 bg-yellow-400/10 rounded">
-                            {trade.algorithm_used}
+                            {trade.algorithm_used || trade.algorithm}
                           </span>
                         )}
                       </div>
                       <div className="text-xs text-gray-400">
-                        {trade.signal} • {trade.strategy}
+                        {trade.signal || 'N/A'} • {trade.strategy || 'Smart Scalper'}
                       </div>
                     </div>
                   </div>
 
                   <div className="text-right">
                     <div className={`font-semibold text-sm ${
-                      trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'
+                      (trade.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {trade.pnl >= 0 ? '+' : ''}${Number(trade.pnl || 0).toFixed(2)}
+                      {(trade.pnl || 0) >= 0 ? '+' : ''}${Number(trade.pnl || 0).toFixed(2)}
                     </div>
                     <div className="text-xs text-gray-400 flex items-center gap-1">
                       <Clock size={10} />
-                      {trade.time_ago}
+                      {trade.time_ago || trade.created_at || 'Ahora'}
                     </div>
-                    {trade.confidence && (
+                    {(trade.confidence !== undefined && trade.confidence !== null) && (
                       <div className="text-xs text-blue-400">
                         {(trade.confidence * 100).toFixed(0)}%
                       </div>
