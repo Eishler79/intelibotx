@@ -9,6 +9,7 @@ import SmartScalperMetrics from "@/components/SmartScalperMetrics";
 import LatencyMonitor from "@/components/LatencyMonitor";
 import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
 import LiveTradingFeed from "@/components/LiveTradingFeed";
+import { createTradingOperation, mapBotTradeToOperation } from "../services/tradingOperationsService";
 import TradingHistory from "../components/TradingHistory";
 import EnhancedBotCreationModal from "../components/EnhancedBotCreationModal";
 import BotTemplates from "../components/BotTemplates";
@@ -417,7 +418,32 @@ export default function BotsAdvanced() {
               const currentDrawdown = newPeak > 0 ? ((newPeak - newBalance) / newPeak * 100) : 0;
               const newMaxDrawdown = Math.max(currentMaxDrawdown, currentDrawdown);
               
-              // NUEVO: Crear registro de trade para historial en vivo
+              // 🔄 NUEVA API: Crear operación persistente (reemplaza memoria)
+              const tradeData = {
+                type: tradeType,
+                signal: signal,
+                pnl: pnl,
+                price: price,
+                quantity: quantity,
+                algorithm_used: 'EMA_CROSSOVER', // Default, se puede obtener del analysis
+                confidence: 0.75 // Se puede calcular basado en indicators
+              };
+
+              // Llamar API para persistir la operación
+              const operationData = mapBotTradeToOperation(bot, tradeData);
+              
+              // Llamada async sin bloquear UI
+              createTradingOperation(operationData)
+                .then(result => {
+                  if (result.success) {
+                    console.log(`✅ Trade persistido: ${result.trade_id} (${operationData.symbol})`);
+                  }
+                })
+                .catch(error => {
+                  console.warn(`⚠️ Error persistiendo trade:`, error.message);
+                });
+              
+              // 📊 MANTENER para compatibilidad temporal con componentes existentes
               const newTradeRecord = {
                 id: Date.now() + Math.random(),
                 botId: botId,
@@ -431,9 +457,9 @@ export default function BotsAdvanced() {
                 quantity: quantity
               };
               
-              // Mantener historial de últimos 50 trades
+              // Solo mantener últimos 10 para UI local (API maneja persistencia real)
               const currentHistory = b.liveTradeHistory || [];
-              const newHistory = [newTradeRecord, ...currentHistory].slice(0, 50);
+              const newHistory = [newTradeRecord, ...currentHistory].slice(0, 10);
               
               return {
                 ...b,
