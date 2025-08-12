@@ -11,12 +11,52 @@
 
 ---
 
+## 📋 ETAPAS ESTRATÉGICAS DEL PROYECTO
+
+### **🏛️ ETAPA 1: Core Engine Avanzado** *(75% completado)*
+**Objetivo:** Implementar servicios Smart Scalper profesionales con datos reales
+**Puntos pendientes originales:**
+- ✅ Persistencia (resuelto - lazy imports + Railway funcional)
+- ✅ Trading en vivo (servicios reales implementados)
+- ✅ Hardcoded algorithms (eliminados retail, solo institucionales)
+- ⚠️ Error 500 (debug pendiente - servicio responde)
+
+### **⚡ ETAPA 2: Trading en Vivo Real** *(0% - pendiente)*
+**Objetivo:** Conexión real exchanges + órdenes automáticas
+- Real market execution con Binance/ByBit
+- Risk management automático
+- Order management + DCA real
+- Live P&L tracking
+
+### **🤖 ETAPA 3: Automatización IA** *(0% - pendiente)*
+**Objetivo:** Machine Learning + decision making autónomo
+- Adaptive algorithms basados en performance
+- Sentiment analysis integrado
+- Auto-optimization de parámetros
+- Predictive risk assessment
+
+### **📊 ETAPA 4: Dashboard Profesional** *(0% - pendiente)*
+**Objetivo:** Interface institucional completa
+- Real-time multi-timeframe charts
+- Portfolio management avanzado
+- Reporting institucional
+- Mobile app companion
+
+### **🌐 ETAPA 5: Multi-Exchange + Scaling** *(0% - pendiente)*
+**Objetivo:** Expansión y escalabilidad
+- Multi-exchange arbitrage
+- Copy trading social
+- API pública para terceros
+- Cloud infrastructure scaling
+
+---
+
 ## 🔄 Tareas activas (hacer ahora)
-### **🏛️ ETAPA 1: Core Engine Avanzado (preparado)**
-- [ ] {CORE01} MarketMicrostructureAnalyzer implementation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)*
-- [ ] {CORE02} InstitutionalDetector: Stop hunting, liquidity grabs *(SPEC_REF: SMART_SCALPER_STRATEGY.md)*
-- [ ] {CORE03} MultiTimeframeCoordinator: 1m-5m-15m-1H sync *(SPEC_REF: SMART_SCALPER_STRATEGY.md)*
-- [ ] {CORE04} SignalQualityAssessor: Multi-confirmation validation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)*
+### **🏛️ ETAPA 1: Core Engine Avanzado** *(ACTIVO - 75% completado)*
+- [x] {CORE01} MarketMicrostructureAnalyzer implementation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**
+- [x] {CORE02} InstitutionalDetector: Stop hunting, liquidity grabs *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**
+- [x] {CORE03} MultiTimeframeCoordinator: 1m-5m-15m-1H sync *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**
+- [ ] {CORE04} SignalQualityAssessor: Multi-confirmation validation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ⚠️ **PENDIENTE**
 
 ### **💀 ALGORITMOS ANTI-MANIPULACIÓN (Smart Scalper Asesino)**
 - [ ] {ALGO01} FAKE_BREAKOUT_DETECTOR - Detecta rupturas falsas retail *(SPEC_REF: SMART_SCALPER_STRATEGY.md)*
