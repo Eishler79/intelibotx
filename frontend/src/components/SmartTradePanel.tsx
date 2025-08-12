@@ -24,7 +24,7 @@ export default function SmartTradePanel() {
     setLog("Ejecutando SmartTrade...");
     try {
       const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://intelibotx-api.up.railway.app";
-      const response = await fetch(`${BASE_URL}/api/run-smart-trade/${symbol.replace("/", "")}`, {
+      const response = await fetch(`${BASE_URL}/api/run-smart-trade/${symbol.replace("/", "")}?scalper_mode=true`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

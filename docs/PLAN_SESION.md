@@ -53,15 +53,16 @@
 
 ## 🔄 Tareas activas (hacer ahora) *(sincronizado con BACKLOG.md - Prioridad ALTA)*
 
-### **🚨 CRÍTICO: Resolver Error 500 Smart Scalper**
-- [ ] {ERROR500_FIX} **Debug Error 500 endpoints Smart Scalper** — Corregir error interno en run-smart-trade y debug-smart-trade en PRD  
-  *(SPEC_REF: Railway logs + routes/bots.py lazy imports)*
+### **🏛️ HITO ARQUITECTÓNICO COMPLETADO - DL-004**
+- [x] {ERROR500_FIX} **Debug Error 500 endpoints Smart Scalper** — Corregido imports TimeframeData ✅ **RESUELTO**
+- [x] {RETAIL_ELIMINATION} **Eliminación definitiva flujo retail** — Solo algoritmos institucionales ✅ **ESTRATÉGICO**
+- [x] {FRONTEND_STANDARD} **Estandarización llamadas frontend** — scalper_mode=true uniforme ✅ **COMPLETADO**
 
-### **🏛️ ETAPA 1: Completar Core Engine Avanzado**
+### **🏛️ ETAPA 1: Core Engine Avanzado - INSTITUCIONAL ÚNICAMENTE**
 - [x] {CORE01} MarketMicrostructureAnalyzer implementation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**
 - [x] {CORE02} InstitutionalDetector: Stop hunting, liquidity grabs *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**
 - [x] {CORE03} MultiTimeframeCoordinator: 1m-5m-15m-1H sync *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**
-- [ ] {CORE04} SignalQualityAssessor: Multi-confirmation validation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ⚠️ **PENDIENTE**
+- [x] {CORE04} SignalQualityAssessor: Multi-confirmation validation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **INTEGRADO**
 
 ### **💀 ALGORITMOS ANTI-MANIPULACIÓN (Smart Scalper Asesino)**
 - [ ] {ALGO01} FAKE_BREAKOUT_DETECTOR - Detecta rupturas falsas retail *(SPEC_REF: SMART_SCALPER_STRATEGY.md)*

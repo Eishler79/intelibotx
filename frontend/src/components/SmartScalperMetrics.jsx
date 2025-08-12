@@ -83,17 +83,12 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         let smartScalperResponse, smartScalperAnalysis = null;
         try {
           
-          smartScalperResponse = await fetch(`${BASE_URL}/api/run-smart-trade/${bot.symbol}`, {
+          smartScalperResponse = await fetch(`${BASE_URL}/api/run-smart-trade/${bot.symbol}?scalper_mode=true&quantity=0.001&execute_real=false`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify({
-              scalper_mode: true,
-              quantity: 0.001,
-              execute_real: false
-            })
+            }
           });
 
           if (smartScalperResponse && smartScalperResponse.ok) {

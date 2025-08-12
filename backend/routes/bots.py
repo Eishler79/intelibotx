@@ -51,6 +51,7 @@ async def execute_smart_scalper_analysis(
         from services.market_microstructure_analyzer import MarketMicrostructureAnalyzer
         from services.institutional_detector import InstitutionalDetector, ManipulationType, MarketPhase
         from services.multi_timeframe_coordinator import MultiTimeframeCoordinator, TimeframeData
+        from services.signal_quality_assessor import SignalQualityAssessor  # 🆕 ETAPA 1 COMPLETAR
         from services.ta_alternative import calculate_rsi, calculate_ema, calculate_sma, calculate_atr
         
         # 🔗 Inicializar servicios Smart Scalper disponibles
@@ -59,6 +60,7 @@ async def execute_smart_scalper_analysis(
         microstructure_analyzer = MarketMicrostructureAnalyzer()
         institutional_detector = InstitutionalDetector()
         multi_tf_coordinator = MultiTimeframeCoordinator()
+        signal_quality_assessor = SignalQualityAssessor()  # 🆕 ETAPA 1 COMPLETAR
         
         # 📊 Obtener datos reales multi-timeframe
         timeframes = ["1m", "5m", "15m", "1h"]
@@ -141,14 +143,49 @@ async def execute_smart_scalper_analysis(
         # 💰 Precio actual
         current_price = main_data['closes'][-1]
         
-        # 🎯 Determinar señal de trading
+        # 🏆 ETAPA 1 COMPLETAR: SignalQualityAssessor - Multi-confirmation validation
+        # Preparar datos para evaluación de calidad
+        main_df = pd.DataFrame({
+            'open': main_data['opens'],
+            'high': main_data['highs'],
+            'low': main_data['lows'],
+            'close': main_data['closes'],
+            'volume': main_data['volumes']
+        })
+        
+        # 🏛️ INSTITUCIONAL: Solo market structure data (DL-002 - No RSI/MACD retail)
+        institutional_market_structure = {
+            'regime': algorithm_selection.market_regime.value,
+            'wyckoff_phase': institutional.market_phase.value,
+            'manipulation_detected': institutional.manipulation_type != ManipulationType.NONE,
+            'manipulation_type': institutional.manipulation_type.value,
+            'order_blocks': institutional.order_blocks,
+            'market_phase': institutional.market_phase.value
+        }
+        
+        # 🏛️ Evaluar calidad INSTITUCIONAL con algoritmos Smart Money únicamente
+        institutional_quality = signal_quality_assessor.assess_signal_quality(
+            price_data=main_df,
+            volume_data=main_data['volumes'],
+            indicators={},  # IGNORADO - solo algoritmos institucionales (DL-002)
+            market_structure=institutional_market_structure,
+            timeframe="15m"
+        )
+        
+        # 🎯 Determinar señal de trading con calidad integrada
         signal = "HOLD"
         confidence = algorithm_selection.selection_confidence
         trade_reason = f"Algoritmo seleccionado: {algorithm_selection.selected_algorithm.value}"
         
-        if multi_tf.signal in ["BUY", "SELL"] and confidence > 0.7:
-            signal = multi_tf.signal
-            trade_reason = f"{algorithm_selection.selected_algorithm.value} - Confianza: {confidence:.1%}"
+        # 🏛️ Aplicar filtro INSTITUCIONAL de calidad de señal (DL-002)
+        if institutional_quality.smart_money_recommendation in ["INSTITUTIONAL_BUY", "ACCUMULATION"] and institutional_quality.overall_score >= 60:
+            if multi_tf.signal == "BUY" and confidence > 0.7:
+                signal = "BUY"
+                trade_reason = f"{algorithm_selection.selected_algorithm.value} + Smart Money: {institutional_quality.confidence_level}"
+        elif institutional_quality.smart_money_recommendation in ["INSTITUTIONAL_SELL", "DISTRIBUTION"] and institutional_quality.overall_score >= 60:
+            if multi_tf.signal == "SELL" and confidence > 0.7:
+                signal = "SELL" 
+                trade_reason = f"{algorithm_selection.selected_algorithm.value} + Smart Money: {institutional_quality.confidence_level}"
         
         # 🚀 Ejecutar orden real si se solicita
         order_result = None
@@ -178,7 +215,12 @@ async def execute_smart_scalper_analysis(
                 "manipulation_events": len(institutional.manipulation_events),
                 "wyckoff_phase": institutional.market_phase.value,
                 "timeframe_alignment": multi_tf.alignment.value,
-                "trend_strength": multi_tf.trend_strength.value
+                "trend_strength": multi_tf.trend_strength.value,
+                # 🏛️ ETAPA 1 COMPLETAR: INSTITUCIONAL SignalQualityAssessor results (DL-002)
+                "institutional_quality_score": institutional_quality.overall_score,
+                "institutional_confidence_level": institutional_quality.confidence_level,
+                "smart_money_recommendation": institutional_quality.smart_money_recommendation,
+                "manipulation_alerts_count": len(institutional_quality.manipulation_alerts)
             },
             "microstructure": {
                 "poc": microstructure.point_of_control,
@@ -195,7 +237,16 @@ async def execute_smart_scalper_analysis(
                 # 🏛️ Indicadores institucionales para frontend
                 "liquidity_grab_detected": institutional.manipulation_type != ManipulationType.NONE,
                 "order_block_confirmed": len(institutional.order_blocks) > 0,
-                "smart_money_flow_detected": institutional.market_phase in [MarketPhase.ACCUMULATION, MarketPhase.DISTRIBUTION]
+                "smart_money_flow_detected": institutional.market_phase in [MarketPhase.ACCUMULATION, MarketPhase.DISTRIBUTION],
+                # 🏛️ ETAPA 1: INSTITUCIONAL confirmations (DL-002)
+                "institutional_confirmations": {
+                    name: {
+                        "score": confirmation.score,
+                        "bias": confirmation.bias,
+                        "name": confirmation.name
+                    } for name, confirmation in institutional_quality.institutional_confirmations.items()
+                } if institutional_quality.institutional_confirmations else {},
+                "manipulation_alerts": institutional_quality.manipulation_alerts
             },
             "order_execution": order_result,
             "top_algorithms": [
@@ -217,6 +268,10 @@ async def execute_smart_scalper_analysis(
 
 def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe):
     """Crear TimeframeData con indicadores técnicos calculados"""
+    
+    # 🔗 Lazy import estratégico (DL-003) - Resolver dependencias circulares
+    from services.ta_alternative import calculate_rsi, calculate_ema, calculate_sma, calculate_atr
+    from services.multi_timeframe_coordinator import TimeframeData
     
     # Calcular indicadores técnicos
     data_length = min(50, len(closes))
@@ -324,58 +379,11 @@ async def run_smart_trade(
             interval = result.interval
             strategy = result.strategy
 
-            # 🚀 SMART SCALPER MODE - Análisis profesional con datos reales
-            if scalper_mode:
-                return await execute_smart_scalper_analysis(
-                    normalized_symbol, result, quantity, execute_real
-                )
-
-            # 🧠 Cargar datos históricos para análisis (modo tradicional)
-            try:
-                # Usar datos de BTCUSDT con fallback
-                import os
-                csv_path = os.path.join(os.path.dirname(__file__), "..", "data", "btcusdt_15m.csv")
-                
-                if os.path.exists(csv_path):
-                    df = pd.read_csv(csv_path)
-                    if "timestamp" not in df.columns and "time" in df.columns:
-                        df = df.rename(columns={"time": "timestamp"})
-                    
-                    # Ejecutar evaluación real de estrategia
-                    evaluator = StrategyEvaluator(df)
-                    signals = evaluator.evaluate()
-                else:
-                    # Fallback si no hay datos históricos
-                    signals = {
-                        "signal": "HOLD",
-                        "confidence": 0.5,
-                        "reason": "No historical data available",
-                        "indicators": {}
-                    }
-            except Exception as e:
-                # Fallback si falla la evaluación
-                signals = {
-                    "signal": "ERROR",
-                    "confidence": 0.0,
-                    "reason": f"Strategy evaluation failed: {str(e)}",
-                    "indicators": {}
-                }
-
-        # 📤 Respuesta con resultado completo
-        return {
-            "message": f"✅ Smart Trade ejecutado para {normalized_symbol}",
-            "symbol": normalized_symbol,
-            "strategy": strategy,
-            "interval": interval,
-            "signals": signals,
-            "bot_config": {
-                "id": result.id,
-                "stake": result.stake,
-                "take_profit": result.take_profit,
-                "stop_loss": result.stop_loss,
-                "dca_levels": result.dca_levels
-            }
-        }
+            # 🏛️ INSTITUCIONAL ÚNICAMENTE (DL-003): SIEMPRE usar Smart Scalper profesional
+            # ELIMINADO: Flujo retail legacy (CSV + indicadores básicos) - DECISIÓN ESTRATÉGICA
+            return await execute_smart_scalper_analysis(
+                normalized_symbol, result, quantity, execute_real
+            )
     
     except HTTPException:
         # Re-raise HTTP exceptions as-is

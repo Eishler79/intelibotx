@@ -38,6 +38,8 @@ class TimeframeData:
     trend_direction: str
     trend_strength: float
     momentum: float
+    data_quality: float  # 🔧 DL-004: Mantener robustez algoritmo institucional
+    reliability: float   # 🔧 DL-004: Evaluación confianza datos Binance
 
 @dataclass
 class MultiTimeframeSignal:
