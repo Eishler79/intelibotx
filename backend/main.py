@@ -42,8 +42,8 @@ async def startup_event():
         SQLModel.metadata.create_all(engine)
         print("✅ Database initialized successfully (Users + Bots)")
         
-        # Create default admin user if none exists
-        await create_default_admin_user()
+        # TEMPORAL: Comentado para evitar deadlock en Railway startup
+        # await create_default_admin_user()
         
     except Exception as e:
         print(f"⚠️ Database initialization warning: {e}")

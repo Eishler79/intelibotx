@@ -14,14 +14,8 @@ from models.user import User  # 🆕 NUEVO: Para dependency injection
 from typing import List, Dict, Any
 import pandas as pd  # ✅ NUEVO: Para cargar datos históricos
 
-# 🚀 Smart Scalper Engine Imports
-from services.advanced_algorithm_selector import AdvancedAlgorithmSelector
-from services.market_microstructure_analyzer import MarketMicrostructureAnalyzer
-from services.institutional_detector import InstitutionalDetector, ManipulationType, MarketPhase
-from services.multi_timeframe_coordinator import MultiTimeframeCoordinator, TimeframeData
-from services.binance_real_data import BinanceRealDataService
-from services.ta_alternative import calculate_rsi, calculate_ema, calculate_sma, calculate_atr
-from services.http_testnet_service import create_testnet_order
+# 🚀 Lazy imports para evitar deadlocks en Railway
+# Los servicios se importan dentro de las funciones cuando se necesitan
 import asyncio
 
 # 🚀 Instancia del router
@@ -51,6 +45,14 @@ async def execute_smart_scalper_analysis(
         Análisis completo y resultado de trading
     """
     try:
+        # 🔗 Lazy imports para evitar deadlocks en Railway startup
+        from services.binance_real_data import BinanceRealDataService
+        from services.advanced_algorithm_selector import AdvancedAlgorithmSelector
+        from services.market_microstructure_analyzer import MarketMicrostructureAnalyzer
+        from services.institutional_detector import InstitutionalDetector, ManipulationType, MarketPhase
+        from services.multi_timeframe_coordinator import MultiTimeframeCoordinator, TimeframeData
+        from services.ta_alternative import calculate_rsi, calculate_ema, calculate_sma, calculate_atr
+        
         # 🔗 Inicializar servicios Smart Scalper disponibles
         binance_service = BinanceRealDataService()
         selector = AdvancedAlgorithmSelector()
@@ -152,6 +154,7 @@ async def execute_smart_scalper_analysis(
         order_result = None
         if execute_real and signal in ["BUY", "SELL"]:
             try:
+                from services.http_testnet_service import create_testnet_order
                 order_result = await create_testnet_order(
                     symbol=symbol,
                     side=signal,
@@ -654,6 +657,7 @@ async def debug_smart_trade(
         
         # Test básico de servicios
         try:
+            from services.binance_real_data import BinanceRealDataService
             binance_service = BinanceRealDataService()
             # Solo probar un timeframe para debug
             df = await asyncio.wait_for(
