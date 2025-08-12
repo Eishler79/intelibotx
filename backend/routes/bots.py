@@ -9,7 +9,8 @@ from sqlmodel import Session, select
 from utils.symbol_validator import validate_symbol  # ✅ EXISTENTE: validador robusto
 from db.database import engine  # ✅ ARREGLADO: Usar database.py consolidado
 from services.exchange_factory import ExchangeFactory  # 🆕 NUEVO: Para conectar con exchanges reales
-from services.auth_service import AuthService  # 🆕 NUEVO: Para autenticación
+from services.auth_service import AuthService, get_current_user  # 🆕 NUEVO: Para autenticación
+from models.user import User  # 🆕 NUEVO: Para dependency injection
 from typing import List, Dict, Any
 import pandas as pd  # ✅ NUEVO: Para cargar datos históricos
 
@@ -277,6 +278,7 @@ async def get_backtest_chart(symbol: str):
 @router.post("/api/run-smart-trade/{symbol}")
 async def run_smart_trade(
     symbol: str,
+    current_user: User = Depends(get_current_user),  # 🆕 AGREGAR: Autenticación requerida
     scalper_mode: bool = False,
     quantity: float = 0.001,
     execute_real: bool = False
