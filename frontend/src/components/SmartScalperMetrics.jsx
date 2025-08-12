@@ -72,12 +72,56 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
       if (!bot) return;
 
       try {
-        // 📊 Obtener métricas específicas de Smart Scalper
+        // 📊 Configuración base
         const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
+        const token = localStorage.getItem('intelibotx_token');
         
         // Obtener datos reales si están disponibles
         let rsiData, volumeData, executionData, signal;
         
+        // 🎯 Primero intentar obtener datos Smart Scalper reales (para ambos flujos)
+        let smartScalperResponse, smartScalperAnalysis = null;
+        try {
+          
+          smartScalperResponse = await fetch(`${BASE_URL}/api/run-smart-trade/${bot.symbol}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({
+              scalper_mode: true,
+              quantity: 0.001,
+              execute_real: false
+            })
+          });
+
+          if (smartScalperResponse && smartScalperResponse.ok) {
+            try {
+              const smartScalperData = await smartScalperResponse.json();
+              if (smartScalperData.analysis) {
+                smartScalperAnalysis = {
+                  algorithm_used: smartScalperData.analysis.algorithm_selected || 'WYCKOFF_SPRING',
+                  market_condition: smartScalperData.analysis.market_regime || 'INSTITUTIONAL_FLOW',
+                  confidence: parseFloat(smartScalperData.analysis.selection_confidence?.replace('%', '')) / 100 || 0.70,
+                  risk_score: 0.25,
+                  wyckoff_phase: smartScalperData.analysis.wyckoff_phase || 'ACCUMULATION',
+                  timeframe_alignment: smartScalperData.analysis.timeframe_alignment || 'ALIGNED',
+                  conditions_met: Object.keys(smartScalperData.signals || {}).filter(key => 
+                    key.includes('detected') && smartScalperData.signals[key]
+                  ),
+                  data_source: 'smart_scalper_real'
+                };
+                console.log(`🎯 Smart Scalper Real: ${smartScalperAnalysis.algorithm_used} (${(smartScalperAnalysis.confidence * 100).toFixed(0)}%)`);
+              }
+            } catch (jsonError) {
+              console.warn('⚠️ Error parsing Smart Scalper JSON:', jsonError);
+            }
+          }
+        } catch (networkError) {
+          console.warn('⚠️ Smart Scalper endpoint no disponible:', networkError);
+        }
+
         // 🔥 PRIORIDAD 1: Datos WebSocket en tiempo real
         const wsData = getSymbolData(bot.symbol);
         if (wsData && wsData.type === 'smart_scalper') {
@@ -93,42 +137,12 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           volumeData = {
             ratio: wsData.volume_ratio || 1.0,
             spike: wsData.volume_spike || false,
-            sma_20: 1000, // No disponible en WebSocket
+            sma_20: 1000,
             status: wsData.volume_spike ? 'SPIKE_DETECTED' : 'NORMAL'
           };
 
-          // 🎯 PROCESAR DATOS SMART SCALPER REAL
-          let smartScalperAnalysis = null;
-          if (smartScalperResponse && smartScalperResponse.ok) {
-            try {
-              const smartScalperData = await smartScalperResponse.json();
-              if (smartScalperData.analysis) {
-                smartScalperAnalysis = {
-                  algorithm_used: smartScalperData.analysis.algorithm_selected || 'WYCKOFF_SPRING',
-                  market_condition: smartScalperData.analysis.market_regime || 'INSTITUTIONAL_FLOW',
-                  confidence: parseFloat(smartScalperData.analysis.selection_confidence?.replace('%', '')) / 100 || 0.70,
-                  risk_score: 0.25, // Calculado basado en market regime
-                  wyckoff_phase: smartScalperData.analysis.wyckoff_phase || 'ACCUMULATION',
-                  timeframe_alignment: smartScalperData.analysis.timeframe_alignment || 'ALIGNED',
-                  conditions_met: [],
-                  data_source: 'smart_scalper_real'
-                };
-                
-                console.log(`🎯 Smart Scalper Real: ${smartScalperAnalysis.algorithm_used} (${(smartScalperAnalysis.confidence * 100).toFixed(0)}%)`);
-              }
-            } catch (error) {
-              console.warn('⚠️ Error procesando Smart Scalper data:', error);
-            }
-          }
-
-          // 🧠 SMART SCALPER MULTI-ALGORITMO DATA (Fallback WebSocket)
-          const smartScalperAdvanced = smartScalperAnalysis || {
-            algorithm_used: wsData.algorithm_used || wsData.algorithm_selected || 'WYCKOFF_SPRING',
-            conditions_met: wsData.conditions_met || [],
-            market_condition: wsData.market_condition || 'sideways',
-            risk_score: wsData.risk_score || 0.5,
-            confidence: wsData.confidence || 0.5
-          };
+          // 🧠 SMART SCALPER MULTI-ALGORITMO DATA (WebSocket + API Real)
+          // Variable se define fuera para ambos flujos
           
           signal = {
             type: wsData.signal || 'HOLD',
@@ -146,33 +160,14 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           console.log('📡 Fallback a APIs REST - WebSocket no disponible');
           
           try {
-            // Obtener token de usuario para APIs autenticadas
-            const token = localStorage.getItem('intelibotx_token');
-          const headers = {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          };
+            // Headers para APIs autenticadas
+            const headers = {
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            };
 
           // Intentar obtener datos reales usando APIs de usuario
-          let realIndicatorsResponse, executionSummaryResponse, smartScalperResponse;
-          
-          // 🎯 NUEVO: Obtener análisis completo del Smart Scalper con algoritmo real
-          try {
-            smartScalperResponse = await fetch(`${BASE_URL}/api/run-smart-trade/${bot.symbol}`, {
-              method: 'POST',
-              headers: {
-                ...headers,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                scalper_mode: true,
-                quantity: 0.001,
-                execute_real: false
-              })
-            });
-          } catch (error) {
-            console.warn('⚠️ Smart Scalper endpoint no disponible:', error);
-          }
+          let realIndicatorsResponse, executionSummaryResponse;
           
           if (token) {
             // Usar endpoints del usuario autenticado
@@ -192,101 +187,129 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           
           executionSummaryResponse = await fetch(`${BASE_URL}/api/bots/${bot.id}/execution-summary`);
           
-          if (realIndicatorsResponse.ok) {
-            const realIndicators = await realIndicatorsResponse.json();
-            if (realIndicators.success) {
-              
-              // Verificar si es endpoint de usuario o público
-              if (token && realIndicators.data.analysis) {
-                // Datos del endpoint de usuario
-                const analysis = realIndicators.data.analysis;
+          // Procesar respuesta de indicadores reales con manejo de errores
+          try {
+            if (realIndicatorsResponse && realIndicatorsResponse.ok) {
+              const realIndicators = await realIndicatorsResponse.json();
+              if (realIndicators.success) {
                 
-                // Mapear datos del análisis a formato esperado
-                rsiData = {
-                  current: analysis.indicators?.rsi || 50,
-                  status: analysis.indicators?.rsi < 30 ? 'OVERSOLD' : analysis.indicators?.rsi > 70 ? 'OVERBOUGHT' : 'NEUTRAL',
-                  signal: analysis.signal || 'HOLD',
-                  trend: analysis.indicators?.rsi > 50 ? 'BULLISH' : 'BEARISH'
-                };
-                
-                volumeData = {
-                  ratio: analysis.indicators?.volume_ratio || 1.0,
-                  spike: (analysis.indicators?.volume_ratio || 1.0) > 1.5,
-                  sma_20: analysis.indicators?.volume_sma || 1000,
-                  status: (analysis.indicators?.volume_ratio || 1.0) > 1.5 ? 'SPIKE_DETECTED' : 'NORMAL'
-                };
-                
-                signal = {
-                  type: analysis.signal || 'HOLD',
-                  confidence: analysis.confidence || 0.5,
-                  strength: analysis.strength || 'WEAK',
-                  conditions: analysis.conditions_met || [],
-                  timestamp: analysis.timestamp || new Date().toISOString(),
-                  quality: analysis.quality || 'LOW'
-                };
-                
-                console.log(`🔥 Usando datos reales del usuario: ${analysis.signal} (${(analysis.confidence * 100).toFixed(0)}%)`);
+                // Verificar si es endpoint de usuario o público
+                if (token && realIndicators.data?.analysis) {
+                  // Datos del endpoint de usuario
+                  const analysis = realIndicators.data.analysis;
+                  
+                  // Mapear datos del análisis a formato esperado
+                  rsiData = {
+                    current: analysis.indicators?.rsi || 50,
+                    status: analysis.indicators?.rsi < 30 ? 'OVERSOLD' : analysis.indicators?.rsi > 70 ? 'OVERBOUGHT' : 'NEUTRAL',
+                    signal: analysis.signal || 'HOLD',
+                    trend: analysis.indicators?.rsi > 50 ? 'BULLISH' : 'BEARISH'
+                  };
+                  
+                  volumeData = {
+                    ratio: analysis.indicators?.volume_ratio || 1.0,
+                    spike: (analysis.indicators?.volume_ratio || 1.0) > 1.5,
+                    sma_20: analysis.indicators?.volume_sma || 1000,
+                    status: (analysis.indicators?.volume_ratio || 1.0) > 1.5 ? 'SPIKE_DETECTED' : 'NORMAL'
+                  };
+                  
+                  signal = {
+                    type: analysis.signal || 'HOLD',
+                    confidence: analysis.confidence || 0.5,
+                    strength: analysis.strength || 'WEAK',
+                    conditions: analysis.conditions_met || [],
+                    timestamp: analysis.timestamp || new Date().toISOString(),
+                    quality: analysis.quality || 'LOW'
+                  };
+                  
+                  console.log(`🔥 Usando datos reales del usuario: ${analysis.signal} (${(analysis.confidence * 100).toFixed(0)}%)`);
+                  
+                } else if (realIndicators.data?.rsi) {
+                  // Datos del endpoint público
+                  rsiData = realIndicators.data.rsi;
+                  volumeData = realIndicators.data.volume;
+                  const signalData = realIndicators.data.signal || {};
+                  
+                  signal = {
+                    type: signalData.current || 'HOLD',
+                    confidence: signalData.confidence || 0.5,
+                    strength: signalData.strength || 'WEAK',
+                    conditions: signalData.conditions_met || [],
+                    timestamp: signalData.timestamp || new Date().toISOString(),
+                    quality: signalData.entry_quality || 'LOW'
+                  };
+                  
+                  console.log(`📊 Usando datos reales públicos: ${signalData.current || 'HOLD'}`);
+                } else {
+                  throw new Error('Estructura de datos inesperada');
+                }
                 
               } else {
-                // Datos del endpoint público
-                rsiData = realIndicators.data.rsi;
-                volumeData = realIndicators.data.volume;
-                const signalData = realIndicators.data.signal;
-                
-                signal = {
-                  type: signalData.current,
-                  confidence: signalData.confidence,
-                  strength: signalData.strength,
-                  conditions: signalData.conditions_met,
-                  timestamp: signalData.timestamp,
-                  quality: signalData.entry_quality
-                };
-                
-                console.log(`📊 Usando datos reales públicos: ${signalData.current}`);
+                throw new Error('API retornó success=false');
               }
-              
             } else {
-              // Fallback a simulación
-              rsiData = simulateSmartScalperRSI(bot.symbol);
-              volumeData = simulateVolumeAnalysis(bot.symbol);
-              console.log('🔄 Fallback a simulación - API falló');
+              throw new Error('Error HTTP en respuesta de indicadores');
             }
-          } else {
-            // Fallback a simulación si API no disponible
+          } catch (apiError) {
+            console.warn('⚠️ Error procesando API response:', apiError);
+            // Fallback a simulación
             rsiData = simulateSmartScalperRSI(bot.symbol);
             volumeData = simulateVolumeAnalysis(bot.symbol);
-            console.log('🔄 Fallback a simulación - API no disponible');
+            console.log('🔄 Fallback a simulación - Error procesando API');
           }
           
-          // Obtener métricas de ejecución reales si disponibles
-          if (executionSummaryResponse.ok) {
-            const executionSummary = await executionSummaryResponse.json();
-            if (executionSummary.success && executionSummary.data.total_executions > 0) {
-              const summary = executionSummary.data;
-              executionData = {
-                avg_latency_ms: summary.execution_metrics?.avg_latency_ms || 45,
-                max_latency_ms: summary.execution_metrics?.max_latency_ms || 85,
-                success_rate: summary.execution_metrics?.success_rate || 97,
-                avg_slippage_pct: summary.cost_metrics?.avg_slippage_percentage || 0.005,
-                total_slippage_cost: summary.cost_metrics?.total_slippage_cost || 0.5,
-                total_commission_cost: summary.cost_metrics?.total_commission_cost || 0.8,
-                efficiency_score: summary.cost_metrics?.avg_efficiency || 95
-              };
+          // Obtener métricas de ejecución reales con manejo de errores
+          try {
+            if (executionSummaryResponse && executionSummaryResponse.ok) {
+              const executionSummary = await executionSummaryResponse.json();
+              if (executionSummary.success && executionSummary.data?.total_executions > 0) {
+                const summary = executionSummary.data;
+                executionData = {
+                  avg_latency_ms: summary.execution_metrics?.avg_latency_ms || 45,
+                  max_latency_ms: summary.execution_metrics?.max_latency_ms || 85,
+                  success_rate: summary.execution_metrics?.success_rate || 97,
+                  avg_slippage_pct: summary.cost_metrics?.avg_slippage_percentage || 0.005,
+                  total_slippage_cost: summary.cost_metrics?.total_slippage_cost || 0.5,
+                  total_commission_cost: summary.cost_metrics?.total_commission_cost || 0.8,
+                  efficiency_score: summary.cost_metrics?.avg_efficiency || 95
+                };
+              } else {
+                throw new Error('No execution data available');
+              }
             } else {
-              executionData = await simulateExecutionMetrics(bot.id);
+              throw new Error('Execution summary endpoint failed');
             }
-          } else {
+          } catch (execError) {
+            console.warn('⚠️ Error obteniendo execution data:', execError);
             executionData = await simulateExecutionMetrics(bot.id);
           }
           
           } catch (error) {
             console.error('Error obteniendo datos reales:', error);
-            // Fallback a simulación
+            // Fallback completo a simulación
             rsiData = simulateSmartScalperRSI(bot.symbol);
             volumeData = simulateVolumeAnalysis(bot.symbol);
             executionData = await simulateExecutionMetrics(bot.id);
           }
         } // Fin del bloque else (WebSocket no disponible)
+
+        // 🧠 Asegurar que smartScalperAdvanced esté disponible (ambos flujos)
+        const smartScalperAdvanced = smartScalperAnalysis || 
+          (wsData && wsData.type === 'smart_scalper' ? {
+            algorithm_used: wsData.algorithm_used || wsData.algorithm_selected || 'WYCKOFF_SPRING',
+            conditions_met: wsData.conditions_met || [],
+            market_condition: wsData.market_condition || 'INSTITUTIONAL_FLOW',
+            risk_score: wsData.risk_score || 0.25,
+            confidence: wsData.confidence || 0.70,
+            data_source: 'websocket_realtime'
+          } : {
+            algorithm_used: 'WYCKOFF_SPRING',
+            conditions_met: [],
+            market_condition: 'INSTITUTIONAL_FLOW',
+            risk_score: 0.25,
+            confidence: 0.70,
+            data_source: 'fallback'
+          });
 
         // 🎯 Generar señal basada en algoritmo Smart Scalper real (si no viene de WebSocket)
         if (!signal) {
@@ -327,20 +350,13 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           },
 
           // 🧠 Smart Scalper Multi-Algorithm (NEW)
-          advanced: typeof smartScalperAdvanced !== 'undefined' ? {
+          advanced: {
             algorithm_used: smartScalperAdvanced.algorithm_used,
             conditions_met: smartScalperAdvanced.conditions_met,
             market_condition: smartScalperAdvanced.market_condition,
             risk_score: smartScalperAdvanced.risk_score,
             confidence: smartScalperAdvanced.confidence,
-            data_source: smartScalperAdvanced.data_source || 'websocket_realtime'
-          } : {
-            algorithm_used: 'WYCKOFF_SPRING',
-            conditions_met: [],
-            market_condition: 'INSTITUTIONAL_FLOW',
-            risk_score: 0.25,
-            confidence: 0.70,
-            data_source: 'fallback'
+            data_source: smartScalperAdvanced.data_source
           },
 
           // Performance Specific to Smart Scalper
