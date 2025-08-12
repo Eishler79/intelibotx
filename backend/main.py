@@ -22,31 +22,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup"""
-    try:
-        # Import here to avoid circular imports
-        from sqlmodel import create_engine, SQLModel
-        from models.bot_config import BotConfig
-        from models.user import User, UserSession
-        from models.user_exchange import UserExchange
-        from models.trading_order import TradingOrder
-        from routes.trading_operations import TradingOperation
-        
-        # Trading models re-enabled for real data functionality
-        print("✅ Trading models loaded for real data functionality")
-        
-        DATABASE_URL = "sqlite:///./intelibotx.db"  # Renamed for security system
-        engine = create_engine(DATABASE_URL, echo=False)
-        SQLModel.metadata.create_all(engine)
-        print("✅ Database initialized successfully (Users + Bots)")
-        
-        # TEMPORAL: Comentado para evitar deadlock en Railway startup
-        # await create_default_admin_user()
-        
-    except Exception as e:
-        print(f"⚠️ Database initialization warning: {e}")
+# TEMPORAL: Comentado startup event completo para diagnosticar deadlock
+# @app.on_event("startup")
+# async def startup_event():
+#     """Initialize database on startup"""
+#     try:
+#         # Import here to avoid circular imports
+#         from sqlmodel import create_engine, SQLModel
+#         from models.bot_config import BotConfig
+#         from models.user import User, UserSession
+#         from models.user_exchange import UserExchange
+#         from models.trading_order import TradingOrder
+#         from routes.trading_operations import TradingOperation
+#         
+#         # Trading models re-enabled for real data functionality
+#         print("✅ Trading models loaded for real data functionality")
+#         
+#         DATABASE_URL = "sqlite:///./intelibotx.db"  # Renamed for security system
+#         engine = create_engine(DATABASE_URL, echo=False)
+#         SQLModel.metadata.create_all(engine)
+#         print("✅ Database initialized successfully (Users + Bots)")
+#         
+#         # TEMPORAL: Comentado para evitar deadlock en Railway startup
+#         # await create_default_admin_user()
+#         
+#     except Exception as e:
+#         print(f"⚠️ Database initialization warning: {e}")
 
 async def create_default_admin_user():
     """Create default admin user with current .env API keys"""
@@ -303,13 +304,14 @@ except Exception as e:
 
 # Smart trade routes removed - now using Smart Scalper Engine in bots.py
 
+# TEMPORAL: Comentado bots routes para diagnosticar deadlock
 # Load bots routes last (newest/most complex)
-try:
-    from routes.bots import router as bots_router
-    app.include_router(bots_router)
-    print("✅ Bots routes loaded")
-except Exception as e:
-    print(f"⚠️ Could not load bots routes: {e}")
+# try:
+#     from routes.bots import router as bots_router
+#     app.include_router(bots_router)
+#     print("✅ Bots routes loaded")
+# except Exception as e:
+#     print(f"⚠️ Could not load bots routes: {e}")
 
 # Load real bots routes with live market data
 try:
