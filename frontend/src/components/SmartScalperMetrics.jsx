@@ -104,8 +104,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               const smartScalperData = await smartScalperResponse.json();
               if (smartScalperData.analysis) {
                 smartScalperAnalysis = {
-                  algorithm_used: smartScalperData.analysis.algorithm_selected || 'EMA_CROSSOVER',
-                  market_condition: smartScalperData.analysis.market_regime || 'RANGE_BOUND',
+                  algorithm_used: smartScalperData.analysis.algorithm_selected || 'WYCKOFF_SPRING',
+                  market_condition: smartScalperData.analysis.market_regime || 'INSTITUTIONAL_FLOW',
                   confidence: parseFloat(smartScalperData.analysis.selection_confidence?.replace('%', '')) / 100 || 0.70,
                   risk_score: 0.25, // Calculado basado en market regime
                   wyckoff_phase: smartScalperData.analysis.wyckoff_phase || 'ACCUMULATION',
@@ -123,7 +123,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
 
           // 🧠 SMART SCALPER MULTI-ALGORITMO DATA (Fallback WebSocket)
           const smartScalperAdvanced = smartScalperAnalysis || {
-            algorithm_used: wsData.algorithm_used || wsData.algorithm_selected || 'EMA_CROSSOVER',
+            algorithm_used: wsData.algorithm_used || wsData.algorithm_selected || 'WYCKOFF_SPRING',
             conditions_met: wsData.conditions_met || [],
             market_condition: wsData.market_condition || 'sideways',
             risk_score: wsData.risk_score || 0.5,
@@ -147,10 +147,10 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           
           try {
             // Obtener token de usuario para APIs autenticadas
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('intelibotx_token');
           const headers = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           };
 
           // Intentar obtener datos reales usando APIs de usuario
@@ -335,9 +335,9 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             confidence: smartScalperAdvanced.confidence,
             data_source: smartScalperAdvanced.data_source || 'websocket_realtime'
           } : {
-            algorithm_used: 'EMA_CROSSOVER',
+            algorithm_used: 'WYCKOFF_SPRING',
             conditions_met: [],
-            market_condition: 'RANGE_BOUND',
+            market_condition: 'INSTITUTIONAL_FLOW',
             risk_score: 0.25,
             confidence: 0.70,
             data_source: 'fallback'
@@ -938,21 +938,21 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               <h4 className="text-white font-semibold mb-3">Algorithm Checklist</h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm">RSI Oversold (&lt;30)</span>
+                  <span className="text-gray-300 text-sm">Liquidity Grab Detection</span>
                   <Badge className={`text-xs ${metrics.rsi?.current < 30 ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                    {metrics.rsi?.current < 30 ? '✅' : '❌'}
+                    {metrics.liquidity_grab_detected ? '✅' : '❌'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm">Volume Spike (&gt;1.5x)</span>
+                  <span className="text-gray-300 text-sm">Order Block Confirmation</span>
                   <Badge className={`text-xs ${metrics.volume?.spike ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                    {metrics.volume?.spike ? '✅' : '❌'}
+                    {metrics.order_block_confirmed ? '✅' : '❌'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm">Latency &lt;100ms</span>
+                  <span className="text-gray-300 text-sm">Smart Money Flow</span>
                   <Badge className={`text-xs ${executionMetrics.avg_latency_ms < 100 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {executionMetrics.avg_latency_ms < 100 ? '✅' : '❌'}
+                    {metrics.smart_money_flow_detected ? '✅' : '❌'}
                   </Badge>
                 </div>
               </div>
