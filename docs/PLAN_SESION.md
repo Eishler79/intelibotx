@@ -51,8 +51,13 @@
 
 ---
 
-## 🔄 Tareas activas (hacer ahora)
-### **🏛️ ETAPA 1: Core Engine Avanzado** *(ACTIVO - 75% completado)*
+## 🔄 Tareas activas (hacer ahora) *(sincronizado con BACKLOG.md - Prioridad ALTA)*
+
+### **🚨 CRÍTICO: Resolver Error 500 Smart Scalper**
+- [ ] {ERROR500_FIX} **Debug Error 500 endpoints Smart Scalper** — Corregir error interno en run-smart-trade y debug-smart-trade en PRD  
+  *(SPEC_REF: Railway logs + routes/bots.py lazy imports)*
+
+### **🏛️ ETAPA 1: Completar Core Engine Avanzado**
 - [x] {CORE01} MarketMicrostructureAnalyzer implementation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**
 - [x] {CORE02} InstitutionalDetector: Stop hunting, liquidity grabs *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**
 - [x] {CORE03} MultiTimeframeCoordinator: 1m-5m-15m-1H sync *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**

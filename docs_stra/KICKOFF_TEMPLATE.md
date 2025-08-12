@@ -7,6 +7,7 @@ Antes de cualquier tarea:
    - `GUARDRAILS.md`
    - `CLAUDE_INDEX.md`
    - `PLAN_SESION.md`
+   - `BACKLOG.md` *(sincronizar prioridades con plan del día)*
 2. Validar que los archivos estratégicos están disponibles y actualizados.
 3. Preguntar: "¿Existen cambios recientes en los estratégicos que deba considerar antes de continuar?"
 
