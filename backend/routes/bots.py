@@ -633,6 +633,73 @@ async def get_real_indicators(current_user: User = Depends(get_current_user)):
         "data_source": "fallback_rest_api"
     }
 
+# 🧪 ENDPOINT DE PRUEBA SIMPLIFICADO
+@router.post("/api/debug-smart-trade/{symbol}")
+async def debug_smart_trade(
+    symbol: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Debug version of smart trade to isolate issues"""
+    try:
+        # Verificar configuración del bot
+        with Session(engine) as session:
+            query = select(BotConfig).where(BotConfig.symbol == symbol.upper())
+            result = session.exec(query).first()
+            
+            if not result:
+                return {
+                    "error": f"No bot config found for {symbol}",
+                    "status": "config_missing"
+                }
+        
+        # Test básico de servicios
+        try:
+            binance_service = BinanceRealDataService()
+            # Solo probar un timeframe para debug
+            df = await asyncio.wait_for(
+                binance_service.get_klines(symbol=symbol, interval="1m", limit=10),
+                timeout=3.0
+            )
+            
+            return {
+                "symbol": symbol,
+                "status": "success",
+                "data_points": len(df) if not df.empty else 0,
+                "latest_price": float(df['close'].iloc[-1]) if not df.empty else None,
+                "services": {
+                    "binance_data": "ok",
+                    "bot_config": "ok"
+                }
+            }
+            
+        except asyncio.TimeoutError:
+            return {
+                "symbol": symbol,
+                "status": "timeout",
+                "error": "Binance API timeout",
+                "services": {
+                    "binance_data": "timeout",
+                    "bot_config": "ok"
+                }
+            }
+        except Exception as e:
+            return {
+                "symbol": symbol,
+                "status": "error",
+                "error": str(e),
+                "services": {
+                    "binance_data": "error",
+                    "bot_config": "ok"
+                }
+            }
+            
+    except Exception as e:
+        return {
+            "symbol": symbol,
+            "status": "critical_error",
+            "error": str(e)
+        }
+
 @router.get("/api/execution-summary") 
 async def get_execution_summary(current_user: User = Depends(get_current_user)):
     """Endpoint fallback para métricas de ejecución"""
