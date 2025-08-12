@@ -57,6 +57,7 @@
 - [x] {ERROR500_FIX} **Debug Error 500 endpoints Smart Scalper** — Corregido imports TimeframeData ✅ **RESUELTO**
 - [x] {RETAIL_ELIMINATION} **Eliminación definitiva flujo retail** — Solo algoritmos institucionales ✅ **ESTRATÉGICO**
 - [x] {FRONTEND_STANDARD} **Estandarización llamadas frontend** — scalper_mode=true uniforme ✅ **COMPLETADO**
+- [x] {SECURITY_HOMOLOGATION} **Homologación seguridad endpoints** — AUTH obligatorio trading crítico ✅ **ESTRATÉGICO**
 
 ### **🏛️ ETAPA 1: Core Engine Avanzado - INSTITUCIONAL ÚNICAMENTE**
 - [x] {CORE01} MarketMicrostructureAnalyzer implementation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)* ✅ **COMPLETADO**
@@ -78,11 +79,23 @@
 - [x] (discovery) Backend 404 en Railway - posible problema deploy
 - [x] (discovery) GUARDRAILS.md desactualizado vs realidad proyecto
 - [x] (discovery) Archivos .MD obsoletos en raíz ocupando espacio
+- [x] (discovery) Endpoints institucionales existentes pero requieren AUTH ✅ **RESUELTO**
+
+---
+
+## **🔒 DECISIÓN SEGURIDAD HOMOLOGADA - PREMISAS DOCUMENTALES**
+
+**POLÍTICA AUTH ESTRATÉGICA (Siguiendo DL-001 + ETAPA 2):**
+- ✅ **CRÍTICOS CON AUTH:** `/api/run-smart-trade`, `/api/debug-smart-trade` (ejecutan trading real)
+- ✅ **SENSIBLES CON AUTH:** `/api/bots`, `/api/backtest-results` (acceso datos usuario)  
+- ✅ **PÚBLICOS SIN AUTH:** `/api/backtest-chart`, `/api/available-symbols` (solo lectura)
+
+**JUSTIFICACIÓN:** Trading en vivo real (ETAPA 2) + APIs reales (DL-001) requieren seguridad robusta.
 
 ---
 
 ## ⛔ Bloqueadores
-- [ ] (blocker) Backend no responde en Railway → impide validar APIs en producción
+- [x] (blocker) Backend no responde en Railway → ✅ **RESUELTO** - Responde con AUTH
 
 ---
 

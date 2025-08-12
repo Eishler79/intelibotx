@@ -117,29 +117,8 @@ async def health():
     """Health check for monitoring"""
     return {"status": "ok", "message": "API is running"}
 
-# 🔍 TEMPORAL DEBUG ENDPOINT - ELIMINAR DESPUÉS DE INVESTIGACIÓN
-@app.get("/api/debug/routes-status")
-async def routes_debug():
-    """🔍 TEMPORAL: Verificar qué rutas están cargadas en Railway - ELIMINAR DESPUÉS"""
-    routes_info = []
-    try:
-        # Check if bots router is loaded
-        for route in app.routes:
-            if hasattr(route, 'path') and '/api/' in route.path:
-                routes_info.append({
-                    "path": route.path,
-                    "methods": list(route.methods) if hasattr(route, 'methods') else [],
-                    "name": getattr(route, 'name', 'unknown')
-                })
-        
-        return {
-            "total_api_routes": len(routes_info),
-            "routes": sorted(routes_info, key=lambda x: x['path'])[:20],  # First 20 routes
-            "has_institutional_endpoints": any("/run-smart-trade" in r['path'] for r in routes_info),
-            "environment": "railway_production"
-        }
-    except Exception as e:
-        return {"error": str(e), "routes_count": 0}
+# 🔍 DEBUG ENDPOINT ELIMINADO - Investigación completada exitosamente
+# Los algoritmos institucionales están funcionando correctamente en Railway con AUTH
 
 @app.post("/api/init-db")
 async def initialize_database():
