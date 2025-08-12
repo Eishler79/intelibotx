@@ -60,3 +60,9 @@
 - [x] {T03} JSON Parse errors - Error 405 identificado (deploy en progreso)
 - [x] {T04} Bots RUNNING investigación - Endpoints simulados detectados
 - [x] {VAL_EST} Validación archivos estratégicos - 4 críticos + 2 importantes confirmados
+- [x] {CORE01} MarketMicrostructureAnalyzer implementation *(SPEC_REF: SMART_SCALPER_STRATEGY.md)*
+- [x] {CORE02} InstitutionalDetector: Stop hunting, liquidity grabs *(SPEC_REF: SMART_SCALPER_STRATEGY.md)*
+- [x] {CORE03} MultiTimeframeCoordinator: 1m-5m-15m-1H sync *(SPEC_REF: SMART_SCALPER_STRATEGY.md)*
+- [x] {FIX01} Error 500 Smart Scalper - Servicios REALES implementados sin mocks
+- [x] {FIX02} JSON Parse y WebSocket fallback - Manejo robusto errores frontend
+- [x] {CRITICAL} Railway startup deadlock - Lazy imports + health check funcional

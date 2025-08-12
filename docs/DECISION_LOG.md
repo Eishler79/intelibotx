@@ -25,4 +25,14 @@
 
 ---
 
-## YYYY-MM-DD — DL-002 · …
+## 2025-08-12 — DL-003 · Política lazy imports para evitar deadlocks Railway
+**Contexto:** Servicio Railway inaccesible por deadlock en startup de FastAPI.  
+**Decisión:** Todos los imports de servicios deben ser lazy (dentro de funciones).  
+**Implementación:** Smart Scalper services movidos de module-level a function-level imports.  
+**Impacto:** Startup tiempo <5s vs >30s timeout previo. Health check funcional.  
+**Rollback:** Git revert + restaurar imports de módulo en routes/bots.py.  
+**SPEC_REF:** routes/bots.py + main.py startup event
+
+---
+
+## YYYY-MM-DD — DL-004 · …
