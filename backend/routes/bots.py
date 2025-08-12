@@ -65,7 +65,11 @@ async def execute_smart_scalper_analysis(
         
         for tf in timeframes:
             try:
-                df = await binance_service.get_klines(symbol=symbol, interval=tf, limit=100)
+                # Timeout más agresivo para evitar cuelgues
+                df = await asyncio.wait_for(
+                    binance_service.get_klines(symbol=symbol, interval=tf, limit=100),
+                    timeout=5.0  # 5 segundos máximo por timeframe
+                )
                 if not df.empty:
                     opens = df['open'].tolist()
                     highs = df['high'].tolist() 
@@ -82,6 +86,9 @@ async def execute_smart_scalper_analysis(
                         'closes': closes, 'volumes': volumes
                     }
                     
+            except asyncio.TimeoutError:
+                print(f"⏰ Timeout obteniendo datos {tf} para {symbol}")
+                continue
             except Exception as e:
                 print(f"⚠️ Error obteniendo datos {tf}: {str(e)}")
                 continue
@@ -89,7 +96,7 @@ async def execute_smart_scalper_analysis(
         if not timeframe_data:
             raise HTTPException(
                 status_code=500, 
-                detail="No se pudieron obtener datos de mercado"
+                detail=f"No se pudieron obtener datos de mercado para {symbol}. Timeframes intentados: {timeframes}"
             )
         
         # 🔬 Análisis de microestructura
