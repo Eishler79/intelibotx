@@ -17,7 +17,7 @@ import pandas as pd  # ✅ NUEVO: Para cargar datos históricos
 # 🚀 Smart Scalper Engine Imports
 from services.advanced_algorithm_selector import AdvancedAlgorithmSelector
 from services.market_microstructure_analyzer import MarketMicrostructureAnalyzer
-from services.institutional_detector import InstitutionalDetector
+from services.institutional_detector import InstitutionalDetector, ManipulationType, MarketPhase
 from services.multi_timeframe_coordinator import MultiTimeframeCoordinator, TimeframeData
 from services.binance_real_data import BinanceRealDataService
 from services.ta_alternative import calculate_rsi, calculate_ema, calculate_sma, calculate_atr
@@ -51,7 +51,7 @@ async def execute_smart_scalper_analysis(
         Análisis completo y resultado de trading
     """
     try:
-        # 🔗 Inicializar servicios Smart Scalper
+        # 🔗 Inicializar servicios Smart Scalper disponibles
         binance_service = BinanceRealDataService()
         selector = AdvancedAlgorithmSelector()
         microstructure_analyzer = MarketMicrostructureAnalyzer()
