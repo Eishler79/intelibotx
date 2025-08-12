@@ -27,20 +27,18 @@ from services.ta_alternative import (
 logger = logging.getLogger(__name__)
 
 class AlgorithmType(Enum):
-    """Tipos de algoritmos disponibles"""
-    EMA_CROSSOVER = "ema_crossover"
-    RSI_OVERSOLD = "rsi_oversold" 
-    MACD_DIVERGENCE = "macd_divergence"
-    SUPPORT_BOUNCE = "support_bounce"
-    MA_ALIGNMENT = "ma_alignment"
-    HIGHER_HIGH_FORMATION = "higher_high_formation"
-    VOLUME_BREAKOUT = "volume_breakout"
-    BOLLINGER_SQUEEZE = "bollinger_squeeze"
+    """Algoritmos institucionales y Smart Money únicamente"""
+    # 🏛️ INSTITUCIONALES - Smart Money Analysis
     WYCKOFF_SPRING = "wyckoff_spring"
-    LIQUIDITY_GRAB_FADE = "liquidity_grab_fade"
+    LIQUIDITY_GRAB_FADE = "liquidity_grab_fade" 
     STOP_HUNT_REVERSAL = "stop_hunt_reversal"
     ORDER_BLOCK_RETEST = "order_block_retest"
     FAIR_VALUE_GAP = "fair_value_gap"
+    
+    # 🎯 PROFESIONALES - Volume & Structure
+    VOLUME_BREAKOUT = "volume_breakout"  # Solo si analiza volumen institucional
+    MA_ALIGNMENT = "ma_alignment"        # Alineación de múltiples timeframes
+    HIGHER_HIGH_FORMATION = "higher_high_formation"  # Estructura de tendencia
 
 class MarketRegime(Enum):
     """Regímenes de mercado"""
@@ -187,53 +185,9 @@ class AdvancedAlgorithmSelector:
         """Inicializar características de cada algoritmo"""
         
         return {
-            AlgorithmType.EMA_CROSSOVER: {
-                "best_regimes": [MarketRegime.STRONG_TRENDING, MarketRegime.WEAK_TRENDING],
-                "worst_regimes": [MarketRegime.RANGE_BOUND, MarketRegime.HIGH_VOLATILITY],
-                "min_trend_strength": 0.4,
-                "optimal_volatility_range": (0.01, 0.03),
-                "required_volume_confirmation": True,
-                "timeframe_preference": ["5m", "15m"],
-                "base_win_rate": 0.65,
-                "base_rr": 1.8,
-                "complexity": 0.3
-            },
             
-            AlgorithmType.RSI_OVERSOLD: {
-                "best_regimes": [MarketRegime.RANGE_BOUND, MarketRegime.WEAK_TRENDING],
-                "worst_regimes": [MarketRegime.STRONG_TRENDING],
-                "min_trend_strength": 0.0,
-                "optimal_volatility_range": (0.005, 0.025),
-                "required_volume_confirmation": True,
-                "timeframe_preference": ["1m", "5m"],
-                "base_win_rate": 0.70,
-                "base_rr": 1.5,
-                "complexity": 0.2
-            },
             
-            AlgorithmType.MACD_DIVERGENCE: {
-                "best_regimes": [MarketRegime.WEAK_TRENDING, MarketRegime.RANGE_BOUND],
-                "worst_regimes": [MarketRegime.HIGH_VOLATILITY, MarketRegime.MANIPULATION],
-                "min_trend_strength": 0.2,
-                "optimal_volatility_range": (0.008, 0.025),
-                "required_volume_confirmation": False,
-                "timeframe_preference": ["5m", "15m"],
-                "base_win_rate": 0.62,
-                "base_rr": 2.0,
-                "complexity": 0.6
-            },
             
-            AlgorithmType.SUPPORT_BOUNCE: {
-                "best_regimes": [MarketRegime.RANGE_BOUND, MarketRegime.WEAK_TRENDING],
-                "worst_regimes": [MarketRegime.HIGH_VOLATILITY],
-                "min_trend_strength": 0.0,
-                "optimal_volatility_range": (0.005, 0.02),
-                "required_volume_confirmation": True,
-                "timeframe_preference": ["5m", "15m"],
-                "base_win_rate": 0.68,
-                "base_rr": 2.2,
-                "complexity": 0.4
-            },
             
             AlgorithmType.MA_ALIGNMENT: {
                 "best_regimes": [MarketRegime.STRONG_TRENDING],
@@ -291,20 +245,13 @@ class AdvancedAlgorithmSelector:
         
         # Strong Trending Market
         weights[MarketRegime.STRONG_TRENDING] = {
-            AlgorithmType.EMA_CROSSOVER: 0.9,
             AlgorithmType.MA_ALIGNMENT: 1.0,
             AlgorithmType.HIGHER_HIGH_FORMATION: 0.8,
-            AlgorithmType.RSI_OVERSOLD: 0.3,
-            AlgorithmType.SUPPORT_BOUNCE: 0.4,
             AlgorithmType.LIQUIDITY_GRAB_FADE: 0.2
         }
         
         # Range Bound Market
         weights[MarketRegime.RANGE_BOUND] = {
-            AlgorithmType.RSI_OVERSOLD: 1.0,
-            AlgorithmType.SUPPORT_BOUNCE: 0.9,
-            AlgorithmType.BOLLINGER_SQUEEZE: 0.8,
-            AlgorithmType.EMA_CROSSOVER: 0.4,
             AlgorithmType.MA_ALIGNMENT: 0.2
         }
         
@@ -314,16 +261,12 @@ class AdvancedAlgorithmSelector:
             AlgorithmType.STOP_HUNT_REVERSAL: 0.9,
             AlgorithmType.WYCKOFF_SPRING: 0.8,
             AlgorithmType.ORDER_BLOCK_RETEST: 0.7,
-            AlgorithmType.EMA_CROSSOVER: 0.1
         }
         
         # High Volatility
         weights[MarketRegime.HIGH_VOLATILITY] = {
             AlgorithmType.VOLUME_BREAKOUT: 0.8,
             AlgorithmType.LIQUIDITY_GRAB_FADE: 0.7,
-            AlgorithmType.RSI_OVERSOLD: 0.6,
-            AlgorithmType.EMA_CROSSOVER: 0.3,
-            AlgorithmType.SUPPORT_BOUNCE: 0.2
         }
         
         # Default weights for other regimes
@@ -838,7 +781,7 @@ class AdvancedAlgorithmSelector:
         """Generar selección fallback cuando hay errores"""
         
         fallback_score = AlgorithmScore(
-            algorithm=AlgorithmType.RSI_OVERSOLD,
+            algorithm=AlgorithmType.WYCKOFF_SPRING,
             score=0.5,
             confidence=0.5,
             reasons=["Fallback selection due to error"],
@@ -852,7 +795,7 @@ class AdvancedAlgorithmSelector:
             symbol=symbol,
             timestamp=datetime.utcnow().isoformat(),
             
-            selected_algorithm=AlgorithmType.RSI_OVERSOLD,
+            selected_algorithm=AlgorithmType.WYCKOFF_SPRING,
             selection_confidence=0.5,
             
             market_regime=MarketRegime.RANGE_BOUND,
