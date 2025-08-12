@@ -304,14 +304,13 @@ except Exception as e:
 
 # Smart trade routes removed - now using Smart Scalper Engine in bots.py
 
-# TEMPORAL: Comentado bots routes para diagnosticar deadlock
-# Load bots routes last (newest/most complex)
-# try:
-#     from routes.bots import router as bots_router
-#     app.include_router(bots_router)
-#     print("✅ Bots routes loaded")
-# except Exception as e:
-#     print(f"⚠️ Could not load bots routes: {e}")
+# Load bots routes last (newest/most complex) - Con lazy imports aplicados
+try:
+    from routes.bots import router as bots_router
+    app.include_router(bots_router)
+    print("✅ Bots routes loaded with lazy imports")
+except Exception as e:
+    print(f"⚠️ Could not load bots routes: {e}")
 
 # Load real bots routes with live market data
 try:
