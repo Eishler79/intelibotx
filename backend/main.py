@@ -75,13 +75,32 @@ app.add_middleware(
 async def startup_event():
     """Initialize database on startup"""
     try:
+        # CRITICAL: Force install psycopg2-binary if PostgreSQL detected
+        DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE
+        
+        if "postgresql" in DATABASE_URL:
+            print("🔧 PostgreSQL detected - Installing psycopg2-binary...")
+            import subprocess
+            import sys
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "psycopg2-binary==2.9.9"])
+                print("✅ psycopg2-binary installed successfully")
+            except Exception as pip_error:
+                print(f"⚠️ Failed to install psycopg2-binary: {pip_error}")
+                # Try alternative
+                try:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "psycopg2"])
+                    print("✅ psycopg2 (source) installed as fallback")
+                except Exception as fallback_error:
+                    print(f"❌ Both psycopg2 installations failed: {fallback_error}")
+                    raise
+        
         # Import here to avoid circular imports
         from sqlmodel import create_engine, SQLModel
         from models.bot_config import BotConfig
         from models.user import User, UserSession
         from models.user_exchange import UserExchange
         
-        DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE
         engine = create_engine(DATABASE_URL, echo=False)
         SQLModel.metadata.create_all(engine)
         
