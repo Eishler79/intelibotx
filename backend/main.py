@@ -33,6 +33,7 @@ DEVELOPMENT_ORIGINS = [
 PRODUCTION_ORIGINS = [
     "https://intelibotx.vercel.app",
     "https://intelibotx-frontend.vercel.app", 
+    "https://intelibotx-8gfsb95fn-eishler79s-projects.vercel.app",
     "https://intelibotx-production.up.railway.app",
     "https://www.intelibotx.com",
     "https://intelibotx.com"
@@ -65,7 +66,11 @@ app.add_middleware(
         "X-Mx-ReqToken",
         "Keep-Alive",
         "X-Requested-With",
-        "If-Modified-Since"
+        "If-Modified-Since",
+        "Pragma",
+        "Sec-Fetch-Dest",
+        "Sec-Fetch-Mode",
+        "Sec-Fetch-Site"
     ],
     expose_headers=["Content-Length", "X-Kuma-Revision"],
     max_age=3600  # Cache preflight for 1 hour
