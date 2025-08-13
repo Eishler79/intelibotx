@@ -71,32 +71,25 @@ app.add_middleware(
     max_age=3600  # Cache preflight for 1 hour
 )
 
-# TEMPORAL: Comentado startup event completo para diagnosticar deadlock
-# @app.on_event("startup")
-# async def startup_event():
-#     """Initialize database on startup"""
-#     try:
-#         # Import here to avoid circular imports
-#         from sqlmodel import create_engine, SQLModel
-#         from models.bot_config import BotConfig
-#         from models.user import User, UserSession
-#         from models.user_exchange import UserExchange
-#         from models.trading_order import TradingOrder
-#         from routes.trading_operations import TradingOperation
-#         
-#         # Trading models re-enabled for real data functionality
-#         print("✅ Trading models loaded for real data functionality")
-#         
-#         DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE  # Renamed for security system
-#         engine = create_engine(DATABASE_URL, echo=False)
-#         SQLModel.metadata.create_all(engine)
-#         print("✅ Database initialized successfully (Users + Bots)")
-#         
-#         # TEMPORAL: Comentado para evitar deadlock en Railway startup
-#         # await create_default_admin_user()
-#         
-#     except Exception as e:
-#         print(f"⚠️ Database initialization warning: {e}")
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup"""
+    try:
+        # Import here to avoid circular imports
+        from sqlmodel import create_engine, SQLModel
+        from models.bot_config import BotConfig
+        from models.user import User, UserSession
+        from models.user_exchange import UserExchange
+        
+        DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE
+        engine = create_engine(DATABASE_URL, echo=False)
+        SQLModel.metadata.create_all(engine)
+        
+        db_type = "PostgreSQL" if "postgresql" in DATABASE_URL else "SQLite"
+        print(f"✅ Database initialized successfully - {db_type}")
+        
+    except Exception as e:
+        print(f"⚠️ Database initialization warning: {e}")
 
 # ✅ DL-001 COMPLIANCE: Función eliminada - No hardcode admin creation
 # Admin users se crean vía registro normal con email verification
