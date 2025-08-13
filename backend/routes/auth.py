@@ -7,19 +7,27 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from db.database import get_session
-from models.user import UserCreate, UserLogin, UserResponse, ApiKeysUpdate
-from services.auth_service import auth_service, get_current_user
-from services.email_service import email_service
-from models.user import User
+# Lazy imports to avoid psycopg2 dependency at module level
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=Dict[str, Any])
 async def register(
-    user_data: UserCreate,
-    session: Session = Depends(get_session)
+    user_data: dict,
+    session = Depends(lambda: None)
 ):
+    # Lazy imports
+    from db.database import get_session
+    from models.user import UserCreate, User
+    from services.auth_service import auth_service
+    from services.email_service import email_service
+    from sqlmodel import Session
+    
+    # Get actual session
+    session = get_session().__next__()
+    
+    # Convert dict to UserCreate
+    user_data = UserCreate(**user_data)
     """
     Registrar nuevo usuario en InteliBotX.
     
@@ -62,14 +70,26 @@ async def register(
 
 @router.post("/login", response_model=Dict[str, Any])
 async def login(
-    login_data: UserLogin,
-    session: Session = Depends(get_session)
+    login_data: dict,
+    session = Depends(lambda: None)
 ):
     """
     Iniciar sesión en InteliBotX.
     
     Autentica usuario y retorna token de acceso.
     """
+    # Lazy imports
+    from db.database import get_session
+    from models.user import UserLogin
+    from services.auth_service import auth_service
+    from sqlmodel import Session
+    
+    # Get actual session
+    session = get_session().__next__()
+    
+    # Convert dict to UserLogin
+    login_data = UserLogin(**login_data)
+    
     try:
         # Autenticar usuario
         user = auth_service.authenticate_user(login_data, session)
@@ -99,13 +119,20 @@ async def login(
             detail=f"Login failed: {str(e)}"
         )
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me")
 async def get_current_user_info(
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(lambda: None)
 ):
     """
     Obtener información del usuario autenticado actual.
     """
+    # Lazy imports
+    from models.user import UserResponse
+    from services.auth_service import get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     return UserResponse(
         id=current_user.id,
         email=current_user.email,
@@ -120,15 +147,28 @@ async def get_current_user_info(
 
 @router.put("/api-keys", response_model=Dict[str, str])
 async def update_api_keys(
-    api_keys_data: ApiKeysUpdate,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    api_keys_data: dict,
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
 ):
     """
     Actualizar claves API de Binance del usuario.
     
     Las claves se encriptan antes de almacenarse en la base de datos.
     """
+    # Lazy imports
+    from db.database import get_session
+    from models.user import ApiKeysUpdate
+    from services.auth_service import auth_service, get_current_user
+    from sqlmodel import Session
+    
+    # Get actual dependencies
+    session = get_session().__next__()
+    current_user = await get_current_user()
+    
+    # Convert dict to ApiKeysUpdate
+    api_keys_data = ApiKeysUpdate(**api_keys_data)
+    
     try:
         # Convertir a dict
         keys_dict = api_keys_data.dict(exclude_unset=True)
@@ -154,11 +194,17 @@ async def update_api_keys(
 
 @router.get("/binance-status", response_model=Dict[str, Any])
 async def check_binance_status(
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(lambda: None)
 ):
     """
     Verificar estado de configuración de Binance para el usuario.
     """
+    # Lazy imports
+    from services.auth_service import get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     return {
         "api_keys_configured": current_user.api_keys_configured,
         "preferred_mode": current_user.preferred_mode,
@@ -177,12 +223,21 @@ async def check_binance_status(
 
 @router.get("/user/exchanges", response_model=List[Dict[str, Any]])
 async def get_user_exchanges(
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
 ):
     """
     Obtener todos los exchanges configurados por el usuario.
     """
+    # Lazy imports
+    from db.database import get_session
+    from services.auth_service import get_current_user
+    from sqlmodel import Session
+    
+    # Get actual dependencies
+    session = get_session().__next__()
+    current_user = await get_current_user()
+    
     try:
         # Por ahora simulamos con datos mock basados en configuración del usuario
         exchanges = []
@@ -230,13 +285,22 @@ async def get_user_exchanges(
 @router.post("/user/exchanges", response_model=Dict[str, Any])
 async def add_user_exchange(
     exchange_data: Dict[str, Any],
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
 ):
     """
     Agregar un nuevo exchange al usuario.
     Por ahora actualiza las claves API del usuario directamente.
     """
+    # Lazy imports
+    from db.database import get_session
+    from services.auth_service import auth_service, get_current_user
+    from sqlmodel import Session
+    
+    # Get actual dependencies
+    session = get_session().__next__()
+    current_user = await get_current_user()
+    
     try:
         exchange_name = exchange_data.get("exchange_name", "").lower()
         exchange_type = exchange_data.get("exchange_type", "testnet").lower()
@@ -295,12 +359,21 @@ async def add_user_exchange(
 @router.delete("/user/exchanges/{exchange_id}", response_model=Dict[str, str])
 async def delete_user_exchange(
     exchange_id: int,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
 ):
     """
     Eliminar un exchange del usuario.
     """
+    # Lazy imports
+    from db.database import get_session
+    from services.auth_service import auth_service, get_current_user
+    from sqlmodel import Session
+    
+    # Get actual dependencies
+    session = get_session().__next__()
+    current_user = await get_current_user()
+    
     try:
         # Determinar qué claves eliminar basado en el ID
         keys_data = {}
@@ -339,11 +412,17 @@ async def delete_user_exchange(
 @router.post("/user/exchanges/{exchange_id}/test", response_model=Dict[str, Any])
 async def test_user_exchange(
     exchange_id: int,
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(lambda: None)
 ):
     """
     Probar conexión de un exchange específico del usuario.
     """
+    # Lazy imports
+    from services.auth_service import auth_service, get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
         # Determinar tipo de credenciales basado en ID
         mode = "TESTNET" if exchange_id == 1 else "MAINNET"
@@ -381,12 +460,18 @@ async def test_user_exchange(
 
 @router.post("/test-binance-connection", response_model=Dict[str, Any])
 async def test_binance_connection(
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(lambda: None)
 ):
     """
     Probar conexión REAL con Binance usando las claves del usuario.
     Solo para testnet por seguridad.
     """
+    # Lazy imports
+    from services.auth_service import auth_service, get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
         # Obtener credenciales testnet del usuario
         credentials = auth_service.get_user_binance_credentials(current_user, "TESTNET")
@@ -426,11 +511,17 @@ async def test_binance_connection(
 
 @router.get("/binance-account", response_model=Dict[str, Any])
 async def get_binance_account_info(
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(lambda: None)
 ):
     """
     Obtener información REAL de la cuenta Binance del usuario.
     """
+    # Lazy imports
+    from services.auth_service import auth_service, get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
         # Obtener credenciales testnet del usuario
         credentials = auth_service.get_user_binance_credentials(current_user, "TESTNET")
@@ -466,11 +557,17 @@ async def get_binance_account_info(
 @router.get("/binance-price/{symbol}", response_model=Dict[str, Any])
 async def get_binance_price(
     symbol: str,
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(lambda: None)
 ):
     """
     Obtener precio REAL de un símbolo desde Binance.
     """
+    # Lazy imports
+    from services.auth_service import auth_service, get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
         # Obtener credenciales testnet del usuario
         credentials = auth_service.get_user_binance_credentials(current_user, "TESTNET")
@@ -527,11 +624,19 @@ async def get_binance_price(
 @router.post("/verify-email", response_model=Dict[str, Any])
 async def verify_email(
     token: str,
-    session: Session = Depends(get_session)
+    session = Depends(lambda: None)
 ):
     """
     Verificar email del usuario usando token de verificación.
     """
+    # Lazy imports
+    from db.database import get_session
+    from services.auth_service import auth_service
+    from sqlmodel import Session
+    
+    # Get actual session
+    session = get_session().__next__()
+    
     try:
         user = auth_service.verify_email_token(token, session)
         
@@ -561,11 +666,20 @@ async def verify_email(
 @router.post("/resend-verification", response_model=Dict[str, Any])
 async def resend_verification(
     email: str,
-    session: Session = Depends(get_session)
+    session = Depends(lambda: None)
 ):
     """
     Reenviar email de verificación.
     """
+    # Lazy imports
+    from db.database import get_session
+    from services.auth_service import auth_service
+    from services.email_service import email_service
+    from sqlmodel import Session
+    
+    # Get actual session
+    session = get_session().__next__()
+    
     try:
         user = auth_service.resend_verification_token(email, session)
         
@@ -593,12 +707,21 @@ async def resend_verification(
 @router.post("/request-password-reset", response_model=Dict[str, Any])
 async def request_password_reset(
     request_data: Dict[str, str],
-    session: Session = Depends(get_session)
+    session = Depends(lambda: None)
 ):
     """
     Solicitar reset de contraseña.
     Envía email con enlace de recuperación.
     """
+    # Lazy imports
+    from db.database import get_session
+    from services.auth_service import auth_service
+    from services.email_service import email_service
+    from sqlmodel import Session
+    
+    # Get actual session
+    session = get_session().__next__()
+    
     try:
         email = request_data.get("email")
         
@@ -638,11 +761,19 @@ async def request_password_reset(
 @router.post("/reset-password", response_model=Dict[str, Any])
 async def reset_password(
     reset_data: Dict[str, str],
-    session: Session = Depends(get_session)
+    session = Depends(lambda: None)
 ):
     """
     Resetear contraseña usando token de recuperación.
     """
+    # Lazy imports
+    from db.database import get_session
+    from services.auth_service import auth_service
+    from sqlmodel import Session
+    
+    # Get actual session
+    session = get_session().__next__()
+    
     try:
         token = reset_data.get("token")
         new_password = reset_data.get("new_password")
@@ -679,13 +810,19 @@ async def reset_password(
 
 @router.post("/logout", response_model=Dict[str, str])
 async def logout(
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(lambda: None)
 ):
     """
     Cerrar sesión del usuario.
     
     En implementación completa se invalidaría el token JWT.
     """
+    # Lazy imports
+    from services.auth_service import get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     return {
         "message": "Logout successful",
         "timestamp": datetime.utcnow().isoformat()
