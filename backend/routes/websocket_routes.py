@@ -358,13 +358,22 @@ async def start_realtime_distribution():
     """Task en background para distribuir datos en tiempo real"""
     logger.info("🚀 Iniciando distribución de datos en tiempo real...")
     
-    # TODO: Implementar distribución automática cuando haya callbacks del realtime manager
-    # Por ahora, los datos se envían bajo demanda via WebSocket messages
-    
-    # Iniciar limpieza periódica
-    asyncio.create_task(realtime_manager.start_periodic_cleanup())
-    
-    logger.info("✅ Distribución de datos en tiempo real iniciada")
+    # Lazy import
+    try:
+        from services.realtime_data_manager import RealtimeDataManager
+        realtime_manager = RealtimeDataManager()
+        
+        # TODO: Implementar distribución automática cuando haya callbacks del realtime manager
+        # Por ahora, los datos se envían bajo demanda via WebSocket messages
+        
+        # Iniciar limpieza periódica
+        asyncio.create_task(realtime_manager.start_periodic_cleanup())
+        
+        logger.info("✅ Distribución de datos en tiempo real iniciada")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not initialize realtime distribution: {e}")
 
-# Inicializar distribución al importar el módulo
-asyncio.create_task(start_realtime_distribution())
+# Inicializar distribución de forma diferida (no al importar módulo)
+def initialize_realtime_distribution():
+    """Initialize realtime distribution when needed"""
+    asyncio.create_task(start_realtime_distribution())
