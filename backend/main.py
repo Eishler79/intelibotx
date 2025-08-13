@@ -75,7 +75,20 @@ app.add_middleware(
 async def startup_event():
     """Initialize database on startup"""
     try:
+        # CRITICAL: Runtime install psycopg2-binary (Railway Nixpacks bug - doesn't install from requirements.txt)
         DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE
+        
+        if "postgresql" in DATABASE_URL:
+            print("🔧 PostgreSQL detected - Installing psycopg2-binary at runtime...")
+            import subprocess
+            import sys
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "psycopg2-binary==2.9.9"])
+                print("✅ psycopg2-binary installed successfully at runtime")
+            except Exception as pip_error:
+                print(f"⚠️ Failed to install psycopg2-binary: {pip_error}")
+                raise
+        
         # Import here to avoid circular imports
         from sqlmodel import create_engine, SQLModel
         from models.bot_config import BotConfig
