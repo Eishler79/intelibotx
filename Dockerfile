@@ -12,7 +12,10 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
+# Force install psycopg2-binary first
+RUN pip install --no-cache-dir psycopg2-binary==2.9.9
+
+# Install remaining Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
