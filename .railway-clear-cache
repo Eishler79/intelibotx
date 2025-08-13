@@ -1,0 +1,6 @@
+# Railway Cache Clear Force
+# Timestamp: 2025-08-13 17:15:00
+# Reason: Requirements.txt not being read completely - build cuts off at line 15
+# Solution: Force complete rebuild with psycopg2-binary at line 1
+CLEAR_BUILD_CACHE=true
+FORCE_COMPLETE_REINSTALL=true
