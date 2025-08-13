@@ -1,20 +1,9 @@
 # 📦 Importaciones base
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import HTMLResponse
-from services.backtest_bot import run_backtest_and_plot
-from analytics.strategy_evaluator import StrategyEvaluator  # ✅ ARREGLADO: Usar clase correcta
-from models.bot_config import BotConfig  # 🆕 NUEVO: Acceso a configuración del bot
-from models.user_exchange import UserExchange  # 🆕 NUEVO: Para integración con exchanges
-from sqlmodel import Session, select
-from utils.symbol_validator import validate_symbol  # ✅ EXISTENTE: validador robusto
-from db.database import engine  # ✅ ARREGLADO: Usar database.py consolidado
-from services.exchange_factory import ExchangeFactory  # 🆕 NUEVO: Para conectar con exchanges reales
-from services.auth_service import AuthService, get_current_user  # 🆕 NUEVO: Para autenticación
-from models.user import User  # 🆕 NUEVO: Para dependency injection
 from typing import List, Dict, Any
-import pandas as pd  # ✅ NUEVO: Para cargar datos históricos
 
-# Dynamic imports for performance optimization
+# Lazy imports to avoid psycopg2 dependency at module level
 import asyncio
 
 # 🚀 Instancia del router
@@ -334,7 +323,14 @@ def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe
 
 # 📈 RUTA ACTUAL: Gráfico de backtest (sin cambios)
 @router.get("/api/backtest-chart/{symbol}", response_class=HTMLResponse)
-async def get_backtest_chart(symbol: str, current_user: User = Depends(get_current_user)):
+async def get_backtest_chart(symbol: str, current_user = Depends(lambda: None)):
+    # Lazy imports
+    from services.auth_service import get_current_user
+    from services.backtest_bot import run_backtest_and_plot
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     html_chart = run_backtest_and_plot(symbol)
     return HTMLResponse(content=html_chart)
 
@@ -344,12 +340,21 @@ async def get_backtest_chart(symbol: str, current_user: User = Depends(get_curre
 @router.post("/api/run-smart-trade/{symbol}")
 async def run_smart_trade(
     symbol: str,
-    current_user: User = Depends(get_current_user),  # 🆕 AGREGAR: Autenticación requerida
+    current_user = Depends(lambda: None),  # 🆕 AGREGAR: Autenticación requerida
     scalper_mode: bool = False,
     quantity: float = 0.001,
     execute_real: bool = False
 ):
     """Ejecuta Smart Trade con análisis técnico completo"""
+    # Lazy imports
+    from models.bot_config import BotConfig
+    from services.auth_service import get_current_user
+    from sqlmodel import Session, select
+    from db.database import engine
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
         # ✅ Normalización del símbolo
         normalized_symbol = symbol.upper().strip().replace(" ", "")
@@ -395,9 +400,19 @@ async def run_smart_trade(
 
 # 🤖 CRUD ENDPOINTS PARA BOTS
 
-@router.get("/api/bots", response_model=List[BotConfig])
-async def get_bots(current_user: User = Depends(get_current_user)):
+@router.get("/api/bots")
+async def get_bots(current_user = Depends(lambda: None)):
     """Obtener lista de todos los bots"""
+    # Lazy imports
+    from models.bot_config import BotConfig
+    from models.user import User
+    from services.auth_service import get_current_user
+    from sqlmodel import Session, select
+    from db.database import engine
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
         with Session(engine) as session:
             # ✅ DL-006 COMPLIANCE: Solo bots del usuario autenticado
@@ -412,10 +427,20 @@ async def get_bots(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/api/create-bot")
-async def create_bot(bot_data: dict, current_user: User = Depends(get_current_user)):
+async def create_bot(bot_data: dict, current_user = Depends(lambda: None)):
     """Crear un nuevo bot con autenticación JWT"""
+    # Lazy imports
+    from models.bot_config import BotConfig
+    from models.user import User
+    from services.auth_service import get_current_user
+    from sqlmodel import Session
+    from db.database import engine
+    from utils.symbol_validator import validate_symbol
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
-        
         with Session(engine) as session:
             # ✅ DL-006 COMPLIANCE: Usar JWT auth en lugar de hardcode user_id
             # user_id viene del token JWT validado en get_current_user dependency
@@ -492,8 +517,17 @@ async def create_bot(bot_data: dict, current_user: User = Depends(get_current_us
 
 
 @router.delete("/api/bots/{bot_id}")
-async def delete_bot(bot_id: int, current_user: User = Depends(get_current_user)):
+async def delete_bot(bot_id: int, current_user = Depends(lambda: None)):
     """Eliminar un bot"""
+    # Lazy imports
+    from models.bot_config import BotConfig
+    from services.auth_service import get_current_user
+    from sqlmodel import Session, select
+    from db.database import engine
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
         with Session(engine) as session:
             query = select(BotConfig).where(BotConfig.id == bot_id)
@@ -522,8 +556,18 @@ async def delete_bot(bot_id: int, current_user: User = Depends(get_current_user)
 
 
 @router.get("/api/backtest-results/{bot_id}")
-async def get_backtest_results(bot_id: int, current_user: User = Depends(get_current_user)):
+async def get_backtest_results(bot_id: int, current_user = Depends(lambda: None)):
     """Obtener resultados de backtest para un bot específico"""
+    # Lazy imports
+    from models.bot_config import BotConfig
+    from services.auth_service import get_current_user
+    from sqlmodel import Session, select
+    from db.database import engine
+    from services.backtest_bot import run_backtest_and_plot
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
         with Session(engine) as session:
             query = select(BotConfig).where(BotConfig.id == bot_id)
@@ -565,8 +609,17 @@ async def get_backtest_results(bot_id: int, current_user: User = Depends(get_cur
 
 
 @router.put("/api/bots/{bot_id}")
-async def update_bot(bot_id: int, bot_data: dict, current_user: User = Depends(get_current_user)):
+async def update_bot(bot_id: int, bot_data: dict, current_user = Depends(lambda: None)):
     """Actualizar configuración de un bot"""
+    # Lazy imports
+    from models.bot_config import BotConfig
+    from services.auth_service import get_current_user
+    from sqlmodel import Session, select
+    from db.database import engine
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     try:
         with Session(engine) as session:
             query = select(BotConfig).where(BotConfig.id == bot_id)
@@ -604,8 +657,14 @@ async def update_bot(bot_id: int, bot_data: dict, current_user: User = Depends(g
 # Control de Bots (para el panel de control dinámico)
 
 @router.post("/api/bots/{bot_id}/start")
-async def start_bot(bot_id: int, current_user: User = Depends(get_current_user)):
+async def start_bot(bot_id: int, current_user = Depends(lambda: None)):
     """Iniciar un bot"""
+    # Lazy imports
+    from services.auth_service import get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     return {
         "message": f"✅ Bot {bot_id} iniciado",
         "status": "RUNNING",
@@ -614,8 +673,14 @@ async def start_bot(bot_id: int, current_user: User = Depends(get_current_user))
 
 
 @router.post("/api/bots/{bot_id}/pause")
-async def pause_bot(bot_id: int, current_user: User = Depends(get_current_user)):
+async def pause_bot(bot_id: int, current_user = Depends(lambda: None)):
     """Pausar un bot"""
+    # Lazy imports
+    from services.auth_service import get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     return {
         "message": f"⏸️ Bot {bot_id} pausado",
         "status": "PAUSED",
@@ -624,8 +689,14 @@ async def pause_bot(bot_id: int, current_user: User = Depends(get_current_user))
 
 
 @router.post("/api/bots/{bot_id}/stop")
-async def stop_bot(bot_id: int, current_user: User = Depends(get_current_user)):
+async def stop_bot(bot_id: int, current_user = Depends(lambda: None)):
     """Detener un bot"""
+    # Lazy imports
+    from services.auth_service import get_current_user
+    
+    # Get actual current user
+    current_user = await get_current_user()
+    
     return {
         "message": f"⏹️ Bot {bot_id} detenido",
         "status": "STOPPED",
