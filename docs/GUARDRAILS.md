@@ -78,3 +78,34 @@ Antes de modificar cualquiera de estos, se debe:
   - Todos los componentes que consumen APIs
   - Consistencia con endpoints backend
   - Manejo de errores en UI
+
+---
+
+## 6. Premisas DL-001 COMPLIANCE (CRÍTICO)
+### **Reglas Anti-Hardcode y Anti-Simulación**
+- **PROHIBIDO:** Hardcode de usuarios, passwords, API keys
+- **PROHIBIDO:** Datos temporales, simulados, test/demo
+- **PROHIBIDO:** Credenciales admin hardcoded
+- **REQUERIDO:** Solo datos reales de usuarios reales
+- **REQUERIDO:** Email verification real obligatorio
+- **REQUERIDO:** Configuración API keys por usuario individual
+- **VALIDACIÓN:** Antes de cualquier test, confirmar compliance DL-001
+
+### **Testing E2E DL-001 Compliant**
+- **DATOS LIMPIOS:** Base de datos sin usuarios registrados
+- **REGISTRO REAL:** Usuario real con email real verificable
+- **API KEYS REALES:** Testnet Binance con credenciales válidas
+- **NO TEST USERS:** Prohibido crear usuarios artificiales
+
+---
+
+## 7. Premisas URLs y Endpoints (NUEVO)
+### **URLs Railway Production (CRÍTICO)**
+- **URL OFICIAL:** `https://intelibotx-production.up.railway.app`
+- **PROHIBIDO:** Cambiar URL sin autorización explícita
+- **REQUERIDO:** Documentar cualquier cambio de URL con:
+  - Motivo del cambio
+  - Autorización previa
+  - Impacto en sistema
+  - Plan de migración
+- **VALIDACIÓN:** Siempre confirmar URL antes de testing E2E

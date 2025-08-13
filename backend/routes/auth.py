@@ -24,7 +24,8 @@ async def register(
     from sqlmodel import Session
     
     # Get actual session
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     
     # Convert dict to UserCreate
     user_data = UserCreate(**user_data)
