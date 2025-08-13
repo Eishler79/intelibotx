@@ -146,8 +146,8 @@ async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str, toke
                 "message": "Please authenticate with JWT token",
                 "timestamp": datetime.utcnow().isoformat()
             }, client_id)
-    
-    try:
+        
+        # WebSocket message handling loop
         while True:
             # Recibir mensaje del cliente
             data = await websocket.receive_text()

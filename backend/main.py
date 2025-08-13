@@ -86,11 +86,7 @@ async def startup_event():
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "psycopg2-binary==2.9.9"])
                 print("✅ psycopg2-binary installed successfully at runtime")
                 
-                # Restart worker to reload imports with psycopg2 available
-                print("🔄 Restarting worker to reload auth routers...")
-                import signal
-                import os
-                os.kill(os.getpid(), signal.SIGUSR2)  # Graceful restart
+                print("🔄 psycopg2-binary ready for lazy imports")
                 
             except Exception as pip_error:
                 print(f"⚠️ Failed to install psycopg2-binary: {pip_error}")
