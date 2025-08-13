@@ -9,13 +9,17 @@
 - [x] {ERROR500_FIX} **Debug Error 500 endpoints Smart Scalper** — ✅ **RESUELTO 2025-08-13** - E2E clean completado
 - [x] {CORE04} **SignalQualityAssessor implementation** — ✅ **COMPLETADO 2025-08-13** - Integrado en Smart Scalper
 
-### **🚀 NUEVAS PRIORIDADES POST E2E CLEAN**
-- {DB_MIGRATION_RESUMIR} **Migración PostgreSQL definitiva** — Sistema limpio listo para migración production-ready  
-  *(SPEC_REF: Sistema DL-001 compliant + auth robusto)*
-- {PRODUCTION_DEPLOY} **Deploy producción Railway** — Deploy final con sistema robusto + auth + datos reales  
-  *(SPEC_REF: E2E clean completado)*
+### **🚀 PRIORIDADES INMEDIATAS - SISTEMA FUNCIONAL**
+- [x] {DB_MIGRATION_RESUMIR} **Migración PostgreSQL definitiva** — ✅ **COMPLETADO 2025-08-13** Sistema + auth robusto funcional
+- [x] {PRODUCTION_DEPLOY} **Deploy producción Railway** — ✅ **COMPLETADO 2025-08-13** 11/11 routers + PostgreSQL + lazy imports  
 - {E2E_TESTING} **Testing E2E completo** — Validar flujo: Auth → Exchange → Bot → Trading  
-  *(SPEC_REF: PLAN_SESION.md actividades subsiguientes)*
+  *(SPEC_REF: Sistema 11/11 routers funcional)*
+- {EXCHANGE_VALIDATION_REAL} **Validación conexiones reales** — Testear exchanges con credenciales usuario  
+  *(SPEC_REF: DL-001 compliance + datos reales)*
+
+### **🔄 POST-E2E COMPLETION**
+- {WEBSOCKET_LAZY_IMPORTS_COMPLETE} **WebSocket lazy imports completos** — Revertir disable + aplicar lazy imports RealtimeDataManager  
+  *(SPEC_REF: DL-001 no-temporal + práctica completa)*
 
 ---
 
