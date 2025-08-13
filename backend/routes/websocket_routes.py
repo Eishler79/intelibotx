@@ -14,10 +14,7 @@ from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Query, Depends
 from fastapi.responses import JSONResponse
 
-from services.realtime_data_manager import RealtimeDataManager
-from services.auth_service import AuthService
-from services.user_trading_service import UserTradingService
-from db.database import get_session
+# Lazy imports to avoid psycopg2 dependency at module level
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -123,6 +120,10 @@ async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str, toke
     try:
         from db.database import get_session
         from sqlmodel import Session as SQLSession
+        from services.auth_service import AuthService
+        
+        # Initialize auth service
+        auth_service = AuthService()
         
         # Obtener sesión de BD
         session_gen = get_session()
