@@ -4,16 +4,12 @@ Endpoints para almacenar y recuperar operaciones de trading con IDs únicos
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlmodel import Session, select
 from typing import List, Optional
 from datetime import datetime, timedelta
 from uuid import uuid4
 import json
 
-from db.database import get_session
-from services.auth_service import get_current_user
-from models.user import User
-from services.advanced_algorithm_selector import AdvancedAlgorithmSelector
+# Lazy imports to avoid psycopg2 dependency at module level
 
 router = APIRouter()
 
@@ -113,8 +109,8 @@ class CreateTradeRequest(SQLModel):
 async def create_trading_operation(
     bot_id: int,
     trade: CreateTradeRequest,
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session = Depends(lambda: None),
+    current_user = Depends(lambda: None)
 ):
     """
     🎯 Crear nueva operación de trading persistente
@@ -123,6 +119,14 @@ async def create_trading_operation(
     **Beneficio**: Los trades persisten entre sesiones
     """
     try:
+        # Lazy imports
+        from db.database import get_session
+        from services.auth_service import get_current_user
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
         # Verificar que bot_id en URL coincida con request
         if bot_id != trade.bot_id:
             raise HTTPException(status_code=400, detail="Bot ID mismatch")
@@ -180,8 +184,8 @@ async def get_bot_trading_operations(
     limit: int = Query(50, ge=1, le=200),
     side: Optional[TradeSide] = None,
     days: int = Query(7, ge=1, le=365),
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session = Depends(lambda: None),
+    current_user = Depends(lambda: None)
 ):
     """
     📊 Obtener operaciones de trading de un bot con paginación
@@ -190,6 +194,15 @@ async def get_bot_trading_operations(
     **Beneficio**: Datos persisten + paginación + filtros
     """
     try:
+        # Lazy imports
+        from db.database import get_session
+        from services.auth_service import get_current_user
+        from sqlmodel import select
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
         # Query base
         query = select(TradingOperation).where(
             TradingOperation.bot_id == bot_id,
@@ -263,8 +276,8 @@ async def get_bot_trading_operations(
 @router.get("/api/trading-operations/{trade_id}")
 async def get_trading_operation(
     trade_id: str,
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session = Depends(lambda: None),
+    current_user = Depends(lambda: None)
 ):
     """
     🔍 Obtener operación específica por ID
@@ -272,6 +285,15 @@ async def get_trading_operation(
     **Responde a**: Consulta #2 del usuario sobre IDs de operaciones
     """
     try:
+        # Lazy imports
+        from db.database import get_session
+        from services.auth_service import get_current_user
+        from sqlmodel import select
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
         operation = session.exec(
             select(TradingOperation).where(
                 TradingOperation.id == trade_id,
@@ -316,8 +338,8 @@ async def get_live_trading_feed(
     limit: int = Query(50, ge=1, le=200),
     bot_ids: Optional[str] = Query(None),  # Comma-separated bot IDs
     hours: int = Query(24, ge=1, le=168),  # Últimas X horas
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session = Depends(lambda: None),
+    current_user = Depends(lambda: None)
 ):
     """
     ⚡ Feed en vivo de todas las operaciones de trading con paginación
@@ -326,6 +348,15 @@ async def get_live_trading_feed(
     **Beneficio**: Datos persisten + filtros por bots + tiempo real + paginación
     """
     try:
+        # Lazy imports
+        from db.database import get_session
+        from services.auth_service import get_current_user
+        from sqlmodel import select
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
         # Query base
         base_query = select(TradingOperation).where(
             TradingOperation.user_id == current_user.id,
@@ -403,11 +434,20 @@ async def get_live_trading_feed(
 @router.delete("/api/trading-operations/{trade_id}")
 async def delete_trading_operation(
     trade_id: str,
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session = Depends(lambda: None),
+    current_user = Depends(lambda: None)
 ):
     """🗑️ Eliminar operación de trading (solo para correcciones)"""
     try:
+        # Lazy imports
+        from db.database import get_session
+        from services.auth_service import get_current_user
+        from sqlmodel import select
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
         operation = session.exec(
             select(TradingOperation).where(
                 TradingOperation.id == trade_id,

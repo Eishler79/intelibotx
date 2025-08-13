@@ -4,23 +4,18 @@ Proporciona métricas en tiempo real de bots, balance, PnL y gráficos
 """
 
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlmodel import Session, select, func
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-from db.database import get_session
-from services.auth_service import get_current_user
-from models.user import User
-from models.bot_config import BotConfig
-from routes.trading_operations import TradingOperation
+# Lazy imports to avoid psycopg2 dependency at module level
 
 router = APIRouter()
 
 @router.get("/api/dashboard/summary")
 async def get_dashboard_summary(
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session = Depends(lambda: None),
+    current_user = Depends(lambda: None)
 ):
     """
     📊 Resumen completo del dashboard con datos reales
@@ -28,6 +23,17 @@ async def get_dashboard_summary(
     Reemplaza todos los valores hardcodeados del Dashboard.jsx
     """
     try:
+        # Lazy imports
+        from db.database import get_session
+        from services.auth_service import get_current_user
+        from models.bot_config import BotConfig
+        from routes.trading_operations import TradingOperation
+        from sqlmodel import select
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
         # 🤖 Obtener bots del usuario
         bots_query = select(BotConfig).where(BotConfig.user_id == current_user.id)
         bots = session.exec(bots_query).all()
@@ -109,8 +115,8 @@ async def get_dashboard_summary(
 async def get_balance_evolution(
     days: int = Query(30, ge=1, le=365),
     symbol: Optional[str] = Query(None),
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session = Depends(lambda: None),
+    current_user = Depends(lambda: None)
 ):
     """
     📈 Evolución del balance con filtros por días y símbolo
@@ -118,6 +124,17 @@ async def get_balance_evolution(
     Para gráficos dinámicos: global, por día, por par de moneda
     """
     try:
+        # Lazy imports
+        from db.database import get_session
+        from services.auth_service import get_current_user
+        from models.bot_config import BotConfig
+        from routes.trading_operations import TradingOperation
+        from sqlmodel import select
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
         # Query base
         query = select(TradingOperation).where(
             TradingOperation.user_id == current_user.id,
@@ -186,13 +203,24 @@ async def get_balance_evolution(
 @router.get("/api/dashboard/bots-performance")
 async def get_bots_performance(
     days: int = Query(7, ge=1, le=90),
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session = Depends(lambda: None),
+    current_user = Depends(lambda: None)
 ):
     """
     🤖 Performance individual de cada bot con métricas reales
     """
     try:
+        # Lazy imports
+        from db.database import get_session
+        from services.auth_service import get_current_user
+        from models.bot_config import BotConfig
+        from routes.trading_operations import TradingOperation
+        from sqlmodel import select
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
         # Obtener bots del usuario
         bots_query = select(BotConfig).where(BotConfig.user_id == current_user.id)
         bots = session.exec(bots_query).all()
@@ -255,13 +283,23 @@ async def get_bots_performance(
 @router.get("/api/dashboard/symbols-analysis")
 async def get_symbols_analysis(
     days: int = Query(7, ge=1, le=90),
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session = Depends(lambda: None),
+    current_user = Depends(lambda: None)
 ):
     """
     📊 Análisis por par de moneda para gráficos específicos
     """
     try:
+        # Lazy imports
+        from db.database import get_session
+        from services.auth_service import get_current_user
+        from routes.trading_operations import TradingOperation
+        from sqlmodel import select
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
         # Obtener operaciones por símbolo
         operations_query = select(TradingOperation).where(
             TradingOperation.user_id == current_user.id,

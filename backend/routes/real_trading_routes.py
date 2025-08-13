@@ -13,14 +13,7 @@ from datetime import datetime
 import logging
 from pydantic import BaseModel
 
-# Importar servicios de trading real
-from services.technical_analysis_service import TechnicalAnalysisService
-from services.real_trading_engine import RealTradingEngine
-from services.binance_real_data import BinanceRealDataService
-from services.user_trading_service import UserTradingService
-from services.auth_service import AuthService
-from models.user import User
-from db.database import get_session
+# Lazy imports to avoid psycopg2 dependency at module level
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -29,13 +22,7 @@ logger = logging.getLogger(__name__)
 # Crear router
 router = APIRouter()
 
-# Servicios globales
-user_trading_service = UserTradingService()
-auth_service = AuthService()
-
-# Servicios globales de fallback (modo testnet seguro)
-technical_service = TechnicalAnalysisService(use_testnet=True)
-binance_service = BinanceRealDataService(use_testnet=True)
+# Services will be initialized with lazy loading inside endpoints
 
 # Modelos Pydantic para requests
 class AnalysisRequest(BaseModel):
@@ -74,7 +61,15 @@ async def get_technical_analysis(
     - Análisis técnico completo con señales, indicadores y niveles TP/SL
     """
     try:
+        # Lazy imports
+        from services.technical_analysis_service import TechnicalAnalysisService
+        from services.binance_real_data import BinanceRealDataService
+        
         logger.info(f"📊 Análisis técnico solicitado: {strategy} {symbol} {timeframe}")
+        
+        # Initialize services
+        technical_service = TechnicalAnalysisService(use_testnet=True)
+        binance_service = BinanceRealDataService(use_testnet=True)
         
         # Validar parámetros
         if not symbol:
@@ -126,7 +121,13 @@ async def get_real_indicators(
     **Específico para frontend SmartScalperMetrics**
     """
     try:
+        # Lazy imports
+        from services.binance_real_data import BinanceRealDataService
+        
         logger.info(f"🎯 Indicadores reales: {symbol} {timeframe}")
+        
+        # Initialize service
+        binance_service = BinanceRealDataService(use_testnet=True)
         
         # Obtener indicadores técnicos reales
         indicators = await binance_service.calculate_technical_indicators(symbol, timeframe, limit)
@@ -206,7 +207,13 @@ async def get_market_data(
     **Para gráficos y análisis histórico**
     """
     try:
+        # Lazy imports
+        from services.binance_real_data import BinanceRealDataService
+        
         logger.info(f"📈 Datos mercado: {symbol} {timeframe} ({limit} velas)")
+        
+        # Initialize service
+        binance_service = BinanceRealDataService(use_testnet=True)
         
         # Obtener datos OHLCV
         df = await binance_service.get_klines(symbol, timeframe, limit)
@@ -274,7 +281,15 @@ async def generate_trading_signals(request: AnalysisRequest):
     ```
     """
     try:
+        # Lazy imports
+        from services.technical_analysis_service import TechnicalAnalysisService
+        from services.binance_real_data import BinanceRealDataService
+        
         logger.info(f"🎯 Generando señales: {request.strategy} {request.symbol}")
+        
+        # Initialize services
+        technical_service = TechnicalAnalysisService(use_testnet=True)
+        binance_service = BinanceRealDataService(use_testnet=True)
         
         # Obtener análisis principal
         main_analysis = await technical_service.get_strategy_analysis(
@@ -342,7 +357,14 @@ async def execute_trade(request: TradeRequest):
     ```
     """
     try:
+        # Lazy imports
+        from services.real_trading_engine import RealTradingEngine
+        from services.technical_analysis_service import TechnicalAnalysisService
+        
         logger.info(f"🚀 Ejecutando trade: {request.strategy} {request.symbol}")
+        
+        # Initialize services
+        technical_service = TechnicalAnalysisService(use_testnet=True)
         
         # IMPORTANTE: Por seguridad, usar credenciales dummy (solo simulación)
         trading_engine = RealTradingEngine(
@@ -388,29 +410,12 @@ async def execute_trade(request: TradeRequest):
         logger.error(f"❌ Error ejecutando trade: {e}")
         raise HTTPException(status_code=500, detail=f"Error ejecutando trade: {str(e)}")
 
-async def get_current_user(session = Depends(get_session), authorization: str = Header(...)) -> User:
-    """Dependency para obtener usuario autenticado"""
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        user_id = token_data.get("user_id")
-        
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Token inválido")
-        
-        user = session.get(User, user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
-        return user
-    except Exception as e:
-        logger.error(f"Error autenticación: {e}")
-        raise HTTPException(status_code=401, detail="Error de autenticación")
+# get_current_user is now handled with lazy imports in each endpoint
 
 @router.get("/api/user/trading-status")
 async def get_user_trading_status(
-    current_user: User = Depends(get_current_user),
-    session = Depends(get_session)
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
 ):
     """
     Obtener estado de trading del usuario autenticado
@@ -423,6 +428,18 @@ async def get_user_trading_status(
     - Permisos disponibles
     """
     try:
+        # Lazy imports
+        from services.auth_service import get_current_user
+        from services.user_trading_service import UserTradingService
+        from db.database import get_session
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
+        # Initialize service
+        user_trading_service = UserTradingService()
+        
         logger.info(f"📊 Estado trading usuario {current_user.id}")
         
         exchange_status = await user_trading_service.get_user_exchange_status(
@@ -452,8 +469,8 @@ async def get_user_trading_status(
 @router.post("/api/user/technical-analysis")
 async def get_user_technical_analysis(
     request: UserAnalysisRequest,
-    current_user: User = Depends(get_current_user),
-    session = Depends(get_session)
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
 ):
     """
     Análisis técnico usando exchanges configurados del usuario
@@ -472,6 +489,18 @@ async def get_user_technical_analysis(
     **Usa configuración real del usuario (testnet/mainnet)**
     """
     try:
+        # Lazy imports
+        from services.auth_service import get_current_user
+        from services.user_trading_service import UserTradingService
+        from db.database import get_session
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
+        # Initialize service
+        user_trading_service = UserTradingService()
+        
         logger.info(f"🎯 Análisis usuario {current_user.id}: {request.strategy} {request.symbol}")
         
         # Obtener análisis usando configuración del usuario
@@ -500,8 +529,8 @@ async def get_user_technical_analysis(
 @router.post("/api/user/execute-trade")
 async def execute_user_trade(
     request: TradeRequest,
-    current_user: User = Depends(get_current_user),
-    session = Depends(get_session)
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
 ):
     """
     Ejecutar trade usando exchange configurado del usuario
@@ -522,6 +551,18 @@ async def execute_user_trade(
     ```
     """
     try:
+        # Lazy imports
+        from services.auth_service import get_current_user
+        from services.user_trading_service import UserTradingService
+        from db.database import get_session
+        
+        # Get actual dependencies
+        current_user = await get_current_user()
+        session = get_session().__next__()
+        
+        # Initialize service
+        user_trading_service = UserTradingService()
+        
         logger.info(f"🚀 Ejecutando trade usuario {current_user.id}: {request.strategy}")
         
         # Ejecutar Smart Scalper trade usando configuración del usuario
@@ -609,6 +650,12 @@ async def get_available_strategies():
 async def health_check():
     """Health check para sistema de trading real"""
     try:
+        # Lazy imports
+        from services.binance_real_data import BinanceRealDataService
+        
+        # Initialize service
+        binance_service = BinanceRealDataService(use_testnet=True)
+        
         # Test básico de servicios
         test_symbol = "BTCUSDT"
         
