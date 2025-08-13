@@ -23,10 +23,7 @@ logger = logging.getLogger(__name__)
 # Router para WebSocket
 router = APIRouter()
 
-# Servicios globales
-realtime_manager = RealtimeDataManager()  # Ya no hardcodea testnet
-auth_service = AuthService()
-user_trading_service = UserTradingService()
+# Servicios se inicializan con lazy imports en cada función
 
 # Manager de conexiones WebSocket
 class WebSocketConnectionManager:
