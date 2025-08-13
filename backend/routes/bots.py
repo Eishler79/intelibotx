@@ -16,7 +16,7 @@ bot_states = {}
 # 🧠 Smart Scalper Engine - Análisis profesional con datos reales
 async def execute_smart_scalper_analysis(
     symbol: str, 
-    bot_config: BotConfig, 
+    bot_config, 
     quantity: float, 
     execute_real: bool = False
 ) -> Dict[str, Any]:
