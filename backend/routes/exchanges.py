@@ -7,65 +7,32 @@ import logging
 from typing import List, Dict, Any
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Header
-from sqlmodel import Session, select
-from models.user import User
-from models.user_exchange import (
-    UserExchange, 
-    ExchangeConnectionRequest, 
-    ExchangeConnectionResponse,
-    ExchangeTestResponse
-)
-from services.auth_service import AuthService
-from services.encryption_service import EncryptionService
-from services.exchange_factory import ExchangeFactory
-from db.database import get_session
+
+# Lazy imports to avoid psycopg2 dependency at module level
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/user", tags=["exchanges"])
 
-# Services
-auth_service = AuthService()
-encryption_service = EncryptionService()
-exchange_factory = ExchangeFactory(encryption_service)
 
 
-async def get_current_user(session: Session = Depends(get_session), 
-                          authorization: str = Header(...)) -> User:
-    """Dependency para obtener usuario actual"""
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        user_id = token_data.get("user_id")
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication token"
-            )
-        
-        user = session.get(User, user_id)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        
-        return user
-        
-    except Exception as e:
-        logger.error(f"Authentication error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication failed"
-        )
-
-
-@router.get("/exchanges", response_model=List[ExchangeConnectionResponse])
+@router.get("/exchanges")
 async def list_user_exchanges(
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
-) -> List[ExchangeConnectionResponse]:
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
+):
     """Listar exchanges del usuario"""
+    # Lazy imports
+    from models.user import User
+    from models.user_exchange import UserExchange, ExchangeConnectionResponse
+    from services.auth_service import get_current_user
+    from db.database import get_session
+    from sqlmodel import Session, select
+    
+    # Get actual dependencies
+    current_user = await get_current_user()
+    session = get_session().__next__()
+    
     try:
         statement = select(UserExchange).where(UserExchange.user_id == current_user.id)
         exchanges = session.exec(statement).all()
@@ -95,13 +62,30 @@ async def list_user_exchanges(
         )
 
 
-@router.post("/exchanges", response_model=ExchangeConnectionResponse)
+@router.post("/exchanges")
 async def add_user_exchange(
-    exchange_request: ExchangeConnectionRequest,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
-) -> ExchangeConnectionResponse:
+    exchange_request,
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
+):
     """Agregar nuevo exchange para usuario"""
+    # Lazy imports
+    from models.user import User
+    from models.user_exchange import UserExchange, ExchangeConnectionRequest, ExchangeConnectionResponse
+    from services.auth_service import get_current_user
+    from db.database import get_session
+    from sqlmodel import Session, select
+    from services.encryption_service import EncryptionService
+    from services.exchange_factory import ExchangeFactory
+    
+    # Get actual dependencies
+    current_user = await get_current_user()
+    session = get_session().__next__()
+    
+    # Initialize services
+    encryption_service = EncryptionService()
+    exchange_factory = ExchangeFactory(encryption_service)
+    
     try:
         # Validate exchange is supported
         if not exchange_factory.is_exchange_supported(exchange_request.exchange_name):
@@ -203,14 +187,29 @@ async def add_user_exchange(
         )
 
 
-@router.put("/exchanges/{exchange_id}", response_model=ExchangeConnectionResponse)
+@router.put("/exchanges/{exchange_id}")
 async def update_user_exchange(
     exchange_id: int,
-    exchange_request: ExchangeConnectionRequest,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
-) -> ExchangeConnectionResponse:
+    exchange_request,
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
+):
     """Actualizar exchange del usuario"""
+    # Lazy imports
+    from models.user import User
+    from models.user_exchange import UserExchange, ExchangeConnectionRequest, ExchangeConnectionResponse
+    from services.auth_service import get_current_user
+    from db.database import get_session
+    from sqlmodel import Session, select
+    from services.encryption_service import EncryptionService
+    
+    # Get actual dependencies
+    current_user = await get_current_user()
+    session = get_session().__next__()
+    
+    # Initialize services
+    encryption_service = EncryptionService()
+    
     try:
         # Get existing exchange
         user_exchange = session.get(UserExchange, exchange_id)
@@ -262,10 +261,21 @@ async def update_user_exchange(
 @router.delete("/exchanges/{exchange_id}")
 async def delete_user_exchange(
     exchange_id: int,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
-) -> Dict[str, Any]:
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
+):
     """Eliminar exchange del usuario"""
+    # Lazy imports
+    from models.user import User
+    from models.user_exchange import UserExchange
+    from services.auth_service import get_current_user
+    from db.database import get_session
+    from sqlmodel import Session, select
+    
+    # Get actual dependencies
+    current_user = await get_current_user()
+    session = get_session().__next__()
+    
     try:
         user_exchange = session.get(UserExchange, exchange_id)
         if not user_exchange or user_exchange.user_id != current_user.id:
@@ -290,13 +300,30 @@ async def delete_user_exchange(
         )
 
 
-@router.post("/exchanges/{exchange_id}/test", response_model=ExchangeTestResponse)
+@router.post("/exchanges/{exchange_id}/test")
 async def test_exchange_connection(
     exchange_id: int,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
-) -> ExchangeTestResponse:
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
+):
     """Probar conexión con exchange"""
+    # Lazy imports
+    from models.user import User
+    from models.user_exchange import UserExchange, ExchangeTestResponse
+    from services.auth_service import get_current_user
+    from db.database import get_session
+    from sqlmodel import Session, select
+    from services.encryption_service import EncryptionService
+    from services.exchange_factory import ExchangeFactory
+    
+    # Get actual dependencies
+    current_user = await get_current_user()
+    session = get_session().__next__()
+    
+    # Initialize services
+    encryption_service = EncryptionService()
+    exchange_factory = ExchangeFactory(encryption_service)
+    
     try:
         user_exchange = session.get(UserExchange, exchange_id)
         if not user_exchange or user_exchange.user_id != current_user.id:
@@ -382,10 +409,27 @@ async def test_exchange_connection(
 @router.get("/exchanges/{exchange_id}/balance")
 async def get_exchange_balance(
     exchange_id: int,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
-) -> Dict[str, Any]:
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
+):
     """Obtener balance del exchange"""
+    # Lazy imports
+    from models.user import User
+    from models.user_exchange import UserExchange
+    from services.auth_service import get_current_user
+    from db.database import get_session
+    from sqlmodel import Session, select
+    from services.encryption_service import EncryptionService
+    from services.exchange_factory import ExchangeFactory
+    
+    # Get actual dependencies
+    current_user = await get_current_user()
+    session = get_session().__next__()
+    
+    # Initialize services
+    encryption_service = EncryptionService()
+    exchange_factory = ExchangeFactory(encryption_service)
+    
     try:
         user_exchange = session.get(UserExchange, exchange_id)
         if not user_exchange or user_exchange.user_id != current_user.id:
@@ -437,9 +481,9 @@ async def get_exchange_balance(
 @router.get("/exchanges/{exchange_id}/market-types")
 async def get_exchange_market_types(
     exchange_id: int,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
-) -> Dict[str, Any]:
+    current_user = Depends(lambda: None),
+    session = Depends(lambda: None)
+):
     """
     🏛️ Obtener tipos de mercado disponibles por exchange
     
@@ -449,6 +493,17 @@ async def get_exchange_market_types(
     - KuCoin: SPOT, FUTURES, MARGIN
     - OKX: SPOT, SWAP, FUTURES, OPTIONS
     """
+    # Lazy imports
+    from models.user import User
+    from models.user_exchange import UserExchange
+    from services.auth_service import get_current_user
+    from db.database import get_session
+    from sqlmodel import Session, select
+    
+    # Get actual dependencies
+    current_user = await get_current_user()
+    session = get_session().__next__()
+    
     try:
         # Get user exchange
         user_exchange = session.get(UserExchange, exchange_id)
