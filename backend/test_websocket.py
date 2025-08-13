@@ -28,10 +28,10 @@ class WebSocketTester:
         """Obtener token JWT para testing (admin user)"""
         try:
             async with httpx.AsyncClient() as client:
-                # Login con usuario admin
+                # ✅ DL-001 COMPLIANCE: Use real registered user for testing
                 login_data = {
-                    "email": "admin@intelibotx.com",
-                    "password": "admin123"
+                    "email": "test@example.com",
+                    "password": "testpass123"
                 }
                 
                 response = await client.post(

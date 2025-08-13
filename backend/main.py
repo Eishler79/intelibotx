@@ -13,13 +13,62 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configurar CORS
+# ✅ DL-001 COMPLIANCE: CORS Security Configuration
+import os
+
+# Determine allowed origins based on environment
+DEVELOPMENT_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173", 
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174", 
+    "http://127.0.0.1:5175",
+    "http://127.0.0.1:5176"
+]
+
+PRODUCTION_ORIGINS = [
+    "https://intelibotx.vercel.app",
+    "https://intelibotx-frontend.vercel.app", 
+    "https://intelibotx-production.up.railway.app",
+    "https://www.intelibotx.com",
+    "https://intelibotx.com"
+]
+
+# Get allowed origins from environment or use defaults
+ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if os.getenv("CORS_ALLOWED_ORIGINS") else []
+
+# If no environment variable, determine by environment
+if not ALLOWED_ORIGINS:
+    if os.getenv("ENVIRONMENT") == "production":
+        ALLOWED_ORIGINS = PRODUCTION_ORIGINS
+    else:
+        ALLOWED_ORIGINS = DEVELOPMENT_ORIGINS + PRODUCTION_ORIGINS  # Allow both in dev
+
+# Configure CORS with specific security settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type", 
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "DNT",
+        "Cache-Control",
+        "X-Mx-ReqToken",
+        "Keep-Alive",
+        "X-Requested-With",
+        "If-Modified-Since"
+    ],
+    expose_headers=["Content-Length", "X-Kuma-Revision"],
+    max_age=3600  # Cache preflight for 1 hour
 )
 
 # TEMPORAL: Comentado startup event completo para diagnosticar deadlock
@@ -38,7 +87,7 @@ app.add_middleware(
 #         # Trading models re-enabled for real data functionality
 #         print("✅ Trading models loaded for real data functionality")
 #         
-#         DATABASE_URL = "sqlite:///./intelibotx.db"  # Renamed for security system
+#         DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE  # Renamed for security system
 #         engine = create_engine(DATABASE_URL, echo=False)
 #         SQLModel.metadata.create_all(engine)
 #         print("✅ Database initialized successfully (Users + Bots)")
@@ -49,59 +98,8 @@ app.add_middleware(
 #     except Exception as e:
 #         print(f"⚠️ Database initialization warning: {e}")
 
-async def create_default_admin_user():
-    """Create default admin user with current .env API keys"""
-    try:
-        from db.database import get_session
-        from services.auth_service import auth_service
-        from models.user import UserCreate
-        import os
-        
-        # Check if we need to migrate existing keys
-        testnet_key = os.getenv("BINANCE_TESTNET_API_KEY")
-        testnet_secret = os.getenv("BINANCE_TESTNET_API_SECRET")
-        
-        if testnet_key and testnet_secret:
-            # Create session
-            from sqlmodel import Session, create_engine
-            DATABASE_URL = "sqlite:///./intelibotx.db"
-            engine = create_engine(DATABASE_URL, echo=False)
-            
-            with Session(engine) as session:
-                from models.user import User
-                from sqlmodel import select
-                
-                # Check if admin already exists
-                existing_admin = session.exec(
-                    select(User).where(User.email == "admin@intelibotx.com")
-                ).first()
-                
-                if not existing_admin:
-                    # Create admin user
-                    admin_data = UserCreate(
-                        email="admin@intelibotx.com",
-                        password="admin123",  # User should change this
-                        full_name="InteliBotX Admin"
-                    )
-                    
-                    admin_user = auth_service.register_user(admin_data, session)
-                    
-                    # Add API keys
-                    keys_data = {
-                        'testnet_key': testnet_key,
-                        'testnet_secret': testnet_secret,
-                        'preferred_mode': 'TESTNET'
-                    }
-                    
-                    auth_service.update_user_api_keys(admin_user.id, keys_data, session)
-                    
-                    print("✅ Default admin user created: admin@intelibotx.com / admin123")
-                    print("⚠️  IMPORTANT: Change admin password after first login!")
-                else:
-                    print("ℹ️  Admin user already exists")
-                    
-    except Exception as e:
-        print(f"⚠️ Admin user creation warning: {e}")
+# ✅ DL-001 COMPLIANCE: Función eliminada - No hardcode admin creation
+# Admin users se crean vía registro normal con email verification
 
 @app.get("/")
 async def root():
@@ -127,7 +125,7 @@ async def initialize_database():
         import os
         from sqlmodel import create_engine, SQLModel, Session, select
         
-        DATABASE_URL = "sqlite:///./intelibotx.db"
+        DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE
         
         # Delete existing database file for clean start
         if os.path.exists("./intelibotx.db"):
@@ -204,7 +202,7 @@ async def initialize_auth_only():
         from sqlmodel import create_engine, SQLModel, Session, select
         from datetime import datetime
         
-        DATABASE_URL = "sqlite:///./intelibotx.db"
+        DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE
         
         # Delete existing database file for clean start
         if os.path.exists("./intelibotx.db"):
@@ -221,56 +219,15 @@ async def initialize_auth_only():
         # Create only essential tables
         SQLModel.metadata.create_all(engine)
         
-        # Create admin user directly without auth_service to avoid conflicts
-        with Session(engine) as session:
-            # Hash password
-            password_hash = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            
-            # Create admin user directly
-            admin_user = User(
-                email="admin@intelibotx.com",
-                password_hash=password_hash,
-                full_name="InteliBotX Admin",
-                preferred_exchange="BINANCE",
-                preferred_mode="TESTNET",
-                default_market_type="SPOT",
-                two_factor_enabled=False,
-                api_keys_configured=False,  # Will be updated if keys exist
-                created_at=datetime.utcnow(),
-                is_active=True,
-                is_verified=True
-            )
-            
-            # Add API keys if available
-            import dotenv
-            dotenv.load_dotenv()
-            
-            testnet_key = os.getenv("BINANCE_TESTNET_API_KEY")
-            testnet_secret = os.getenv("BINANCE_TESTNET_API_SECRET")
-            
-            if testnet_key and testnet_secret:
-                # Simple encryption for Railway
-                from services.encryption_service import encryption_service
-                try:
-                    admin_user.encrypted_binance_testnet_key = encryption_service.encrypt_api_key(testnet_key)
-                    admin_user.encrypted_binance_testnet_secret = encryption_service.encrypt_api_key(testnet_secret)
-                    admin_user.api_keys_configured = True
-                except Exception as enc_error:
-                    print(f"⚠️ Encryption failed: {enc_error}")
-            
-            session.add(admin_user)
-            session.commit()
-            session.refresh(admin_user)
+        # ✅ DL-001 COMPLIANCE: No hardcode admin creation
+        # Database initialized with clean tables only
         
         return {
             "status": "success",
-            "message": "Auth system initialized successfully - Railway ready",
+            "message": "Database initialized successfully - Use /register to create users",
             "tables": ["user", "usersession", "botconfig"],
-            "admin_created": True,
-            "admin_email": "admin@intelibotx.com",
-            "admin_password": "admin123",
-            "api_keys_configured": bool(testnet_key and testnet_secret),
-            "ready_for_login": True
+            "auth_system": "Email verification required",
+            "registration_endpoint": "/api/auth/register"
         }
         
     except Exception as e:
@@ -497,7 +454,7 @@ except Exception as e:
             from models.bot_config import BotConfig
             from sqlmodel import create_engine
             
-            DATABASE_URL = "sqlite:///./intelibotx.db"
+            DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE
             engine = create_engine(DATABASE_URL, echo=False)
             
             with Session(engine) as session:

@@ -3,10 +3,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 from typing import Dict, Any, List
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 from db.database import get_session
 from models.user import UserCreate, UserLogin, UserResponse, ApiKeysUpdate
 from services.auth_service import auth_service, get_current_user
+from services.email_service import email_service
 from models.user import User
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
@@ -25,18 +29,27 @@ async def register(
         # Crear usuario
         user = auth_service.register_user(user_data, session)
         
-        # Generar token JWT
-        token_data = auth_service.create_jwt_token(user.id, user.email)
+        # Enviar email de verificación
+        email_sent = await email_service.send_verification_email(
+            user.email, 
+            user.full_name or "User", 
+            user.verification_token
+        )
+        
+        if not email_sent:
+            logger.warning(f"Failed to send verification email to {user.email}")
         
         return {
-            "message": "User registered successfully",
+            "message": "User registered successfully. Please check your email to verify your account.",
             "user": {
                 "id": user.id,
                 "email": user.email,
                 "full_name": user.full_name,
+                "is_verified": user.is_verified,
                 "created_at": user.created_at.isoformat()
             },
-            "auth": token_data
+            "verification_required": True,
+            "email_sent": email_sent
         }
         
     except HTTPException:
@@ -511,6 +524,159 @@ async def get_binance_price(
             detail=f"Failed to get price data: {str(e)}"
         )
 
+@router.post("/verify-email", response_model=Dict[str, Any])
+async def verify_email(
+    token: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Verificar email del usuario usando token de verificación.
+    """
+    try:
+        user = auth_service.verify_email_token(token, session)
+        
+        # Generar token JWT después de verificación exitosa
+        token_data = auth_service.create_jwt_token(user.id, user.email)
+        
+        return {
+            "message": "Email verified successfully",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "is_verified": user.is_verified,
+                "verified_at": user.updated_at.isoformat()
+            },
+            "auth": token_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Email verification failed: {str(e)}"
+        )
+
+@router.post("/resend-verification", response_model=Dict[str, Any])
+async def resend_verification(
+    email: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Reenviar email de verificación.
+    """
+    try:
+        user = auth_service.resend_verification_token(email, session)
+        
+        # Enviar nuevo email
+        email_sent = await email_service.send_verification_email(
+            user.email,
+            user.full_name or "User",
+            user.verification_token
+        )
+        
+        return {
+            "message": "Verification email sent" if email_sent else "Verification token generated (email service unavailable)",
+            "email_sent": email_sent,
+            "expires_in_hours": 24
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to resend verification: {str(e)}"
+        )
+
+@router.post("/request-password-reset", response_model=Dict[str, Any])
+async def request_password_reset(
+    request_data: Dict[str, str],
+    session: Session = Depends(get_session)
+):
+    """
+    Solicitar reset de contraseña.
+    Envía email con enlace de recuperación.
+    """
+    try:
+        email = request_data.get("email")
+        
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is required"
+            )
+        
+        user = auth_service.request_password_reset(email, session)
+        
+        # Enviar email de reset
+        email_sent = await email_service.send_password_reset_email(
+            user.email,
+            user.full_name or "User",
+            user.reset_token
+        )
+        
+        # Siempre retornar el mismo mensaje por seguridad
+        return {
+            "message": "If the email exists, a password reset link has been sent",
+            "email_sent": email_sent,
+            "expires_in_hours": 1
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log error pero no revelar detalles al usuario
+        logger.error(f"Password reset request error: {str(e)}")
+        return {
+            "message": "If the email exists, a password reset link has been sent",
+            "email_sent": False,
+            "expires_in_hours": 1
+        }
+
+@router.post("/reset-password", response_model=Dict[str, Any])
+async def reset_password(
+    reset_data: Dict[str, str],
+    session: Session = Depends(get_session)
+):
+    """
+    Resetear contraseña usando token de recuperación.
+    """
+    try:
+        token = reset_data.get("token")
+        new_password = reset_data.get("new_password")
+        
+        if not token or not new_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token and new_password are required"
+            )
+        
+        user = auth_service.reset_password(token, new_password, session)
+        
+        # Generar nuevo token JWT después del reset
+        token_data = auth_service.create_jwt_token(user.id, user.email)
+        
+        return {
+            "message": "Password reset successfully",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "reset_at": user.updated_at.isoformat()
+            },
+            "auth": token_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Password reset failed: {str(e)}"
+        )
+
 @router.post("/logout", response_model=Dict[str, str])
 async def logout(
     current_user: User = Depends(get_current_user)
@@ -524,5 +690,3 @@ async def logout(
         "message": "Logout successful",
         "timestamp": datetime.utcnow().isoformat()
     }
-
-from datetime import datetime

@@ -1,7 +1,9 @@
 ### 📁 backend/db/database.py
 from sqlmodel import create_engine, Session, SQLModel
+import os
 
-DATABASE_URL = "sqlite:///./intelibotx.db"
+# ✅ DL-006 COMPLIANCE: No hardcode DATABASE_URL - usar variable entorno
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # Fallback solo para desarrollo local
 engine = create_engine(DATABASE_URL, echo=False)
 
 def create_db_and_tables():

@@ -307,67 +307,8 @@ async def get_websocket_status():
         logger.error(f"❌ Error obteniendo estado WebSocket: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/api/websocket/test/{symbol}")
-async def test_websocket_data(
-    symbol: str, 
-    interval: str = Query("1m", description="Intervalo temporal"),
-    user_id: int = Query(1, description="ID de usuario para test (default: 1)")
-):
-    """
-    Test endpoint para verificar datos WebSocket sin conexión permanente
-    
-    **Útil para debugging y validación**
-    **Nota: Usa configuración del usuario especificado**
-    """
-    try:
-        symbol = symbol.upper()
-        
-        # Obtener sesión
-        from db.database import get_session
-        session_gen = get_session()
-        session = next(session_gen)
-        
-        try:
-            # Test usando configuración del usuario
-            logger.info(f"🧪 Test WebSocket para usuario {user_id}: {symbol}")
-            
-            # Suscribirse temporalmente
-            success = await realtime_manager.subscribe_symbol_for_user(
-                user_id, symbol, interval, "websocket_test", session
-            )
-            
-            if not success:
-                raise HTTPException(status_code=400, detail=f"No se pudo suscribir a {symbol}")
-            
-            # Esperar un poco para recopilar datos
-            await asyncio.sleep(3)
-            
-            # Obtener datos actuales usando configuración del usuario
-            indicators = await realtime_manager.get_realtime_indicators_for_user(
-                user_id, symbol, interval, session
-            )
-            smart_scalper_signal = await realtime_manager.get_smart_scalper_signal_for_user(
-                user_id, symbol, interval, session
-            )
-            
-            return JSONResponse(content={
-                "success": True,
-                "data": {
-                    "symbol": symbol,
-                    "interval": interval,
-                    "user_id": user_id,
-                    "indicators": indicators,
-                    "smart_scalper_signal": smart_scalper_signal,
-                    "test_timestamp": datetime.utcnow().isoformat(),
-                    "data_source": f"websocket_test_user_{user_id}"
-                }
-            })
-        finally:
-            session.close()
-        
-    except Exception as e:
-        logger.error(f"❌ Error test WebSocket {symbol}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# ✅ DL-006 COMPLIANCE: Endpoint test eliminado - viola DL-001 (temporal/simulado)
+# WebSocket REAL disponible en /ws/realtime/{client_id} con JWT auth
 
 @router.post("/api/websocket/broadcast")
 async def broadcast_message(message: dict):

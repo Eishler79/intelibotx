@@ -21,7 +21,7 @@ class BotConfig(SQLModel, table=True):
     symbol: str = Field(index=True, description="Par de trading, ejemplo: BTCUSDT")
     
     # Monedas y capital
-    base_currency: str = Field(default="USDT", description="Moneda base para capital")
+    base_currency: str = Field(description="Moneda base para capital - REQUERIDO por usuario")
     quote_currency: str = Field(description="Moneda de beneficio (extraído de symbol)")
     stake: float = Field(description="Cantidad en moneda base a usar por operación")
     
@@ -37,13 +37,12 @@ class BotConfig(SQLModel, table=True):
     
     # Tipo de mercado (MEJORADO)
     market_type: str = Field(
-        default="SPOT",
-        description="Tipo de mercado: SPOT, FUTURES_USDT, FUTURES_COIN, MARGIN_CROSS, MARGIN_ISOLATED"
+        description="Tipo de mercado: SPOT, FUTURES_USDT, FUTURES_COIN, MARGIN_CROSS, MARGIN_ISOLATED - REQUERIDO por usuario"
     )
     
     # Configuración Futures (NUEVO)
-    leverage: Optional[int] = Field(default=1, description="Apalancamiento para futures (1x = spot)")
-    margin_type: Optional[str] = Field(default="ISOLATED", description="CROSS o ISOLATED para futures")
+    leverage: Optional[int] = Field(description="Apalancamiento para futures (1x = spot) - REQUERIDO")
+    margin_type: Optional[str] = Field(description="CROSS o ISOLATED para futures - REQUERIDO")
     
     # Condiciones avanzadas (NUEVO)
     min_volume: Optional[float] = Field(default=None, description="Volumen mínimo para operar")
@@ -51,15 +50,15 @@ class BotConfig(SQLModel, table=True):
     max_orders_per_pair: int = Field(default=1, description="Máximo órdenes activas por par")
     
     # Tipos de órdenes (NUEVO - CRÍTICO PARA ELIMINAR HARDCODING)
-    entry_order_type: str = Field(default="MARKET", description="Tipo orden entrada: MARKET, LIMIT, STOP_LIMIT")
-    exit_order_type: str = Field(default="MARKET", description="Tipo orden salida: MARKET, LIMIT")
-    tp_order_type: str = Field(default="LIMIT", description="Tipo orden Take Profit: LIMIT, MARKET")
-    sl_order_type: str = Field(default="STOP_MARKET", description="Tipo orden Stop Loss: STOP_MARKET, STOP_LIMIT")
-    trailing_stop: bool = Field(default=False, description="Activar trailing stop loss")
+    entry_order_type: str = Field(description="Tipo orden entrada: MARKET, LIMIT, STOP_LIMIT - REQUERIDO")
+    exit_order_type: str = Field(description="Tipo orden salida: MARKET, LIMIT - REQUERIDO")
+    tp_order_type: str = Field(description="Tipo orden Take Profit: LIMIT, MARKET - REQUERIDO")
+    sl_order_type: str = Field(description="Tipo orden Stop Loss: STOP_MARKET, STOP_LIMIT - REQUERIDO")
+    trailing_stop: bool = Field(description="Activar trailing stop loss - REQUERIDO por usuario")
     
     # Controles operacionales (NUEVO - CRÍTICO PARA ELIMINAR HARDCODING)
-    max_open_positions: int = Field(default=3, description="Máximo posiciones simultáneas del bot")
-    cooldown_minutes: int = Field(default=30, description="Tiempo espera entre operaciones (minutos)")
+    max_open_positions: int = Field(description="Máximo posiciones simultáneas del bot - REQUERIDO")
+    cooldown_minutes: int = Field(description="Tiempo espera entre operaciones (minutos) - REQUERIDO")
     
     # Estado y control
     active: bool = Field(default=True, description="Bot habilitado o no")

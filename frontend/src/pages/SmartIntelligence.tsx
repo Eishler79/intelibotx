@@ -1,3 +1,7 @@
+// ✅ DL-001 COMPLIANCE: SmartIntelligence component temporarily disabled
+// Frontend scope reduction - Maintaining only core pages: Home, Dashboard, Bots, Users, Exchange
+
+/*
 import { useState } from "react";
 import {
   Card,
@@ -70,5 +74,16 @@ export default function SmartIntelligence() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+*/
+
+// Placeholder component for future implementation
+export default function SmartIntelligence() {
+  return (
+    <div className="p-4 text-center">
+      <h2 className="text-xl font-bold mb-4">🚧 SmartIntelligence</h2>
+      <p className="text-gray-600">Feature temporarily disabled for scope reduction</p>
+    </div>
   );
 }

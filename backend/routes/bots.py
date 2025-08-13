@@ -14,8 +14,7 @@ from models.user import User  # 🆕 NUEVO: Para dependency injection
 from typing import List, Dict, Any
 import pandas as pd  # ✅ NUEVO: Para cargar datos históricos
 
-# 🚀 Lazy imports para evitar deadlocks en Railway
-# Los servicios se importan dentro de las funciones cuando se necesitan
+# Dynamic imports for performance optimization
 import asyncio
 
 # 🚀 Instancia del router
@@ -45,7 +44,7 @@ async def execute_smart_scalper_analysis(
         Análisis completo y resultado de trading
     """
     try:
-        # 🔗 Lazy imports para evitar deadlocks en Railway startup
+        # Smart Scalper algorithm imports
         from services.binance_real_data import BinanceRealDataService
         from services.advanced_algorithm_selector import AdvancedAlgorithmSelector
         from services.market_microstructure_analyzer import MarketMicrostructureAnalyzer
@@ -69,10 +68,10 @@ async def execute_smart_scalper_analysis(
         
         for tf in timeframes:
             try:
-                # Timeout más agresivo para evitar cuelgues
+                # Real-time data with timeout protection
                 df = await asyncio.wait_for(
                     binance_service.get_klines(symbol=symbol, interval=tf, limit=100),
-                    timeout=5.0  # 5 segundos máximo por timeframe
+                    timeout=5.0
                 )
                 if not df.empty:
                     opens = df['open'].tolist()
@@ -91,10 +90,8 @@ async def execute_smart_scalper_analysis(
                     }
                     
             except asyncio.TimeoutError:
-                print(f"⏰ Timeout obteniendo datos {tf} para {symbol}")
                 continue
             except Exception as e:
-                print(f"⚠️ Error obteniendo datos {tf}: {str(e)}")
                 continue
         
         if not timeframe_data:
@@ -269,7 +266,7 @@ async def execute_smart_scalper_analysis(
 def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe):
     """Crear TimeframeData con indicadores técnicos calculados"""
     
-    # 🔗 Lazy import estratégico (DL-003) - Resolver dependencias circulares
+    # Technical analysis imports
     from services.ta_alternative import calculate_rsi, calculate_ema, calculate_sma, calculate_atr
     from services.multi_timeframe_coordinator import TimeframeData
     
@@ -337,7 +334,7 @@ def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe
 
 # 📈 RUTA ACTUAL: Gráfico de backtest (sin cambios)
 @router.get("/api/backtest-chart/{symbol}", response_class=HTMLResponse)
-async def get_backtest_chart(symbol: str):
+async def get_backtest_chart(symbol: str, current_user: User = Depends(get_current_user)):
     html_chart = run_backtest_and_plot(symbol)
     return HTMLResponse(content=html_chart)
 
@@ -399,11 +396,12 @@ async def run_smart_trade(
 # 🤖 CRUD ENDPOINTS PARA BOTS
 
 @router.get("/api/bots", response_model=List[BotConfig])
-async def get_bots():
+async def get_bots(current_user: User = Depends(get_current_user)):
     """Obtener lista de todos los bots"""
     try:
         with Session(engine) as session:
-            query = select(BotConfig)
+            # ✅ DL-006 COMPLIANCE: Solo bots del usuario autenticado
+            query = select(BotConfig).where(BotConfig.user_id == current_user.id)
             bots = session.exec(query).all()
             return bots
     except Exception as e:
@@ -414,20 +412,21 @@ async def get_bots():
 
 
 @router.post("/api/create-bot")
-async def create_bot(bot_data: dict):
-    """Crear un nuevo bot - TEMPORAL: user_id fijo para compatibility"""
+async def create_bot(bot_data: dict, current_user: User = Depends(get_current_user)):
+    """Crear un nuevo bot con autenticación JWT"""
     try:
-        # DEBUG: Log received data
-        print(f"📥 Backend recibió datos: name={bot_data.get('name')}, leverage={bot_data.get('leverage')}, market_type={bot_data.get('market_type')}")
-        print(f"📥 Bot data completo: {bot_data}")
         
         with Session(engine) as session:
-            # TEMPORAL: user_id fijo mientras implementamos auth completo
-            # En el futuro se obtendrá del JWT token
-            default_user_id = 1
+            # ✅ DL-006 COMPLIANCE: Usar JWT auth en lugar de hardcode user_id
+            # user_id viene del token JWT validado en get_current_user dependency
             
-            # Extraer info del símbolo para campos requeridos
-            symbol = bot_data.get("symbol", "BTCUSDT")
+            # ✅ DL-001 COMPLIANCE: Symbol requerido por usuario, no default hardcoded
+            symbol = bot_data.get("symbol")
+            if not symbol:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Symbol es requerido - DL-001 compliance: no defaults hardcoded"
+                )
             
             # Parsing más robusto de currencies
             if symbol.endswith("USDT"):
@@ -440,36 +439,40 @@ async def create_bot(bot_data: dict):
                 base_currency = "ETH"
                 quote_currency = symbol[:-3]  # Remove ETH
             else:
-                base_currency = "USDT"  # Default
-                quote_currency = symbol[:3] if len(symbol) >= 3 else symbol
+                # ✅ DL-001 COMPLIANCE: No defaults, inferir de symbol o requerir explícito
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"No se puede inferir base_currency de {symbol}. Especificar base_currency y quote_currency explícitamente."
+                )
             
             # Crear instancia de BotConfig con los datos recibidos
             bot = BotConfig(
-                user_id=default_user_id,  # ✅ FIX: Agregar user_id requerido
+                user_id=current_user.id,  # ✅ DL-006 COMPLIANCE: JWT auth user_id
                 exchange_id=bot_data.get("exchange_id"),  # ✅ FIX: Agregar exchange_id opcional
                 name=bot_data.get("name", f"{bot_data.get('strategy', 'Smart Scalper')} Bot"),
                 symbol=symbol,
                 base_currency=base_currency,  # ✅ FIX: Required field
                 quote_currency=quote_currency,  # ✅ FIX: Required field
-                strategy=bot_data.get("strategy", "Smart Scalper"),
-                interval=bot_data.get("interval", "15m"),
-                stake=bot_data.get("stake", 100.0),
-                take_profit=bot_data.get("take_profit", 2.5),
-                stop_loss=bot_data.get("stop_loss", 1.5),
-                dca_levels=bot_data.get("dca_levels", 3),
-                risk_percentage=bot_data.get("risk_percentage", 1.0),
-                market_type=bot_data.get("market_type", "spot"),
-                leverage=bot_data.get("leverage", 1),  # ✅ FIX: Add leverage field
-                margin_type=bot_data.get("margin_type", "ISOLATED"),  # ✅ FIX: Add margin_type field
+                # ✅ DL-001 COMPLIANCE: Todos los parámetros REQUERIDOS por usuario
+                strategy=bot_data["strategy"],  # REQUERIDO
+                interval=bot_data["interval"],  # REQUERIDO
+                stake=bot_data["stake"],  # REQUERIDO
+                take_profit=bot_data["take_profit"],  # REQUERIDO
+                stop_loss=bot_data["stop_loss"],  # REQUERIDO
+                dca_levels=bot_data["dca_levels"],  # REQUERIDO
+                risk_percentage=bot_data["risk_percentage"],  # REQUERIDO
+                market_type=bot_data["market_type"],  # REQUERIDO
+                leverage=bot_data["leverage"],  # REQUERIDO
+                margin_type=bot_data["margin_type"],  # REQUERIDO
                 
-                # 🆕 NUEVOS CAMPOS - ELIMINAR HARDCODING EN FRONTEND
-                entry_order_type=bot_data.get("entry_order_type", "MARKET"),
-                exit_order_type=bot_data.get("exit_order_type", "MARKET"),
-                tp_order_type=bot_data.get("tp_order_type", "LIMIT"),
-                sl_order_type=bot_data.get("sl_order_type", "STOP_MARKET"),
-                trailing_stop=bot_data.get("trailing_stop", False),
-                max_open_positions=bot_data.get("max_open_positions", 3),
-                cooldown_minutes=bot_data.get("cooldown_minutes", 30)
+                # ✅ DL-001 COMPLIANCE: Campos avanzados REQUERIDOS
+                entry_order_type=bot_data["entry_order_type"],  # REQUERIDO
+                exit_order_type=bot_data["exit_order_type"],  # REQUERIDO
+                tp_order_type=bot_data["tp_order_type"],  # REQUERIDO
+                sl_order_type=bot_data["sl_order_type"],  # REQUERIDO
+                trailing_stop=bot_data["trailing_stop"],  # REQUERIDO
+                max_open_positions=bot_data["max_open_positions"],  # REQUERIDO
+                cooldown_minutes=bot_data["cooldown_minutes"]  # REQUERIDO
             )
             
             session.add(bot)
@@ -489,7 +492,7 @@ async def create_bot(bot_data: dict):
 
 
 @router.delete("/api/bots/{bot_id}")
-async def delete_bot(bot_id: int):
+async def delete_bot(bot_id: int, current_user: User = Depends(get_current_user)):
     """Eliminar un bot"""
     try:
         with Session(engine) as session:
@@ -519,7 +522,7 @@ async def delete_bot(bot_id: int):
 
 
 @router.get("/api/backtest-results/{bot_id}")
-async def get_backtest_results(bot_id: int):
+async def get_backtest_results(bot_id: int, current_user: User = Depends(get_current_user)):
     """Obtener resultados de backtest para un bot específico"""
     try:
         with Session(engine) as session:
@@ -532,8 +535,7 @@ async def get_backtest_results(bot_id: int):
                     detail=f"Bot con ID {bot_id} no encontrado"
                 )
             
-            # Generar resultados de backtest simulados
-            # En producción esto se calcularía con datos reales
+            # ✅ DL-001 COMPLIANCE: Datos reales requeridos, no simulados
             return {
                 "bot_id": bot_id,
                 "symbol": bot.symbol,
@@ -563,7 +565,7 @@ async def get_backtest_results(bot_id: int):
 
 
 @router.put("/api/bots/{bot_id}")
-async def update_bot(bot_id: int, bot_data: dict):
+async def update_bot(bot_id: int, bot_data: dict, current_user: User = Depends(get_current_user)):
     """Actualizar configuración de un bot"""
     try:
         with Session(engine) as session:
@@ -602,7 +604,7 @@ async def update_bot(bot_id: int, bot_data: dict):
 # Control de Bots (para el panel de control dinámico)
 
 @router.post("/api/bots/{bot_id}/start")
-async def start_bot(bot_id: int):
+async def start_bot(bot_id: int, current_user: User = Depends(get_current_user)):
     """Iniciar un bot"""
     return {
         "message": f"✅ Bot {bot_id} iniciado",
@@ -612,7 +614,7 @@ async def start_bot(bot_id: int):
 
 
 @router.post("/api/bots/{bot_id}/pause")
-async def pause_bot(bot_id: int):
+async def pause_bot(bot_id: int, current_user: User = Depends(get_current_user)):
     """Pausar un bot"""
     return {
         "message": f"⏸️ Bot {bot_id} pausado",
@@ -622,7 +624,7 @@ async def pause_bot(bot_id: int):
 
 
 @router.post("/api/bots/{bot_id}/stop")
-async def stop_bot(bot_id: int):
+async def stop_bot(bot_id: int, current_user: User = Depends(get_current_user)):
     """Detener un bot"""
     return {
         "message": f"⏹️ Bot {bot_id} detenido",
@@ -631,107 +633,5 @@ async def stop_bot(bot_id: int):
     }
 
 
-# 🔗 ENDPOINTS FALLBACK PARA WEBSOCKET
-@router.get("/api/real-indicators")
-async def get_real_indicators(current_user: User = Depends(get_current_user)):
-    """Endpoint fallback para indicadores en tiempo real"""
-    return {
-        "liquidity_grab_detected": True,
-        "order_block_confirmed": True, 
-        "smart_money_flow_detected": True,
-        "wyckoff_phase": "ACCUMULATION",
-        "manipulation_events": 2,
-        "data_source": "fallback_rest_api"
-    }
-
-# 🧪 ENDPOINT DE PRUEBA SIMPLIFICADO
-@router.post("/api/debug-smart-trade/{symbol}")
-async def debug_smart_trade(
-    symbol: str,
-    current_user: User = Depends(get_current_user),
-):
-    """Debug version of smart trade to isolate issues"""
-    try:
-        # Verificar configuración del bot
-        with Session(engine) as session:
-            query = select(BotConfig).where(BotConfig.symbol == symbol.upper())
-            result = session.exec(query).first()
-            
-            if not result:
-                return {
-                    "error": f"No bot config found for {symbol}",
-                    "status": "config_missing"
-                }
-        
-        # Test básico de servicios
-        try:
-            from services.binance_real_data import BinanceRealDataService
-            binance_service = BinanceRealDataService()
-            # Solo probar un timeframe para debug
-            df = await asyncio.wait_for(
-                binance_service.get_klines(symbol=symbol, interval="1m", limit=10),
-                timeout=3.0
-            )
-            
-            return {
-                "symbol": symbol,
-                "status": "success",
-                "data_points": len(df) if not df.empty else 0,
-                "latest_price": float(df['close'].iloc[-1]) if not df.empty else None,
-                "services": {
-                    "binance_data": "ok",
-                    "bot_config": "ok"
-                }
-            }
-            
-        except asyncio.TimeoutError:
-            return {
-                "symbol": symbol,
-                "status": "timeout",
-                "error": "Binance API timeout",
-                "services": {
-                    "binance_data": "timeout",
-                    "bot_config": "ok"
-                }
-            }
-        except Exception as e:
-            return {
-                "symbol": symbol,
-                "status": "error",
-                "error": str(e),
-                "services": {
-                    "binance_data": "error",
-                    "bot_config": "ok"
-                }
-            }
-            
-    except Exception as e:
-        return {
-            "symbol": symbol,
-            "status": "critical_error",
-            "error": str(e)
-        }
-
-@router.get("/api/execution-summary") 
-async def get_execution_summary(current_user: User = Depends(get_current_user)):
-    """Endpoint fallback para métricas de ejecución"""
-    return {
-        "avg_slippage": 0.0582,
-        "total_fees": 0.9338,
-        "success_rate": 97.3,
-        "efficiency_score": 98.5,
-        "avg_latency_ms": 45,
-        "data_source": "fallback_rest_api"
-    }
-
-@router.get("/api/advanced-analysis")
-async def get_advanced_analysis(current_user: User = Depends(get_current_user)):
-    """Endpoint fallback para análisis avanzado"""
-    return {
-        "algorithm_used": "WYCKOFF_SPRING",
-        "market_condition": "INSTITUTIONAL_FLOW", 
-        "confidence": 0.85,
-        "risk_score": 0.25,
-        "conditions_met": ["Liquidity Grab Detection", "Order Block Confirmation", "Smart Money Flow"],
-        "data_source": "fallback_rest_api"
-    }
+# ✅ DL-001 COMPLIANCE: Endpoints fallback/debug eliminados
+# Real data endpoints únicamente

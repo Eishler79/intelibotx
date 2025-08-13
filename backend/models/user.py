@@ -41,6 +41,14 @@ class User(SQLModel, table=True):
     is_active: bool = Field(default=True, description="Usuario activo")
     is_verified: bool = Field(default=False, description="Email verificado")
     
+    # Email verification
+    verification_token: Optional[str] = Field(default=None, description="Token de verificación email")
+    verification_expires: Optional[datetime] = Field(default=None, description="Expiración token verificación")
+    
+    # Password reset
+    reset_token: Optional[str] = Field(default=None, description="Token reset contraseña")
+    reset_expires: Optional[datetime] = Field(default=None, description="Expiración token reset")
+    
     @validator('preferred_mode')
     def validate_preferred_mode(cls, v):
         if v not in ['TESTNET', 'MAINNET']:

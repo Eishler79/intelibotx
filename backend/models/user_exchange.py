@@ -24,8 +24,8 @@ class UserExchange(SQLModel, table=True):
     encrypted_api_secret: Optional[str] = Field(default=None, description="API Secret encriptada")
     encrypted_passphrase: Optional[str] = Field(default=None, description="Passphrase encriptada (para OKX, etc.)")
     
-    # Exchange Configuration
-    is_testnet: bool = Field(default=True, description="Si es testnet o mainnet")
+    # Exchange Configuration  
+    is_testnet: bool = Field(description="Si es testnet o mainnet - REQUERIDO por usuario")
     permissions: Optional[str] = Field(default=None, description="Permisos JSON (spot, futures, margin)")
     
     # Connection Status
@@ -64,7 +64,7 @@ class ExchangeConnectionRequest(SQLModel):
     api_key: str = Field(description="API Key del exchange")
     api_secret: str = Field(description="API Secret del exchange")
     passphrase: Optional[str] = Field(default=None, description="Passphrase (para OKX)")
-    is_testnet: bool = Field(default=True, description="Si es testnet")
+    is_testnet: bool = Field(description="Si es testnet - REQUERIDO por usuario")
 
 
 class ExchangeConnectionResponse(SQLModel):

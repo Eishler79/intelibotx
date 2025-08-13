@@ -2,6 +2,8 @@
 import os
 import jwt
 import bcrypt
+import uuid
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from sqlmodel import Session, select
@@ -122,9 +124,18 @@ class AuthService:
                 detail="Invalid token"
             )
     
+    def generate_verification_token(self) -> str:
+        """Generar token único para verificación de email."""
+        return str(uuid.uuid4())
+    
+    def generate_reset_token(self) -> str:
+        """Generar token único para reset de contraseña."""
+        return secrets.token_urlsafe(32)
+    
     def register_user(self, user_data: UserCreate, session: Session) -> User:
         """
         Registrar nuevo usuario en el sistema.
+        Usuario creado con is_verified=False y verification_token.
         """
         # Verificar que email no exista
         existing_user = session.exec(
@@ -139,24 +150,30 @@ class AuthService:
         
         # Crear usuario
         password_hash = self.hash_password(user_data.password)
+        verification_token = self.generate_verification_token()
+        verification_expires = datetime.utcnow() + timedelta(hours=24)
         
         new_user = User(
             email=user_data.email,
             password_hash=password_hash,
             full_name=user_data.full_name,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
+            is_verified=False,
+            verification_token=verification_token,
+            verification_expires=verification_expires
         )
         
         session.add(new_user)
         session.commit()
         session.refresh(new_user)
         
-        logger.info(f"New user registered: {user_data.email}")
+        logger.info(f"New user registered: {user_data.email} (verification required)")
         return new_user
     
     def authenticate_user(self, login_data: UserLogin, session: Session) -> User:
         """
         Autenticar usuario con email y contraseña.
+        REQUIERE verificación de email para acceder.
         """
         user = session.exec(
             select(User).where(User.email == login_data.email)
@@ -172,6 +189,13 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials"
+            )
+        
+        # BLOQUEAR usuarios no verificados
+        if not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email verification required. Please check your email and verify your account before logging in."
             )
         
         # Skip last_login update to avoid readonly database issues for Railway
@@ -308,3 +332,143 @@ async def get_current_user_binance_creds(
     Dependency para obtener credenciales de Binance del usuario autenticado.
     """
     return auth_service.get_user_binance_credentials(user, mode)
+
+# Métodos de verificación de email (agregar a AuthService)
+def verify_email_token(self, token: str, session: Session) -> User:
+    """
+    Verificar token de email y marcar usuario como verificado.
+    """
+    user = session.exec(
+        select(User).where(
+            User.verification_token == token,
+            User.verification_expires > datetime.utcnow()
+        )
+    ).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token"
+        )
+    
+    # Marcar como verificado
+    user.is_verified = True
+    user.verification_token = None
+    user.verification_expires = None
+    user.updated_at = datetime.utcnow()
+    
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    logger.info(f"User email verified: {user.email}")
+    return user
+
+def resend_verification_token(self, email: str, session: Session) -> User:
+    """
+    Regenerar token de verificación para usuario.
+    """
+    user = session.exec(
+        select(User).where(User.email == email)
+    ).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    if user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already verified"
+        )
+    
+    # Generar nuevo token
+    user.verification_token = self.generate_verification_token()
+    user.verification_expires = datetime.utcnow() + timedelta(hours=24)
+    user.updated_at = datetime.utcnow()
+    
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    logger.info(f"Verification token regenerated for: {user.email}")
+    return user
+
+def request_password_reset(self, email: str, session: Session) -> User:
+    """
+    Solicitar reset de contraseña para usuario.
+    Genera token seguro y actualiza usuario.
+    """
+    user = session.exec(
+        select(User).where(User.email == email)
+    ).first()
+    
+    if not user:
+        # No revelar si el email existe o no por seguridad
+        raise HTTPException(
+            status_code=status.HTTP_200_OK,
+            detail="If the email exists, a password reset link has been sent"
+        )
+    
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account is not active"
+        )
+    
+    # Generar token de reset (1 hora de expiración)
+    user.reset_token = self.generate_reset_token()
+    user.reset_expires = datetime.utcnow() + timedelta(hours=1)
+    user.updated_at = datetime.utcnow()
+    
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    logger.info(f"Password reset requested for: {user.email}")
+    return user
+
+def reset_password(self, token: str, new_password: str, session: Session) -> User:
+    """
+    Resetear contraseña usando token válido.
+    """
+    user = session.exec(
+        select(User).where(
+            User.reset_token == token,
+            User.reset_expires > datetime.utcnow()
+        )
+    ).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Validar nueva contraseña
+    if len(new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 6 characters long"
+        )
+    
+    # Actualizar contraseña
+    user.password_hash = self.hash_password(new_password)
+    user.reset_token = None
+    user.reset_expires = None
+    user.updated_at = datetime.utcnow()
+    
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    logger.info(f"Password reset completed for: {user.email}")
+    return user
+
+# Agregar métodos a la clase AuthService
+AuthService.verify_email_token = verify_email_token
+AuthService.resend_verification_token = resend_verification_token
+AuthService.request_password_reset = request_password_reset
+AuthService.reset_password = reset_password

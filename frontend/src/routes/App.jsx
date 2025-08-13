@@ -33,11 +33,11 @@ const App = () => {
           {/* Redirect root to auth */}
           <Route path="/" element={<Navigate to="/auth" replace />} />
           
-          {/* Protected Routes - App */}
+          {/* Protected Routes - App - ✅ DL-001 COMPLIANCE: Core pages only */}
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/smart-trade" element={<SmartTrade />} />
-            <Route path="/intelligence" element={<SmartIntelligence />} />
+            <Route path="/smart-trade" element={<SmartTrade />} /> {/* PLACEHOLDER - Temporarily disabled */}
+            <Route path="/intelligence" element={<SmartIntelligence />} /> {/* PLACEHOLDER - Temporarily disabled */}
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/bots" element={<BotsAdvanced />} />
             <Route path="/bots-advanced" element={<BotsAdvanced />} />

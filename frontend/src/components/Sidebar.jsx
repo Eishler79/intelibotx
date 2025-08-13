@@ -1,11 +1,13 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, BarChart2, PieChart, Cpu, Layers, Bot, Link } from "lucide-react";
+import { Home, PieChart, Bot, Link } from "lucide-react";
+// Temporarily removed: BarChart2, Cpu, Layers for scope reduction
 
+// ✅ DL-001 COMPLIANCE: Frontend scope reduction - Core pages only
 const links = [
   { to: "/dashboard", label: "Dashboard", icon: <Home size={18} /> },
-  { to: "/smart-trade", label: "SmartTrade Panel", icon: <BarChart2 size={18} /> },
-  { to: "/intelligence", label: "Inteligencia", icon: <Cpu size={18} /> },
+  // { to: "/smart-trade", label: "SmartTrade Panel", icon: <BarChart2 size={18} /> }, // TEMPORARILY DISABLED
+  // { to: "/intelligence", label: "Inteligencia", icon: <Cpu size={18} /> }, // TEMPORARILY DISABLED
   { to: "/portfolio", label: "Portafolio", icon: <PieChart size={18} /> },
   { to: "/bots", label: "🤖 InteliBots AI", icon: <Bot size={18} /> },
   { to: "/exchanges", label: "🔗 Mis Exchanges", icon: <Link size={18} /> },
