@@ -13,10 +13,7 @@ from collections import defaultdict
 router = APIRouter()
 
 @router.get("/api/dashboard/summary")
-async def get_dashboard_summary(
-    session = Depends(lambda: None),
-    current_user = Depends(lambda: None)
-):
+async def get_dashboard_summary():
     """
     📊 Resumen completo del dashboard con datos reales
     
@@ -114,9 +111,7 @@ async def get_dashboard_summary(
 @router.get("/api/dashboard/balance-evolution")
 async def get_balance_evolution(
     days: int = Query(30, ge=1, le=365),
-    symbol: Optional[str] = Query(None),
-    session = Depends(lambda: None),
-    current_user = Depends(lambda: None)
+    symbol: Optional[str] = Query(None)
 ):
     """
     📈 Evolución del balance con filtros por días y símbolo
@@ -202,9 +197,7 @@ async def get_balance_evolution(
 
 @router.get("/api/dashboard/bots-performance")
 async def get_bots_performance(
-    days: int = Query(7, ge=1, le=90),
-    session = Depends(lambda: None),
-    current_user = Depends(lambda: None)
+    days: int = Query(7, ge=1, le=90)
 ):
     """
     🤖 Performance individual de cada bot con métricas reales
@@ -282,9 +275,7 @@ async def get_bots_performance(
 
 @router.get("/api/dashboard/symbols-analysis")
 async def get_symbols_analysis(
-    days: int = Query(7, ge=1, le=90),
-    session = Depends(lambda: None),
-    current_user = Depends(lambda: None)
+    days: int = Query(7, ge=1, le=90)
 ):
     """
     📊 Análisis por par de moneda para gráficos específicos

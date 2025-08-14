@@ -120,9 +120,7 @@ async def login(
         )
 
 @router.get("/me")
-async def get_current_user_info(
-    current_user = Depends(lambda: None)
-):
+async def get_current_user_info():
     """
     Obtener información del usuario autenticado actual.
     """
@@ -147,9 +145,7 @@ async def get_current_user_info(
 
 @router.put("/api-keys", response_model=Dict[str, str])
 async def update_api_keys(
-    api_keys_data: dict,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    api_keys_data: dict
 ):
     """
     Actualizar claves API de Binance del usuario.
@@ -193,9 +189,7 @@ async def update_api_keys(
         )
 
 @router.get("/binance-status", response_model=Dict[str, Any])
-async def check_binance_status(
-    current_user = Depends(lambda: None)
-):
+async def check_binance_status():
     """
     Verificar estado de configuración de Binance para el usuario.
     """
@@ -222,10 +216,7 @@ async def check_binance_status(
 # Exchange Management Endpoints
 
 @router.get("/user/exchanges", response_model=List[Dict[str, Any]])
-async def get_user_exchanges(
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
-):
+async def get_user_exchanges():
     """
     Obtener todos los exchanges configurados por el usuario.
     """
@@ -284,9 +275,7 @@ async def get_user_exchanges(
 
 @router.post("/user/exchanges", response_model=Dict[str, Any])
 async def add_user_exchange(
-    exchange_data: Dict[str, Any],
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    exchange_data: Dict[str, Any]
 ):
     """
     Agregar un nuevo exchange al usuario.
@@ -358,9 +347,7 @@ async def add_user_exchange(
 
 @router.delete("/user/exchanges/{exchange_id}", response_model=Dict[str, str])
 async def delete_user_exchange(
-    exchange_id: int,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    exchange_id: int
 ):
     """
     Eliminar un exchange del usuario.
@@ -411,8 +398,7 @@ async def delete_user_exchange(
 
 @router.post("/user/exchanges/{exchange_id}/test", response_model=Dict[str, Any])
 async def test_user_exchange(
-    exchange_id: int,
-    current_user = Depends(lambda: None)
+    exchange_id: int
 ):
     """
     Probar conexión de un exchange específico del usuario.
@@ -459,9 +445,7 @@ async def test_user_exchange(
         }
 
 @router.post("/test-binance-connection", response_model=Dict[str, Any])
-async def test_binance_connection(
-    current_user = Depends(lambda: None)
-):
+async def test_binance_connection():
     """
     Probar conexión REAL con Binance usando las claves del usuario.
     Solo para testnet por seguridad.
@@ -510,9 +494,7 @@ async def test_binance_connection(
         }
 
 @router.get("/binance-account", response_model=Dict[str, Any])
-async def get_binance_account_info(
-    current_user = Depends(lambda: None)
-):
+async def get_binance_account_info():
     """
     Obtener información REAL de la cuenta Binance del usuario.
     """
@@ -556,8 +538,7 @@ async def get_binance_account_info(
 
 @router.get("/binance-price/{symbol}", response_model=Dict[str, Any])
 async def get_binance_price(
-    symbol: str,
-    current_user = Depends(lambda: None)
+    symbol: str
 ):
     """
     Obtener precio REAL de un símbolo desde Binance.
@@ -838,9 +819,7 @@ async def test_email_connection():
         }
 
 @router.post("/logout", response_model=Dict[str, str])
-async def logout(
-    current_user = Depends(lambda: None)
-):
+async def logout():
     """
     Cerrar sesión del usuario.
     

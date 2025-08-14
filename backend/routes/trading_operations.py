@@ -108,9 +108,7 @@ class CreateTradeRequest(SQLModel):
 @router.post("/api/bots/{bot_id}/trading-operations")
 async def create_trading_operation(
     bot_id: int,
-    trade: CreateTradeRequest,
-    session = Depends(lambda: None),
-    current_user = Depends(lambda: None)
+    trade: CreateTradeRequest
 ):
     """
     🎯 Crear nueva operación de trading persistente
@@ -183,9 +181,7 @@ async def get_bot_trading_operations(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     side: Optional[TradeSide] = None,
-    days: int = Query(7, ge=1, le=365),
-    session = Depends(lambda: None),
-    current_user = Depends(lambda: None)
+    days: int = Query(7, ge=1, le=365)
 ):
     """
     📊 Obtener operaciones de trading de un bot con paginación
@@ -275,9 +271,7 @@ async def get_bot_trading_operations(
 
 @router.get("/api/trading-operations/{trade_id}")
 async def get_trading_operation(
-    trade_id: str,
-    session = Depends(lambda: None),
-    current_user = Depends(lambda: None)
+    trade_id: str
 ):
     """
     🔍 Obtener operación específica por ID
@@ -337,9 +331,7 @@ async def get_live_trading_feed(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     bot_ids: Optional[str] = Query(None),  # Comma-separated bot IDs
-    hours: int = Query(24, ge=1, le=168),  # Últimas X horas
-    session = Depends(lambda: None),
-    current_user = Depends(lambda: None)
+    hours: int = Query(24, ge=1, le=168)  # Últimas X horas
 ):
     """
     ⚡ Feed en vivo de todas las operaciones de trading con paginación
@@ -433,9 +425,7 @@ async def get_live_trading_feed(
 
 @router.delete("/api/trading-operations/{trade_id}")
 async def delete_trading_operation(
-    trade_id: str,
-    session = Depends(lambda: None),
-    current_user = Depends(lambda: None)
+    trade_id: str
 ):
     """🗑️ Eliminar operación de trading (solo para correcciones)"""
     try:

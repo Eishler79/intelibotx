@@ -17,10 +17,7 @@ router = APIRouter(prefix="/api/user", tags=["exchanges"])
 
 
 @router.get("/exchanges")
-async def list_user_exchanges(
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
-):
+async def list_user_exchanges():
     """Listar exchanges del usuario"""
     # Lazy imports
     from models.user import User
@@ -64,9 +61,7 @@ async def list_user_exchanges(
 
 @router.post("/exchanges")
 async def add_user_exchange(
-    exchange_request,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    exchange_request
 ):
     """Agregar nuevo exchange para usuario"""
     # Lazy imports
@@ -190,9 +185,7 @@ async def add_user_exchange(
 @router.put("/exchanges/{exchange_id}")
 async def update_user_exchange(
     exchange_id: int,
-    exchange_request,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    exchange_request
 ):
     """Actualizar exchange del usuario"""
     # Lazy imports
@@ -260,9 +253,7 @@ async def update_user_exchange(
 
 @router.delete("/exchanges/{exchange_id}")
 async def delete_user_exchange(
-    exchange_id: int,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    exchange_id: int
 ):
     """Eliminar exchange del usuario"""
     # Lazy imports
@@ -302,9 +293,7 @@ async def delete_user_exchange(
 
 @router.post("/exchanges/{exchange_id}/test")
 async def test_exchange_connection(
-    exchange_id: int,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    exchange_id: int
 ):
     """Probar conexión con exchange"""
     # Lazy imports
@@ -408,9 +397,7 @@ async def test_exchange_connection(
 
 @router.get("/exchanges/{exchange_id}/balance")
 async def get_exchange_balance(
-    exchange_id: int,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    exchange_id: int
 ):
     """Obtener balance del exchange"""
     # Lazy imports
@@ -480,12 +467,10 @@ async def get_exchange_balance(
 
 @router.get("/exchanges/{exchange_id}/market-types")
 async def get_exchange_market_types(
-    exchange_id: int,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    exchange_id: int
 ):
     """
-    🏛️ Obtener tipos de mercado disponibles por exchange
+    Obtener tipos de mercado disponibles por exchange
     
     Cada exchange tiene diferentes tipos de mercado:
     - Binance: SPOT, FUTURES, MARGIN, LEVERAGED_TOKENS

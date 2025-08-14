@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 @router.get("/summary", response_model=Dict[str, Any])
-async def get_dashboard_summary(
-    current_user = Depends(lambda: None)
-):
+async def get_dashboard_summary():
     """
     Obtener resumen general dashboard del usuario.
     Solo datos reales de BD - DL-001 Compliance.
@@ -81,9 +79,7 @@ async def get_dashboard_summary(
         session.close()
 
 @router.get("/balance-evolution", response_model=Dict[str, Any])
-async def get_balance_evolution(
-    current_user = Depends(lambda: None)
-):
+async def get_balance_evolution():
     """
     Obtener evolución balance usuario - últimos 30 días.
     Solo datos reales de BD - DL-001 Compliance.
@@ -135,9 +131,7 @@ async def get_balance_evolution(
         session.close()
 
 @router.get("/bots-performance", response_model=Dict[str, Any])
-async def get_bots_performance(
-    current_user = Depends(lambda: None)
-):
+async def get_bots_performance():
     """
     Obtener performance de bots del usuario.
     Solo datos reales de BD - DL-001 Compliance.

@@ -323,7 +323,7 @@ def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe
 
 # 📈 RUTA ACTUAL: Gráfico de backtest (sin cambios)
 @router.get("/api/backtest-chart/{symbol}", response_class=HTMLResponse)
-async def get_backtest_chart(symbol: str, current_user = Depends(lambda: None)):
+async def get_backtest_chart(symbol: str):
     # Lazy imports
     from services.auth_service import get_current_user
     from services.backtest_bot import run_backtest_and_plot
@@ -340,7 +340,6 @@ async def get_backtest_chart(symbol: str, current_user = Depends(lambda: None)):
 @router.post("/api/run-smart-trade/{symbol}")
 async def run_smart_trade(
     symbol: str,
-    current_user = Depends(lambda: None),  # 🆕 AGREGAR: Autenticación requerida
     scalper_mode: bool = False,
     quantity: float = 0.001,
     execute_real: bool = False
@@ -401,7 +400,7 @@ async def run_smart_trade(
 # 🤖 CRUD ENDPOINTS PARA BOTS
 
 @router.get("/api/bots")
-async def get_bots(current_user = Depends(lambda: None)):
+async def get_bots():
     """Obtener lista de todos los bots"""
     # Lazy imports
     from models.bot_config import BotConfig
@@ -427,7 +426,7 @@ async def get_bots(current_user = Depends(lambda: None)):
 
 
 @router.post("/api/create-bot")
-async def create_bot(bot_data: dict, current_user = Depends(lambda: None)):
+async def create_bot(bot_data: dict):
     """Crear un nuevo bot con autenticación JWT"""
     # Lazy imports
     from models.bot_config import BotConfig
@@ -517,7 +516,7 @@ async def create_bot(bot_data: dict, current_user = Depends(lambda: None)):
 
 
 @router.delete("/api/bots/{bot_id}")
-async def delete_bot(bot_id: int, current_user = Depends(lambda: None)):
+async def delete_bot(bot_id: int):
     """Eliminar un bot"""
     # Lazy imports
     from models.bot_config import BotConfig
@@ -556,7 +555,7 @@ async def delete_bot(bot_id: int, current_user = Depends(lambda: None)):
 
 
 @router.get("/api/backtest-results/{bot_id}")
-async def get_backtest_results(bot_id: int, current_user = Depends(lambda: None)):
+async def get_backtest_results(bot_id: int):
     """Obtener resultados de backtest para un bot específico"""
     # Lazy imports
     from models.bot_config import BotConfig
@@ -609,7 +608,7 @@ async def get_backtest_results(bot_id: int, current_user = Depends(lambda: None)
 
 
 @router.put("/api/bots/{bot_id}")
-async def update_bot(bot_id: int, bot_data: dict, current_user = Depends(lambda: None)):
+async def update_bot(bot_id: int, bot_data: dict):
     """Actualizar configuración de un bot"""
     # Lazy imports
     from models.bot_config import BotConfig
@@ -657,7 +656,7 @@ async def update_bot(bot_id: int, bot_data: dict, current_user = Depends(lambda:
 # Control de Bots (para el panel de control dinámico)
 
 @router.post("/api/bots/{bot_id}/start")
-async def start_bot(bot_id: int, current_user = Depends(lambda: None)):
+async def start_bot(bot_id: int):
     """Iniciar un bot"""
     # Lazy imports
     from services.auth_service import get_current_user
@@ -673,7 +672,7 @@ async def start_bot(bot_id: int, current_user = Depends(lambda: None)):
 
 
 @router.post("/api/bots/{bot_id}/pause")
-async def pause_bot(bot_id: int, current_user = Depends(lambda: None)):
+async def pause_bot(bot_id: int):
     """Pausar un bot"""
     # Lazy imports
     from services.auth_service import get_current_user
@@ -689,7 +688,7 @@ async def pause_bot(bot_id: int, current_user = Depends(lambda: None)):
 
 
 @router.post("/api/bots/{bot_id}/stop")
-async def stop_bot(bot_id: int, current_user = Depends(lambda: None)):
+async def stop_bot(bot_id: int):
     """Detener un bot"""
     # Lazy imports
     from services.auth_service import get_current_user

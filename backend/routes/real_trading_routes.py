@@ -413,10 +413,7 @@ async def execute_trade(request: TradeRequest):
 # get_current_user is now handled with lazy imports in each endpoint
 
 @router.get("/api/user/trading-status")
-async def get_user_trading_status(
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
-):
+async def get_user_trading_status():
     """
     Obtener estado de trading del usuario autenticado
     
@@ -468,9 +465,7 @@ async def get_user_trading_status(
 
 @router.post("/api/user/technical-analysis")
 async def get_user_technical_analysis(
-    request: UserAnalysisRequest,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    request: UserAnalysisRequest
 ):
     """
     Análisis técnico usando exchanges configurados del usuario
@@ -528,9 +523,7 @@ async def get_user_technical_analysis(
 
 @router.post("/api/user/execute-trade")
 async def execute_user_trade(
-    request: TradeRequest,
-    current_user = Depends(lambda: None),
-    session = Depends(lambda: None)
+    request: TradeRequest
 ):
     """
     Ejecutar trade usando exchange configurado del usuario
