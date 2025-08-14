@@ -24,12 +24,12 @@ const VerifyEmail = () => {
 
   const verifyEmail = async (verificationToken) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-email`, {
+      // ✅ FIXED: Send token as query parameter, not body (apegado a premisas DL-001)
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-email?token=${verificationToken}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token: verificationToken }),
       });
 
       const data = await response.json();
