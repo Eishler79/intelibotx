@@ -26,7 +26,7 @@ async def list_user_exchanges():
     from db.database import get_session
     from sqlmodel import Session, select
     
-    # Get actual dependencies
+    # Get actual dependencies - PATRÓN ORIGINAL (pendiente de fix)
     current_user = await get_current_user()
     session = get_session().__next__()
     
@@ -61,21 +61,50 @@ async def list_user_exchanges():
 
 @router.post("/exchanges")
 async def add_user_exchange(
-    exchange_request: dict
+    exchange_request: dict,
+    authorization: str = Header(None)
 ):
     """Agregar nuevo exchange para usuario"""
     # Lazy imports
     from models.user import User
     from models.user_exchange import UserExchange, ExchangeConnectionRequest, ExchangeConnectionResponse
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from db.database import get_session
     from sqlmodel import Session, select
     from services.encryption_service import EncryptionService
     from services.exchange_factory import ExchangeFactory
+    from fastapi import HTTPException, status
     
-    # Get actual dependencies
-    current_user = await get_current_user()
-    session = get_session().__next__()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session().__next__()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in add_user_exchange: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     # Initialize services
     encryption_service = EncryptionService()
