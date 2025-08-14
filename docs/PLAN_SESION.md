@@ -1,13 +1,23 @@
-# PLAN_SESION.md · Plan de Sesión — 2025-08-14
+# PLAN_SESION.md · Plan de Sesión — 2025-08-15
 
 > **Regla:** Máx. 2 objetivos clave por sesión.  
 > Las tareas deben tener `SPEC_REF` para ejecutarse.
 
 ---
 
-## 🎯 Objetivos del día ✅ **COMPLETADOS**
-1. ✅ **Depurar y estabilizar proyecto** - Auditoría completa + limpieza archivos obsoletos
-2. ✅ **E2E CLEAN PLAN EJECUTADO** - 6 etapas completadas: Auth + Exchange + Bot + Engine + Dashboard + Frontend
+## 🎯 Objetivos del día — 2025-08-15 ⚠️ **EN PROGRESO**
+1. **Debug Exchange Validation Error** - ✅ Parcial: OpenAPI fix, ❌ Authentication issue pendiente
+2. **Completar ETAPA 2: Trading en Vivo Real** - ⏸️ Bloqueado por authentication issue
+
+## 🔍 **DESCUBRIMIENTOS CRÍTICOS 2025-08-15**
+- 🎯 **Root cause identificado**: Forward references `'ExchangeConnectionRequest'` rompían OpenAPI
+- 🚨 **Problema mayor descubierto**: Massive auth fix rompió `get_current_user()` dependency injection
+- ✅ **Testing mejorado**: Implementado local testing completo con datos reales
+- ⚠️ **Estado actual**: APIs cargan pero authentication flow roto
+
+## 🏆 LOGROS SESIÓN ANTERIOR 2025-08-14 ✅ **COMPLETADOS**
+1. ✅ **Authentication Fix Masivo** - 43 endpoints corregidos sistemáticamente
+2. ✅ **Login E2E Completion** - Email verification + password recovery funcional
 
 ## 🏆 LOGROS SESIÓN 2025-08-14
 **HITO TÉCNICO CRÍTICO:** Frontend-Backend sincronización + Auth sistema completo
@@ -246,10 +256,64 @@
 - [ ] {EXCHANGE_TESTING} Testear conexión real con credenciales
 - [ ] {FRONTEND_REACTIVATION} Reactivar SmartIntelligence + SmartTrade cuando sea necesario
 
-#### **🚨 PRÓXIMA SESIÓN PRIORIDAD ALTA**
-1. **Debug exchange validation error** - Error persiste después authentication fix
-2. **Completar E2E exchange testing** - Validación real credenciales API
-3. **Continuar ETAPA 2: Trading en Vivo Real** - Siguiente hito mayor
+## 📋 ACTIVIDADES PENDIENTES HOY 2025-08-15
+
+### **🚨 PRIORIDAD ALTA - BLOQUEADORES**
+- [ ] {EXCHANGE_VALIDATION_DEBUG} **Debug exchange validation error** — Error persiste post-auth fix  
+  *(SPEC_REF: Exchange add functionality failing - requires specific debug)*
+  **Actividades específicas:**
+  - Reproducir error exact en dashboard
+  - Revisar logs backend específicos
+  - Verificar endpoints exchange con authentication fix
+  - Testear flujo completo add exchange
+
+- [ ] {EXCHANGE_TESTING_REAL} **Exchange testing con credenciales reales** — API connection validation  
+  *(SPEC_REF: Binance/ByBit testnet + mainnet connection testing)*
+  **Actividades específicas:**
+  - Configurar credenciales testnet Binance
+  - Testear conexión API real
+  - Validar permissions y balance
+  - Verificar error handling
+
+### **🔄 CONTINUACIÓN TÉCNICA**
+- [ ] {WEBSOCKET_LAZY_IMPORTS_COMPLETE} **WebSocket lazy imports** — Revertir disable + aplicar lazy imports RealtimeDataManager  
+  *(SPEC_REF: DL-001 compliance final)*
+  **Actividades específicas:**
+  - Revisar RealtimeDataManager disable
+  - Aplicar lazy imports pattern
+  - Testing WebSocket funcionalidad
+  - Validation no-regression
+
+### **🚀 ETAPA 2: TRADING EN VIVO REAL - PRÓXIMO HITO MAYOR**
+**Actividades preparatorias:**
+- Real market execution con Binance/ByBit
+- Risk management automático  
+- Order management + DCA real
+- Live P&L tracking
+
+## 🔍 CONTROLES DE CAMBIOS 2025-08-14 → 2025-08-15
+
+### **Commits Recientes Sesión 2025-08-15:**
+```bash
+2035f9f 🔧 fix: Replace forward references with dict in exchange endpoints
+ffd2fb7 Revert "🔧 fix: Add Body parameter for POST /exchanges endpoint"  
+006ebb0 🔧 fix: Add Body parameter for POST /exchanges endpoint
+79c1495 🔧 fix: Add missing type hint for POST /exchanges endpoint
+c6b1b8f 🔧 fix: Massive authentication fix across 43 endpoints in 7 files
+```
+
+### **Estado Arquitectural ACTUALIZADO:**
+- ✅ **Database Layer**: PostgreSQL production-ready Railway
+- ✅ **Email Service**: SMTP innova-consulting.net operativo
+- ✅ **Frontend-Backend Sync**: CORS + lazy imports + dashboard APIs
+- ✅ **OpenAPI Schema**: Fixed forward references - APIs cargan correctamente
+- 🚨 **Authentication System**: Dependency injection ROTO - endpoints fallan
+- ❌ **Exchange Management**: OpenAPI fixed, auth broken (NUEVO BLOQUEADOR)
+
+### **Análisis BACKLOG Status:**
+- **Alta Prioridad COMPLETADA**: 7/7 items ✅ (Auth completion hito mayor)
+- **Próxima Sesión PENDIENTE**: 3/3 items ⚠️ (Exchange debug crítico)
+- **Algoritmos Anti-Manipulación**: 6/6 items 🟡 (ETAPA futura)
 
 ---
 
@@ -269,7 +333,26 @@
 
 ---
 
-## ✅ Hecho hoy (cerrado en esta sesión 2025-08-14)
+## ✅ Hecho hoy (cerrado en esta sesión 2025-08-15)
+
+### **🔍 INVESTIGACIÓN Y DEBUGGING - SESIÓN 2025-08-15:**
+- [x] {ROOT_CAUSE_ANALYSIS} **Root cause analysis OpenAPI** - Forward references `'ExchangeConnectionRequest'` identificados ✅ **CRÍTICO**
+- [x] {PATTERN_RESEARCH} **Pattern research sistemático** - Comparación endpoints funcionales vs rotos ✅ **EVIDENCIA**
+- [x] {LOCAL_TESTING_IMPLEMENTATION} **Local testing completo** - TestClient + datos reales + JWT real implementado ✅ **METODOLOGÍA**
+- [x] {OPENAPI_FIX} **OpenAPI schema fix** - Cambio `'ExchangeConnectionRequest'` → `dict` en POST/PUT endpoints ✅ **TÉCNICO**
+
+### **🚨 DESCUBRIMIENTO CRÍTICO:**
+- [x] {AUTHENTICATION_ISSUE_DISCOVERED} **Authentication dependency injection roto** - Massive auth fix causó `AttributeError: 'Depends' object has no attribute 'credentials'` ✅ **BLOQUEADOR**
+- [x] {TESTING_METHODOLOGY_IMPROVED} **Testing methodology mejorada** - Local testing detecta issues antes de PRD ✅ **PROCESO**
+
+### **📊 DEPLOYMENT + VALIDATION:**
+- [x] {EXCHANGE_ENDPOINTS_DEPLOYED} **Exchange endpoints deployed** - POST/PUT /exchanges con dict parameters ✅ **PRD**
+- [x] {OPENAPI_SCHEMA_FUNCTIONAL} **OpenAPI schema funcional** - 80 endpoints detectados, APIs cargan correctamente ✅ **VALIDADO**
+
+### **⚠️ ESTADO ACTUAL:**
+- ✅ **OpenAPI Schema**: Fixed y funcional
+- ❌ **Authentication Flow**: Dependency injection roto (nuevo bloqueador)
+- ⏸️ **Exchange/Bot Creation**: Bloqueado por auth issue
 
 ### **HITO TÉCNICO MAYOR - FRONTEND-BACKEND SYNCHRONIZATION:**
 - [x] {FRONTEND_AUDIT} **Auditoría completa frontend-backend sync** - Identificadas violaciones DL-001 críticas

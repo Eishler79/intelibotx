@@ -19,11 +19,14 @@
 - [x] {LOGIN_E2E_COMPLETION} **Login E2E completion** — ✅ **COMPLETADO 2025-08-14** Auth flow completo + dashboard access
 - [x] {MASSIVE_AUTH_FIX} **Authentication architecture fix** — ✅ **COMPLETADO 2025-08-14** 43 endpoints corregidos CORS 500→401
 
-### **🚨 PRIORIDADES PRÓXIMA SESIÓN 2025-08-15**
-- [ ] {EXCHANGE_VALIDATION_DEBUG} **Debug exchange validation error** — Error persiste post-auth fix  
-  *(SPEC_REF: CORS/Auth issues resolved pero exchange add sigue fallando)*
+### **🚨 PRIORIDADES PRÓXIMA SESIÓN 2025-08-16** ⚠️ **ACTUALIZADO**
+- [ ] {AUTHENTICATION_DEPENDENCY_FIX} **CRÍTICO: Fix authentication dependency injection** — `get_current_user()` roto por massive auth fix  
+  *(SPEC_REF: AttributeError: 'Depends' object has no attribute 'credentials' - línea 314 auth_service.py)*
+- [x] {EXCHANGE_OPENAPI_FIX} **OpenAPI schema fixed** — ✅ **COMPLETADO 2025-08-15** Forward references resueltos
 - [ ] {EXCHANGE_TESTING_REAL} **Exchange testing con credenciales reales** — API connection validation  
-  *(SPEC_REF: Binance/ByBit testnet + mainnet connection testing)*
+  *(SPEC_REF: Pendiente hasta resolver auth dependency injection)*
+- [ ] {BOT_CREATION_TESTING} **Bot creation endpoint testing** — Validar create-bot post auth fix
+  *(SPEC_REF: Mismo issue de dependency injection detectado)*
 - [ ] {WEBSOCKET_LAZY_IMPORTS_COMPLETE} **WebSocket lazy imports** — Revertir disable + aplicar lazy imports RealtimeDataManager  
   *(SPEC_REF: DL-001 compliance final)*
 
