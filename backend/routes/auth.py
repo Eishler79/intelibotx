@@ -808,6 +808,35 @@ async def reset_password(
             detail=f"Password reset failed: {str(e)}"
         )
 
+@router.post("/test-email-connection", response_model=Dict[str, Any])
+async def test_email_connection():
+    """
+    Test email service connection (SendGrid SMTP).
+    """
+    try:
+        # Lazy imports
+        from services.email_service import email_service
+        
+        # Test connection
+        connection_ok = email_service.test_connection()
+        
+        return {
+            "status": "success" if connection_ok else "error",
+            "smtp_configured": email_service.is_configured,
+            "smtp_server": email_service.smtp_server,
+            "smtp_port": email_service.smtp_port,
+            "from_email": email_service.from_email,
+            "connection_test": "passed" if connection_ok else "failed",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Email test failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 @router.post("/logout", response_model=Dict[str, str])
 async def logout(
     current_user = Depends(lambda: None)

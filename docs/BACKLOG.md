@@ -5,17 +5,21 @@
 
 ---
 
-## 🔴 Alto (Prioridad inmediata)
+## 🔴 Alto (Prioridad inmediata) - Actualizado 2025-08-14
 - [x] {ERROR500_FIX} **Debug Error 500 endpoints Smart Scalper** — ✅ **RESUELTO 2025-08-13** - E2E clean completado
 - [x] {CORE04} **SignalQualityAssessor implementation** — ✅ **COMPLETADO 2025-08-13** - Integrado en Smart Scalper
+- [x] {FRONTEND_BACKEND_SYNC} **Frontend-Backend synchronization** — ✅ **COMPLETADO 2025-08-14** - CORS + lazy imports + dashboard APIs
 
-### **🚀 PRIORIDADES INMEDIATAS - SISTEMA FUNCIONAL**
+### **🚀 PRIORIDADES INMEDIATAS ACTUALES - AUTH COMPLETION**
 - [x] {DB_MIGRATION_RESUMIR} **Migración PostgreSQL definitiva** — ✅ **COMPLETADO 2025-08-13** Sistema + auth robusto funcional
-- [x] {PRODUCTION_DEPLOY} **Deploy producción Railway** — ✅ **COMPLETADO 2025-08-13** 11/11 routers + PostgreSQL + lazy imports  
-- {E2E_TESTING} **Testing E2E completo** — Validar flujo: Auth → Exchange → Bot → Trading  
-  *(SPEC_REF: Sistema 11/11 routers funcional)*
-- {EXCHANGE_VALIDATION_REAL} **Validación conexiones reales** — Testear exchanges con credenciales usuario  
-  *(SPEC_REF: DL-001 compliance + datos reales)*
+- [x] {PRODUCTION_DEPLOY} **Deploy producción Railway** — ✅ **COMPLETADO 2025-08-13** 12/12 routers + PostgreSQL + lazy imports  
+- [x] {REGISTRATION_E2E} **Registration E2E funcional** — ✅ **COMPLETADO 2025-08-14** Usuario e1g1@hotmail.com creado
+- [ ] {EMAIL_VERIFICATION_SYSTEM} **Email verification system completo** — SMTP config + verification flow operativo  
+  *(SPEC_REF: Login blocked - email verification required)*
+- [ ] {PASSWORD_RECOVERY_SYSTEM} **Password recovery system funcional** — Reset password E2E workflow  
+  *(SPEC_REF: Credentials invalid - recovery mechanism needed)*
+- [ ] {LOGIN_E2E_COMPLETION} **Login E2E completion** — Auth flow completo + dashboard access  
+  *(SPEC_REF: E2E testing blocked at login step)*
 
 ### **🔄 POST-E2E COMPLETION**
 - {WEBSOCKET_LAZY_IMPORTS_COMPLETE} **WebSocket lazy imports completos** — Revertir disable + aplicar lazy imports RealtimeDataManager  

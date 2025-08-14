@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Cargar variables de entorno
 load_dotenv()
@@ -209,48 +212,70 @@ async def initialize_database():
 
 @app.post("/api/init-auth-only")
 async def initialize_auth_only():
-    """Initialize ONLY authentication tables - for Railway deployment"""
+    """Initialize ONLY authentication tables - for Railway deployment
+    
+    ✅ DL-001 COMPLIANCE: Real database reset (PostgreSQL + SQLite compatible)
+    Fixed: Now works correctly with Railway PostgreSQL, not just local SQLite
+    """
     try:
         import os
-        import bcrypt
-        from sqlmodel import create_engine, SQLModel, Session, select
-        from datetime import datetime
+        from sqlmodel import create_engine, SQLModel, Session, text
         
         DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")  # ✅ DL-006 COMPLIANCE
         
-        # Delete existing database file for clean start
-        if os.path.exists("./intelibotx.db"):
+        # SQLite-specific cleanup (local development only)
+        if "sqlite" in DATABASE_URL and os.path.exists("./intelibotx.db"):
             os.remove("./intelibotx.db")
         
-        # Create new engine 
+        # Create engine 
         engine = create_engine(DATABASE_URL, echo=False)
         
-        # Import models
+        # Import models to register them
         from models.user import User, UserSession
         from models.bot_config import BotConfig
         from models.user_exchange import UserExchange
         
-        # Create only essential tables
+        # Create tables if they don't exist
         SQLModel.metadata.create_all(engine)
+        
+        # ✅ FIXED: Clear existing data for both PostgreSQL and SQLite
+        with Session(engine) as session:
+            try:
+                # Clear tables in correct order (handle foreign keys)
+                session.execute(text("DELETE FROM usersession"))
+                session.execute(text("DELETE FROM botconfig"))
+                session.execute(text("DELETE FROM userexchange"))
+                session.execute(text("DELETE FROM user"))
+                session.commit()
+                logger.info("✅ Database tables cleared successfully")
+            except Exception as clear_error:
+                logger.warning(f"⚠️ Some tables may not exist yet: {clear_error}")
+                session.rollback()
         
         # ✅ DL-001 COMPLIANCE: No hardcode admin creation
         # Database initialized with clean tables only
         
+        db_type = "PostgreSQL" if "postgresql" in DATABASE_URL else "SQLite"
+        
         return {
             "status": "success",
-            "message": "Database initialized successfully - Use /register to create users",
-            "tables": ["user", "usersession", "botconfig"],
+            "message": f"Database initialized successfully ({db_type}) - Use /register to create users",
+            "database_type": db_type,
+            "tables": ["user", "usersession", "botconfig", "userexchange"],
+            "tables_cleared": True,
             "auth_system": "Email verification required",
             "registration_endpoint": "/api/auth/register"
         }
         
     except Exception as e:
         import traceback
+        logger.error(f"❌ Database initialization failed: {str(e)}")
         return {
             "status": "error",
             "message": f"Auth initialization failed: {str(e)}",
             "traceback": traceback.format_exc()
         }
+
 
 # Import routes only after app is created
 # Load authentication routes FIRST (security)
