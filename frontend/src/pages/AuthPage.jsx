@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AuthProviders from '../components/auth/AuthProviders';
 
@@ -260,6 +260,19 @@ const AuthPage = () => {
                 )}
               </button>
             </form>
+
+            {/* Forgot Password Link - Only in Login Mode */}
+            {mode === 'login' && (
+              <div className="mt-6 text-center">
+                <Link 
+                  to="/forgot-password"
+                  className="text-sm font-medium transition-colors hover:opacity-80"
+                  style={{ color: '#8b5cf6' }}
+                >
+                  Forgot your password?
+                </Link>
+              </div>
+            )}
 
             {/* Mode Toggle */}
             <div className="mt-8 text-center">
