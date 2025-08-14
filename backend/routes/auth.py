@@ -86,7 +86,8 @@ async def login(
     from sqlmodel import Session
     
     # Get actual session
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     
     # Convert dict to UserLogin
     login_data = UserLogin(**login_data)
@@ -164,7 +165,8 @@ async def update_api_keys(
     from sqlmodel import Session
     
     # Get actual dependencies
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     current_user = await get_current_user()
     
     # Convert dict to ApiKeysUpdate
@@ -236,7 +238,8 @@ async def get_user_exchanges(
     from sqlmodel import Session
     
     # Get actual dependencies
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     current_user = await get_current_user()
     
     try:
@@ -299,7 +302,8 @@ async def add_user_exchange(
     from sqlmodel import Session
     
     # Get actual dependencies
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     current_user = await get_current_user()
     
     try:
@@ -372,7 +376,8 @@ async def delete_user_exchange(
     from sqlmodel import Session
     
     # Get actual dependencies
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     current_user = await get_current_user()
     
     try:
@@ -636,7 +641,8 @@ async def verify_email(
     from sqlmodel import Session
     
     # Get actual session
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     
     try:
         user = auth_service.verify_email_token(token, session)
@@ -679,7 +685,8 @@ async def resend_verification(
     from sqlmodel import Session
     
     # Get actual session
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     
     try:
         user = auth_service.resend_verification_token(email, session)
@@ -721,7 +728,8 @@ async def request_password_reset(
     from sqlmodel import Session
     
     # Get actual session
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     
     try:
         email = request_data.get("email")
@@ -773,7 +781,8 @@ async def reset_password(
     from sqlmodel import Session
     
     # Get actual session
-    session = get_session().__next__()
+    session_gen = get_session()
+    session = next(session_gen)
     
     try:
         token = reset_data.get("token")
