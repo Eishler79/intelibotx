@@ -61,7 +61,7 @@ async def list_user_exchanges():
 
 @router.post("/exchanges")
 async def add_user_exchange(
-    exchange_request
+    exchange_request: 'ExchangeConnectionRequest'
 ):
     """Agregar nuevo exchange para usuario"""
     # Lazy imports
@@ -185,7 +185,7 @@ async def add_user_exchange(
 @router.put("/exchanges/{exchange_id}")
 async def update_user_exchange(
     exchange_id: int,
-    exchange_request
+    exchange_request: 'ExchangeConnectionRequest'
 ):
     """Actualizar exchange del usuario"""
     # Lazy imports
