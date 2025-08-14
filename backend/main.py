@@ -242,15 +242,39 @@ async def initialize_auth_only():
         with Session(engine) as session:
             try:
                 # Clear tables in correct order (handle foreign keys)
+                logger.info("🔄 Starting database table clearing...")
+                
+                # Check current user count BEFORE deletion
+                before_count = session.execute(text("SELECT COUNT(*) FROM user")).scalar()
+                logger.info(f"📊 Users before deletion: {before_count}")
+                
                 session.execute(text("DELETE FROM usersession"))
+                logger.info("✅ usersession table cleared")
+                
                 session.execute(text("DELETE FROM botconfig"))
+                logger.info("✅ botconfig table cleared")
+                
                 session.execute(text("DELETE FROM userexchange"))
-                session.execute(text("DELETE FROM user"))
+                logger.info("✅ userexchange table cleared")
+                
+                deleted_users = session.execute(text("DELETE FROM user")).rowcount
+                logger.info(f"✅ user table cleared - {deleted_users} users deleted")
+                
                 session.commit()
-                logger.info("✅ Database tables cleared successfully")
+                
+                # Verify deletion worked
+                after_count = session.execute(text("SELECT COUNT(*) FROM user")).scalar()
+                logger.info(f"📊 Users after deletion: {after_count}")
+                
+                if after_count == 0:
+                    logger.info("✅ Database tables cleared successfully - VERIFIED")
+                else:
+                    logger.error(f"❌ Database clear FAILED - {after_count} users still exist")
+                    
             except Exception as clear_error:
-                logger.warning(f"⚠️ Some tables may not exist yet: {clear_error}")
+                logger.error(f"❌ Database clear FAILED: {clear_error}")
                 session.rollback()
+                raise clear_error  # Re-raise para ver el error real
         
         # ✅ DL-001 COMPLIANCE: No hardcode admin creation
         # Database initialized with clean tables only
@@ -273,6 +297,41 @@ async def initialize_auth_only():
         return {
             "status": "error",
             "message": f"Auth initialization failed: {str(e)}",
+            "traceback": traceback.format_exc()
+        }
+
+@app.get("/api/debug-users")
+async def debug_users():
+    """Debug endpoint - show users in database"""
+    try:
+        import os
+        from sqlmodel import create_engine, Session, text
+        
+        DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./intelibotx.db")
+        engine = create_engine(DATABASE_URL, echo=False)
+        
+        with Session(engine) as session:
+            # Check if table exists
+            result = session.execute(text("SELECT COUNT(*) FROM user"))
+            count = result.scalar()
+            
+            # Get all users
+            users_result = session.execute(text("SELECT id, email, full_name, is_verified, created_at FROM user"))
+            users = [dict(row._mapping) for row in users_result]
+            
+        return {
+            "status": "success",
+            "database_type": "PostgreSQL" if "postgresql" in DATABASE_URL else "SQLite",
+            "user_count": count,
+            "users": users,
+            "timestamp": "2025-08-14"
+        }
+        
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "message": f"Debug failed: {str(e)}",
             "traceback": traceback.format_exc()
         }
 
