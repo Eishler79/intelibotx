@@ -6,7 +6,7 @@ Rutas para gestión de exchanges por usuario
 import logging
 from typing import List, Dict, Any
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Body
 
 # Lazy imports to avoid psycopg2 dependency at module level
 
@@ -61,7 +61,7 @@ async def list_user_exchanges():
 
 @router.post("/exchanges")
 async def add_user_exchange(
-    exchange_request: 'ExchangeConnectionRequest'
+    exchange_request: 'ExchangeConnectionRequest' = Body(...)
 ):
     """Agregar nuevo exchange para usuario"""
     # Lazy imports
