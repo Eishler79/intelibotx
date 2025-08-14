@@ -9,6 +9,7 @@ import { AuthProvider } from "../contexts/AuthContext";
 import AuthPage from "../pages/AuthPage";
 import ForgotPassword from "../pages/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword";
+import VerifyEmail from "../pages/VerifyEmail";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 
 // Existing Pages
@@ -33,6 +34,7 @@ const App = () => {
           <Route path="/register" element={<Navigate to="/auth" replace />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           
           {/* Redirect root to auth */}
           <Route path="/" element={<Navigate to="/auth" replace />} />

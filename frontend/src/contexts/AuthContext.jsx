@@ -153,21 +153,37 @@ export const AuthProvider = ({ children }) => {
 
       const data = await response.json();
       
-      // Después del registro exitoso, hacer login automático
-      const accessToken = data.auth.access_token;
+      // ✅ FIXED: Handle email verification required (apegado a premisas DL-001)
+      if (data.verification_required) {
+        // Registration successful, but email verification required
+        return {
+          success: true,
+          requiresVerification: true,
+          data: {
+            user: data.user,
+            message: data.message,
+            email_sent: data.email_sent
+          }
+        };
+      }
+      
+      // If no verification required, proceed with auto-login
+      const accessToken = data.auth?.access_token;
       const userData = data.user;
 
-      setToken(accessToken);
-      setUser(userData);
-      setAuthProvider('email');
-      
-      // Persistir en localStorage
-      localStorage.setItem('intelibotx_token', accessToken);
-      localStorage.setItem('intelibotx_user', JSON.stringify(userData));
-      localStorage.setItem('intelibotx_auth_provider', 'email');
-      
-      // Load user exchanges (empty for new user)
-      await loadUserExchanges();
+      if (accessToken) {
+        setToken(accessToken);
+        setUser(userData);
+        setAuthProvider('email');
+        
+        // Persistir en localStorage
+        localStorage.setItem('intelibotx_token', accessToken);
+        localStorage.setItem('intelibotx_user', JSON.stringify(userData));
+        localStorage.setItem('intelibotx_auth_provider', 'email');
+        
+        // Load user exchanges (empty for new user)
+        await loadUserExchanges();
+      }
 
       return { success: true, data };
     } catch (error) {
