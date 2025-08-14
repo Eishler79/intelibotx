@@ -277,19 +277,6 @@ const AuthPage = () => {
             </div>
 
             {/* Demo Credentials - Only in Login Mode */}
-            {mode === 'login' && (
-              <div 
-                className="mt-6 p-4 rounded-lg border"
-                style={{
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  borderColor: 'rgba(59, 130, 246, 0.2)'
-                }}
-              >
-                <p className="text-sm font-medium mb-2 text-blue-300">Demo Admin Access:</p>
-                <p className="text-xs text-gray-300">Email: admin@intelibotx.com</p>
-                <p className="text-xs text-gray-300">Password: admin123</p>
-              </div>
-            )}
           </div>
         </div>
       </div>

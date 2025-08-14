@@ -342,6 +342,14 @@ try:
 except Exception as e:
     print(f"⚠️  Warning: Could not load Dashboard Data router: {e}")
 
+# 📊 Dashboard API - Frontend endpoints requeridos
+try:
+    from routes.dashboard_api import router as dashboard_api_router
+    app.include_router(dashboard_api_router)
+    print("📈 Dashboard API router loaded")
+except Exception as e:
+    print(f"⚠️  Warning: Could not load Dashboard API router: {e}")
+
 # Load WebSocket routes (NEW - Real-time data streaming) - TEMPORARILY DISABLED
 # WebSocket routes require complex lazy imports for RealtimeDataManager
 # Core trading functionality (11/12 routers) is fully operational
