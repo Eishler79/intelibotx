@@ -605,35 +605,63 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
 
 
 @router.delete("/api/bots/{bot_id}")
-async def delete_bot(bot_id: int):
+async def delete_bot(bot_id: int, authorization: str = Header(None)):
     """Eliminar un bot"""
     # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
-    from db.database import engine
+    from db.database import get_session
+    from fastapi import HTTPException, status
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in delete_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
-        with Session(engine) as session:
-            query = select(BotConfig).where(BotConfig.id == bot_id)
-            bot = session.exec(query).first()
-            
-            if not bot:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Bot con ID {bot_id} no encontrado"
-                )
-            
-            session.delete(bot)
-            session.commit()
-            
-            return {
-                "message": f"🗑️ Bot {bot.symbol} eliminado exitosamente",
-                "bot_id": bot_id
-            }
+        query = select(BotConfig).where(BotConfig.id == bot_id)
+        bot = session.exec(query).first()
+        
+        if not bot:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Bot con ID {bot_id} no encontrado"
+            )
+        
+        session.delete(bot)
+        session.commit()
+        
+        return {
+            "message": f"🗑️ Bot {bot.symbol} eliminado exitosamente",
+            "bot_id": bot_id
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -644,20 +672,48 @@ async def delete_bot(bot_id: int):
 
 
 @router.get("/api/backtest-results/{bot_id}")
-async def get_backtest_results(bot_id: int):
+async def get_backtest_results(bot_id: int, authorization: str = Header(None)):
     """Obtener resultados de backtest para un bot específico"""
     # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
-    from db.database import engine
+    from db.database import get_session
     from services.backtest_bot import run_backtest_and_plot
+    from fastapi import HTTPException, status
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_backtest_results: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
-        with Session(engine) as session:
             query = select(BotConfig).where(BotConfig.id == bot_id)
             bot = session.exec(query).first()
             
@@ -697,19 +753,47 @@ async def get_backtest_results(bot_id: int):
 
 
 @router.put("/api/bots/{bot_id}")
-async def update_bot(bot_id: int, bot_data: dict):
+async def update_bot(bot_id: int, bot_data: dict, authorization: str = Header(None)):
     """Actualizar configuración de un bot"""
     # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
-    from db.database import engine
+    from db.database import get_session
+    from fastapi import HTTPException, status
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in update_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
-        with Session(engine) as session:
             query = select(BotConfig).where(BotConfig.id == bot_id)
             bot = session.exec(query).first()
             
@@ -745,13 +829,43 @@ async def update_bot(bot_id: int, bot_data: dict):
 # Control de Bots (para el panel de control dinámico)
 
 @router.post("/api/bots/{bot_id}/start")
-async def start_bot(bot_id: int):
+async def start_bot(bot_id: int, authorization: str = Header(None)):
     """Iniciar un bot"""
     # Lazy imports
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
+    from db.database import get_session
+    from fastapi import HTTPException, status
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in start_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     return {
         "message": f"✅ Bot {bot_id} iniciado",
@@ -761,13 +875,43 @@ async def start_bot(bot_id: int):
 
 
 @router.post("/api/bots/{bot_id}/pause")
-async def pause_bot(bot_id: int):
+async def pause_bot(bot_id: int, authorization: str = Header(None)):
     """Pausar un bot"""
     # Lazy imports
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
+    from db.database import get_session
+    from fastapi import HTTPException, status
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in pause_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     return {
         "message": f"⏸️ Bot {bot_id} pausado",
@@ -777,13 +921,43 @@ async def pause_bot(bot_id: int):
 
 
 @router.post("/api/bots/{bot_id}/stop")
-async def stop_bot(bot_id: int):
+async def stop_bot(bot_id: int, authorization: str = Header(None)):
     """Detener un bot"""
     # Lazy imports
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
+    from db.database import get_session
+    from fastapi import HTTPException, status
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in stop_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     return {
         "message": f"⏹️ Bot {bot_id} detenido",
