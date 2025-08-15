@@ -557,46 +557,70 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
                 status_code=400,
                 detail=f"No se puede inferir base_currency de {symbol}. Especificar base_currency y quote_currency explícitamente."
             )
-            
-            # Crear instancia de BotConfig con los datos recibidos
-            bot = BotConfig(
-                user_id=current_user.id,  # ✅ DL-006 COMPLIANCE: JWT auth user_id
-                exchange_id=bot_data.get("exchange_id"),  # ✅ FIX: Agregar exchange_id opcional
-                name=bot_data.get("name", f"{bot_data.get('strategy', 'Smart Scalper')} Bot"),
-                symbol=symbol,
-                base_currency=base_currency,  # ✅ FIX: Required field
-                quote_currency=quote_currency,  # ✅ FIX: Required field
-                # ✅ DL-001 COMPLIANCE: Todos los parámetros REQUERIDOS por usuario
-                strategy=bot_data["strategy"],  # REQUERIDO
-                interval=bot_data["interval"],  # REQUERIDO
-                stake=bot_data["stake"],  # REQUERIDO
-                take_profit=bot_data["take_profit"],  # REQUERIDO
-                stop_loss=bot_data["stop_loss"],  # REQUERIDO
-                dca_levels=bot_data["dca_levels"],  # REQUERIDO
-                risk_percentage=bot_data["risk_percentage"],  # REQUERIDO
-                market_type=bot_data["market_type"],  # REQUERIDO
-                leverage=bot_data["leverage"],  # REQUERIDO
-                margin_type=bot_data["margin_type"],  # REQUERIDO
-                
-                # ✅ DL-001 COMPLIANCE: Campos avanzados REQUERIDOS
-                entry_order_type=bot_data["entry_order_type"],  # REQUERIDO
-                exit_order_type=bot_data["exit_order_type"],  # REQUERIDO
-                tp_order_type=bot_data["tp_order_type"],  # REQUERIDO
-                sl_order_type=bot_data["sl_order_type"],  # REQUERIDO
-                trailing_stop=bot_data["trailing_stop"],  # REQUERIDO
-                max_open_positions=bot_data["max_open_positions"],  # REQUERIDO
-                cooldown_minutes=bot_data["cooldown_minutes"]  # REQUERIDO
+        
+        # ✅ DL-001 COMPLIANCE: Validar exchange_id requerido y pertenece al usuario
+        exchange_id = bot_data.get("exchange_id")
+        if not exchange_id:
+            raise HTTPException(
+                status_code=400,
+                detail="exchange_id es requerido - DL-001 compliance: no defaults hardcoded"
             )
+        
+        # Validar que el exchange existe y pertenece al usuario
+        from models.user_exchange import UserExchange
+        from sqlmodel import select
+        
+        exchange_query = select(UserExchange).where(
+            UserExchange.id == exchange_id,
+            UserExchange.user_id == current_user.id
+        )
+        user_exchange = session.exec(exchange_query).first()
+        
+        if not user_exchange:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Exchange con ID {exchange_id} no encontrado o no pertenece al usuario"
+            )
+        
+        # Crear instancia de BotConfig con los datos recibidos
+        bot = BotConfig(
+            user_id=current_user.id,  # ✅ DL-006 COMPLIANCE: JWT auth user_id
+            exchange_id=exchange_id,  # ✅ FIX: Usar exchange_id validado
+            name=bot_data.get("name", f"{bot_data.get('strategy', 'Smart Scalper')} Bot"),
+            symbol=symbol,
+            base_currency=base_currency,  # ✅ FIX: Required field
+            quote_currency=quote_currency,  # ✅ FIX: Required field
+            # ✅ DL-001 COMPLIANCE: Todos los parámetros REQUERIDOS por usuario
+            strategy=bot_data["strategy"],  # REQUERIDO
+            interval=bot_data["interval"],  # REQUERIDO
+            stake=bot_data["stake"],  # REQUERIDO
+            take_profit=bot_data["take_profit"],  # REQUERIDO
+            stop_loss=bot_data["stop_loss"],  # REQUERIDO
+            dca_levels=bot_data["dca_levels"],  # REQUERIDO
+            risk_percentage=bot_data["risk_percentage"],  # REQUERIDO
+            market_type=bot_data["market_type"],  # REQUERIDO
+            leverage=bot_data["leverage"],  # REQUERIDO
+            margin_type=bot_data["margin_type"],  # REQUERIDO
             
-            session.add(bot)
-            session.commit()
-            session.refresh(bot)
-            
-            return {
-                "message": f"✅ Bot {bot.strategy} creado para {bot.symbol} ({bot.market_type.upper()})",
-                "bot_id": bot.id,
-                "bot": bot
-            }
+            # ✅ DL-001 COMPLIANCE: Campos avanzados REQUERIDOS
+            entry_order_type=bot_data["entry_order_type"],  # REQUERIDO
+            exit_order_type=bot_data["exit_order_type"],  # REQUERIDO
+            tp_order_type=bot_data["tp_order_type"],  # REQUERIDO
+            sl_order_type=bot_data["sl_order_type"],  # REQUERIDO
+            trailing_stop=bot_data["trailing_stop"],  # REQUERIDO
+            max_open_positions=bot_data["max_open_positions"],  # REQUERIDO
+            cooldown_minutes=bot_data["cooldown_minutes"]  # REQUERIDO
+        )
+        
+        session.add(bot)
+        session.commit()
+        session.refresh(bot)
+        
+        return {
+            "message": f"✅ Bot {bot.strategy} creado para {bot.symbol} ({bot.market_type.upper()})",
+            "bot_id": bot.id,
+            "bot": bot
+        }
     except Exception as e:
         raise HTTPException(
             status_code=500,
