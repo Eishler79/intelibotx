@@ -302,18 +302,45 @@ async def check_binance_status(authorization: str = Header(None)):
 # Exchange Management Endpoints
 
 @router.get("/user/exchanges", response_model=List[Dict[str, Any]])
-async def get_user_exchanges():
+async def get_user_exchanges(authorization: str = Header(None)):
     """
     Obtener todos los exchanges configurados por el usuario.
     """
     # Lazy imports
     from db.database import get_session
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from sqlmodel import Session
     
-    # Get actual dependencies
-    session = get_session()
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_user_exchanges: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # Por ahora simulamos con datos mock basados en configuración del usuario
