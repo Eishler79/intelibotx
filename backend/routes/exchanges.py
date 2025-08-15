@@ -140,27 +140,27 @@ async def add_user_exchange(
     
     try:
         # Validate exchange is supported
-        if not exchange_factory.is_exchange_supported(exchange_request.exchange_name):
+        if not exchange_factory.is_exchange_supported(exchange_request.get("exchange_name")):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Exchange {exchange_request.exchange_name} is not supported"
+                detail=f"Exchange {exchange_request.get('exchange_name')} is not supported"
             )
         
         # Check if connection name already exists for user
         existing_statement = select(UserExchange).where(
             UserExchange.user_id == current_user.id,
-            UserExchange.connection_name == exchange_request.connection_name
+            UserExchange.connection_name == exchange_request.get("connection_name")
         )
         existing_exchange = session.exec(existing_statement).first()
         if existing_exchange:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Connection name '{exchange_request.connection_name}' already exists"
+                detail=f"Connection name '{exchange_request.get('connection_name')}' already exists"
             )
         
         # Encrypt credentials
-        encrypted_api_key = encryption_service.encrypt_api_key(exchange_request.api_key)
-        encrypted_api_secret = encryption_service.encrypt_api_key(exchange_request.api_secret)
+        encrypted_api_key = encryption_service.encrypt_api_key(exchange_request.get("api_key"))
+        encrypted_api_secret = encryption_service.encrypt_api_key(exchange_request.get("api_secret"))
         
         if not encrypted_api_key or not encrypted_api_secret:
             raise HTTPException(
@@ -170,18 +170,18 @@ async def add_user_exchange(
         
         # Encrypt passphrase if provided
         encrypted_passphrase = None
-        if exchange_request.passphrase:
-            encrypted_passphrase = encryption_service.encrypt_api_key(exchange_request.passphrase)
+        if exchange_request.get("passphrase"):
+            encrypted_passphrase = encryption_service.encrypt_api_key(exchange_request.get("passphrase"))
         
         # Create UserExchange record
         user_exchange = UserExchange(
             user_id=current_user.id,
-            exchange_name=exchange_request.exchange_name.lower(),
-            connection_name=exchange_request.connection_name,
+            exchange_name=exchange_request.get("exchange_name").lower(),
+            connection_name=exchange_request.get("connection_name"),
             encrypted_api_key=encrypted_api_key,
             encrypted_api_secret=encrypted_api_secret,
             encrypted_passphrase=encrypted_passphrase,
-            is_testnet=exchange_request.is_testnet,
+            is_testnet=exchange_request.get("is_testnet", False),
             status="inactive"  # Will be updated after connection test
         )
         
@@ -299,17 +299,17 @@ async def update_user_exchange(
             )
         
         # Update fields
-        user_exchange.exchange_name = exchange_request.exchange_name.lower()
-        user_exchange.connection_name = exchange_request.connection_name
-        user_exchange.is_testnet = exchange_request.is_testnet
+        user_exchange.exchange_name = exchange_request.get("exchange_name").lower()
+        user_exchange.connection_name = exchange_request.get("connection_name")
+        user_exchange.is_testnet = exchange_request.get("is_testnet", False)
         
         # Update credentials if provided
-        if exchange_request.api_key:
-            user_exchange.encrypted_api_key = encryption_service.encrypt_api_key(exchange_request.api_key)
-        if exchange_request.api_secret:
-            user_exchange.encrypted_api_secret = encryption_service.encrypt_api_key(exchange_request.api_secret)
-        if exchange_request.passphrase:
-            user_exchange.encrypted_passphrase = encryption_service.encrypt_api_key(exchange_request.passphrase)
+        if exchange_request.get("api_key"):
+            user_exchange.encrypted_api_key = encryption_service.encrypt_api_key(exchange_request.get("api_key"))
+        if exchange_request.get("api_secret"):
+            user_exchange.encrypted_api_secret = encryption_service.encrypt_api_key(exchange_request.get("api_secret"))
+        if exchange_request.get("passphrase"):
+            user_exchange.encrypted_passphrase = encryption_service.encrypt_api_key(exchange_request.get("passphrase"))
         
         user_exchange.update_timestamp()
         session.commit()
