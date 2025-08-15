@@ -644,16 +644,45 @@ async def test_user_exchange(
         }
 
 @router.post("/test-binance-connection", response_model=Dict[str, Any])
-async def test_binance_connection():
+async def test_binance_connection(authorization: str = Header(None)):
     """
     Probar conexión REAL con Binance usando las claves del usuario.
     Solo para testnet por seguridad.
     """
     # Lazy imports
-    from services.auth_service import auth_service, get_current_user
+    from services.auth_service import auth_service
+    from db.database import get_session
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in test_binance_connection: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # Obtener credenciales testnet del usuario
@@ -693,15 +722,44 @@ async def test_binance_connection():
         }
 
 @router.get("/binance-account", response_model=Dict[str, Any])
-async def get_binance_account_info():
+async def get_binance_account_info(authorization: str = Header(None)):
     """
     Obtener información REAL de la cuenta Binance del usuario.
     """
     # Lazy imports
-    from services.auth_service import auth_service, get_current_user
+    from services.auth_service import auth_service
+    from db.database import get_session
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_binance_account_info: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # Obtener credenciales testnet del usuario
@@ -1048,17 +1106,46 @@ async def test_email_connection():
         }
 
 @router.post("/logout", response_model=Dict[str, str])
-async def logout():
+async def logout(authorization: str = Header(None)):
     """
     Cerrar sesión del usuario.
     
     En implementación completa se invalidaría el token JWT.
     """
     # Lazy imports
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
+    from db.database import get_session
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in logout: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     return {
         "message": "Logout successful",
