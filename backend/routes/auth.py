@@ -1,5 +1,5 @@
 ### 📁 backend/routes/auth.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlmodel import Session
 from typing import Dict, Any, List
 from datetime import datetime
@@ -120,16 +120,45 @@ async def login(
         )
 
 @router.get("/me")
-async def get_current_user_info():
+async def get_current_user_info(authorization: str = Header(None)):
     """
     Obtener información del usuario autenticado actual.
     """
     # Lazy imports
     from models.user import UserResponse
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
+    from db.database import get_session
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_current_user_info: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     return UserResponse(
         id=current_user.id,
@@ -145,7 +174,8 @@ async def get_current_user_info():
 
 @router.put("/api-keys", response_model=Dict[str, str])
 async def update_api_keys(
-    api_keys_data: dict
+    api_keys_data: dict,
+    authorization: str = Header(None)
 ):
     """
     Actualizar claves API de Binance del usuario.
@@ -155,12 +185,39 @@ async def update_api_keys(
     # Lazy imports
     from db.database import get_session
     from models.user import ApiKeysUpdate
-    from services.auth_service import auth_service, get_current_user
+    from services.auth_service import auth_service
     from sqlmodel import Session
     
-    # Get actual dependencies
-    session = get_session()
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in update_api_keys: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     # Convert dict to ApiKeysUpdate
     api_keys_data = ApiKeysUpdate(**api_keys_data)
@@ -538,16 +595,46 @@ async def get_binance_account_info():
 
 @router.get("/binance-price/{symbol}", response_model=Dict[str, Any])
 async def get_binance_price(
-    symbol: str
+    symbol: str,
+    authorization: str = Header(None)
 ):
     """
     Obtener precio REAL de un símbolo desde Binance.
     """
     # Lazy imports
-    from services.auth_service import auth_service, get_current_user
+    from services.auth_service import auth_service
+    from db.database import get_session
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_binance_price: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # Obtener credenciales testnet del usuario
