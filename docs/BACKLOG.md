@@ -39,7 +39,7 @@
 
 ### **📊 PROGRESO DEPENDENCY INJECTION - 2025-08-15**
 - [x] {POST_EXCHANGES_OPTION_B_DONE} **POST /exchanges Opción B** — ✅ **COMPLETADO** Manual JWT auth implementado
-- [ ] {GET_EXCHANGES_FIX} **GET /exchanges dependency fix** — Pendiente (línea 30 routes/exchanges.py)
+- [x] {GET_EXCHANGES_FIX} **GET /exchanges dependency fix** — ✅ **COMPLETADO** Opción B manual auth + session fix aplicado
 - [ ] {PUT_EXCHANGES_FIX} **PUT /exchanges/{id} dependency fix** — Pendiente (línea 229 routes/exchanges.py) 
 - [ ] {DELETE_EXCHANGES_FIX} **DELETE /exchanges/{id} dependency fix** — Pendiente (línea 296 routes/exchanges.py)
 - [ ] {TEST_EXCHANGES_FIX} **POST /exchanges/{id}/test dependency fix** — Pendiente (línea 338 routes/exchanges.py)

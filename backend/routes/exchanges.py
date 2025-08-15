@@ -242,20 +242,49 @@ async def add_user_exchange(
 @router.put("/exchanges/{exchange_id}")
 async def update_user_exchange(
     exchange_id: int,
-    exchange_request: dict
+    exchange_request: dict,
+    authorization: str = Header(None)
 ):
     """Actualizar exchange del usuario"""
     # Lazy imports
     from models.user import User
     from models.user_exchange import UserExchange, ExchangeConnectionRequest, ExchangeConnectionResponse
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from db.database import get_session
     from sqlmodel import Session, select
     from services.encryption_service import EncryptionService
+    from fastapi import HTTPException, status
     
-    # Get actual dependencies
-    current_user = await get_current_user()
-    session = get_session().__next__()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in update_user_exchange: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -310,19 +339,48 @@ async def update_user_exchange(
 
 @router.delete("/exchanges/{exchange_id}")
 async def delete_user_exchange(
-    exchange_id: int
+    exchange_id: int,
+    authorization: str = Header(None)
 ):
     """Eliminar exchange del usuario"""
     # Lazy imports
     from models.user import User
     from models.user_exchange import UserExchange
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from db.database import get_session
     from sqlmodel import Session, select
+    from fastapi import HTTPException, status
     
-    # Get actual dependencies
-    current_user = await get_current_user()
-    session = get_session().__next__()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in delete_user_exchange: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         user_exchange = session.get(UserExchange, exchange_id)
@@ -350,21 +408,50 @@ async def delete_user_exchange(
 
 @router.post("/exchanges/{exchange_id}/test")
 async def test_exchange_connection(
-    exchange_id: int
+    exchange_id: int,
+    authorization: str = Header(None)
 ):
     """Probar conexión con exchange"""
     # Lazy imports
     from models.user import User
     from models.user_exchange import UserExchange, ExchangeTestResponse
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from db.database import get_session
     from sqlmodel import Session, select
     from services.encryption_service import EncryptionService
     from services.exchange_factory import ExchangeFactory
+    from fastapi import HTTPException, status
     
-    # Get actual dependencies
-    current_user = await get_current_user()
-    session = get_session().__next__()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in test_exchange_connection: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -454,21 +541,50 @@ async def test_exchange_connection(
 
 @router.get("/exchanges/{exchange_id}/balance")
 async def get_exchange_balance(
-    exchange_id: int
+    exchange_id: int,
+    authorization: str = Header(None)
 ):
     """Obtener balance del exchange"""
     # Lazy imports
     from models.user import User
     from models.user_exchange import UserExchange
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from db.database import get_session
     from sqlmodel import Session, select
     from services.encryption_service import EncryptionService
     from services.exchange_factory import ExchangeFactory
+    from fastapi import HTTPException, status
     
-    # Get actual dependencies
-    current_user = await get_current_user()
-    session = get_session().__next__()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_exchange_balance: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -524,7 +640,8 @@ async def get_exchange_balance(
 
 @router.get("/exchanges/{exchange_id}/market-types")
 async def get_exchange_market_types(
-    exchange_id: int
+    exchange_id: int,
+    authorization: str = Header(None)
 ):
     """
     Obtener tipos de mercado disponibles por exchange
@@ -538,13 +655,41 @@ async def get_exchange_market_types(
     # Lazy imports
     from models.user import User
     from models.user_exchange import UserExchange
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from db.database import get_session
     from sqlmodel import Session, select
+    from fastapi import HTTPException, status
     
-    # Get actual dependencies
-    current_user = await get_current_user()
-    session = get_session().__next__()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_exchange_market_types: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # Get user exchange

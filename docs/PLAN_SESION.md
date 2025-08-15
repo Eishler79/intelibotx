@@ -13,8 +13,8 @@
 - 🎯 **Root cause identificado**: Forward references `'ExchangeConnectionRequest'` rompían OpenAPI ✅ **RESUELTO**
 - 🚨 **Problema mayor descubierto**: Massive auth fix rompió `get_current_user()` dependency injection
 - ✅ **Testing mejorado**: Implementado local testing completo con datos reales
-- 🔧 **Opción B implementada**: Manual JWT authentication en POST /exchanges (1/7 endpoints)
-- ⚠️ **Estado actual**: 1 endpoint arreglado, validación PRD pendiente, 43 endpoints restantes
+- 🔧 **Opción B implementada**: Manual JWT authentication en POST + GET /exchanges (2/7 endpoints)
+- ✅ **Estado actual**: 2 endpoints arreglados, PRD validado funcional, 42 endpoints restantes
 
 ## 🏆 LOGROS SESIÓN ANTERIOR 2025-08-14 ✅ **COMPLETADOS**
 1. ✅ **Authentication Fix Masivo** - 43 endpoints corregidos sistemáticamente
@@ -365,8 +365,8 @@ c6b1b8f 🔧 fix: Massive authentication fix across 43 endpoints in 7 files
 - ⏸️ **Pendiente**: Análisis hallazgos comportamiento PRD + fix 43 endpoints restantes
 
 ### **📈 PROGRESO DEPENDENCY INJECTION:**
-- **1/44 endpoints** ✅ **Arreglado**: POST /exchanges (Opción B manual auth)
-- **6/7 Exchange endpoints** ❌ **Pendientes**: GET, PUT, DELETE, test, balance, market-types  
+- **2/44 endpoints** ✅ **Arreglados**: POST /exchanges + GET /exchanges (Opción B manual auth)
+- **5/7 Exchange endpoints** ❌ **Pendientes**: PUT, DELETE, test, balance, market-types  
 - **37 otros endpoints** ❌ **Pendientes**: bots.py, auth.py, trading_operations.py, etc.
 - **Premisas DL-001** ✅ **Respetadas**: Lazy imports + no hardcode mantenidos
 
