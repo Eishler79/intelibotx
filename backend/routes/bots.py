@@ -1,10 +1,13 @@
 # 📦 Importaciones base
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.responses import HTMLResponse
 from typing import List, Dict, Any
 
 # Lazy imports to avoid psycopg2 dependency at module level
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 🚀 Instancia del router
 router = APIRouter()
@@ -342,17 +345,47 @@ async def run_smart_trade(
     symbol: str,
     scalper_mode: bool = False,
     quantity: float = 0.001,
-    execute_real: bool = False
+    execute_real: bool = False,
+    authorization: str = Header(None)
 ):
     """Ejecuta Smart Trade con análisis técnico completo"""
     # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
-    from db.database import engine
+    from db.database import get_session
+    from fastapi import HTTPException, status, Header
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in run_smart_trade: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # ✅ Normalización del símbolo
@@ -400,24 +433,52 @@ async def run_smart_trade(
 # 🤖 CRUD ENDPOINTS PARA BOTS
 
 @router.get("/api/bots")
-async def get_bots():
+async def get_bots(authorization: str = Header(None)):
     """Obtener lista de todos los bots"""
     # Lazy imports
     from models.bot_config import BotConfig
     from models.user import User
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
-    from db.database import engine
+    from db.database import get_session
+    from fastapi import HTTPException, status, Header
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_bots: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
-        with Session(engine) as session:
-            # ✅ DL-006 COMPLIANCE: Solo bots del usuario autenticado
-            query = select(BotConfig).where(BotConfig.user_id == current_user.id)
-            bots = session.exec(query).all()
-            return bots
+        # ✅ DL-006 COMPLIANCE: Solo bots del usuario autenticado
+        query = select(BotConfig).where(BotConfig.user_id == current_user.id)
+        bots = session.exec(query).all()
+        return bots
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -426,48 +487,76 @@ async def get_bots():
 
 
 @router.post("/api/create-bot")
-async def create_bot(bot_data: dict):
+async def create_bot(bot_data: dict, authorization: str = Header(None)):
     """Crear un nuevo bot con autenticación JWT"""
     # Lazy imports
     from models.bot_config import BotConfig
     from models.user import User
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from sqlmodel import Session
-    from db.database import engine
+    from db.database import get_session
     from utils.symbol_validator import validate_symbol
+    from fastapi import HTTPException, status, Header
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in create_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
-        with Session(engine) as session:
-            # ✅ DL-006 COMPLIANCE: Usar JWT auth en lugar de hardcode user_id
-            # user_id viene del token JWT validado en get_current_user dependency
-            
-            # ✅ DL-001 COMPLIANCE: Symbol requerido por usuario, no default hardcoded
-            symbol = bot_data.get("symbol")
-            if not symbol:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Symbol es requerido - DL-001 compliance: no defaults hardcoded"
-                )
-            
-            # Parsing más robusto de currencies
-            if symbol.endswith("USDT"):
-                base_currency = "USDT"
-                quote_currency = symbol[:-4]  # Remove USDT
-            elif symbol.endswith("BTC"):
-                base_currency = "BTC"  
-                quote_currency = symbol[:-3]  # Remove BTC
-            elif symbol.endswith("ETH"):
-                base_currency = "ETH"
-                quote_currency = symbol[:-3]  # Remove ETH
-            else:
-                # ✅ DL-001 COMPLIANCE: No defaults, inferir de symbol o requerir explícito
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"No se puede inferir base_currency de {symbol}. Especificar base_currency y quote_currency explícitamente."
-                )
+        # ✅ DL-006 COMPLIANCE: Usar JWT auth en lugar de hardcode user_id
+        # user_id viene del token JWT validado en get_current_user dependency
+        
+        # ✅ DL-001 COMPLIANCE: Symbol requerido por usuario, no default hardcoded
+        symbol = bot_data.get("symbol")
+        if not symbol:
+            raise HTTPException(
+                status_code=400,
+                detail="Symbol es requerido - DL-001 compliance: no defaults hardcoded"
+            )
+        
+        # Parsing más robusto de currencies
+        if symbol.endswith("USDT"):
+            base_currency = "USDT"
+            quote_currency = symbol[:-4]  # Remove USDT
+        elif symbol.endswith("BTC"):
+            base_currency = "BTC"  
+            quote_currency = symbol[:-3]  # Remove BTC
+        elif symbol.endswith("ETH"):
+            base_currency = "ETH"
+            quote_currency = symbol[:-3]  # Remove ETH
+        else:
+            # ✅ DL-001 COMPLIANCE: No defaults, inferir de symbol o requerir explícito
+            raise HTTPException(
+                status_code=400,
+                detail=f"No se puede inferir base_currency de {symbol}. Especificar base_currency y quote_currency explícitamente."
+            )
             
             # Crear instancia de BotConfig con los datos recibidos
             bot = BotConfig(
