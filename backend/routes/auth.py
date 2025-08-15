@@ -567,16 +567,46 @@ async def delete_user_exchange(
 
 @router.post("/user/exchanges/{exchange_id}/test", response_model=Dict[str, Any])
 async def test_user_exchange(
-    exchange_id: int
+    exchange_id: int,
+    authorization: str = Header(None)
 ):
     """
     Probar conexión de un exchange específico del usuario.
     """
     # Lazy imports
-    from services.auth_service import auth_service, get_current_user
+    from services.auth_service import auth_service
+    from db.database import get_session
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in test_user_exchange: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # Determinar tipo de credenciales basado en ID
