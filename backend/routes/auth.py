@@ -388,7 +388,8 @@ async def get_user_exchanges(authorization: str = Header(None)):
 
 @router.post("/user/exchanges", response_model=Dict[str, Any])
 async def add_user_exchange(
-    exchange_data: Dict[str, Any]
+    exchange_data: Dict[str, Any],
+    authorization: str = Header(None)
 ):
     """
     Agregar un nuevo exchange al usuario.
@@ -396,12 +397,39 @@ async def add_user_exchange(
     """
     # Lazy imports
     from db.database import get_session
-    from services.auth_service import auth_service, get_current_user
+    from services.auth_service import auth_service
     from sqlmodel import Session
     
-    # Get actual dependencies
-    session = get_session()
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in add_user_exchange: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         exchange_name = exchange_data.get("exchange_name", "").lower()
