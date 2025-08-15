@@ -88,7 +88,7 @@ async def add_user_exchange(
         token_data = auth_service.verify_jwt_token(token)
         
         # Get database session and user
-        session = get_session().__next__()
+        session = get_session()
         current_user = auth_service.get_user_by_id(token_data["user_id"], session)
         
         if not current_user or not current_user.is_active:
