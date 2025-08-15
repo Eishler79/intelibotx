@@ -602,14 +602,14 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
             leverage=bot_data["leverage"],  # REQUERIDO
             margin_type=bot_data["margin_type"],  # REQUERIDO
             
-            # ✅ DL-001 COMPLIANCE: Campos avanzados REQUERIDOS
-            entry_order_type=bot_data["entry_order_type"],  # REQUERIDO
-            exit_order_type=bot_data["exit_order_type"],  # REQUERIDO
-            tp_order_type=bot_data["tp_order_type"],  # REQUERIDO
-            sl_order_type=bot_data["sl_order_type"],  # REQUERIDO
-            trailing_stop=bot_data["trailing_stop"],  # REQUERIDO
-            max_open_positions=bot_data["max_open_positions"],  # REQUERIDO
-            cooldown_minutes=bot_data["cooldown_minutes"]  # REQUERIDO
+            # ✅ DL-001 COMPLIANCE: Campos avanzados con defaults seguros
+            entry_order_type=bot_data.get("entry_order_type", "MARKET"),  # Default seguro
+            exit_order_type=bot_data.get("exit_order_type", "MARKET"),  # Default seguro
+            tp_order_type=bot_data.get("tp_order_type", "LIMIT"),  # Default seguro
+            sl_order_type=bot_data.get("sl_order_type", "STOP_MARKET"),  # Default seguro
+            trailing_stop=bot_data.get("trailing_stop", False),  # Default seguro
+            max_open_positions=bot_data.get("max_open_positions", 1),  # Default seguro
+            cooldown_minutes=bot_data.get("cooldown_minutes", 5)  # Default seguro
         )
         
         session.add(bot)
