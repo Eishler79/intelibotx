@@ -37,6 +37,7 @@ async def execute_smart_scalper_analysis(
     """
     try:
         # Smart Scalper algorithm imports
+        import pandas as pd
         from services.binance_real_data import BinanceRealDataService
         from services.advanced_algorithm_selector import AdvancedAlgorithmSelector
         from services.market_microstructure_analyzer import MarketMicrostructureAnalyzer

@@ -25,6 +25,7 @@ class InstitutionalAnalysis:
     market_phase: MarketPhase
     order_blocks: List[Dict]
     manipulation_events: List[Dict]
+    active_manipulations: List[Dict]
 
 class InstitutionalDetector:
     def analyze_institutional_activity(self, symbol: str, timeframe: str,
@@ -49,7 +50,8 @@ class InstitutionalDetector:
             manipulation_type=manipulation,
             market_phase=phase,
             order_blocks=order_blocks,
-            manipulation_events=events
+            manipulation_events=events,
+            active_manipulations=[]
         )
     
     def _detect_manipulation(self, highs: List[float], lows: List[float], 
