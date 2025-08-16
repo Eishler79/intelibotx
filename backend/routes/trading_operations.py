@@ -3,7 +3,7 @@
 Endpoints para almacenar y recuperar operaciones de trading con IDs únicos
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query, Header
+from fastapi import APIRouter, HTTPException, Query, Header
 from typing import List, Optional
 from datetime import datetime, timedelta
 from uuid import uuid4
