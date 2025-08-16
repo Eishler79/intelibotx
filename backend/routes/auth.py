@@ -837,49 +837,52 @@ async def get_binance_price(
         )
     
     try:
-        # Obtener credenciales testnet del usuario
-        credentials = auth_service.get_user_binance_credentials(current_user, "TESTNET")
+        # Los precios de Binance son públicos, no requieren API keys del usuario
+        import aiohttp
+        import time
         
-        if not credentials or not credentials.get("api_key") or not credentials.get("api_secret"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No testnet API keys configured"
-            )
+        # API pública de Binance para precios (no requiere autenticación)
+        async with aiohttp.ClientSession() as session:
+            # Obtener precio actual
+            price_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol.upper()}"
+            async with session.get(price_url) as response:
+                if response.status == 200:
+                    price_data = await response.json()
+                    current_price = float(price_data["price"])
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Symbol {symbol} not found on Binance"
+                    )
+            
+            # Obtener estadísticas 24h
+            ticker_url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={symbol.upper()}"
+            async with session.get(ticker_url) as response:
+                if response.status == 200:
+                    ticker_data = await response.json()
+                    price_change_24h = float(ticker_data["priceChangePercent"])
+                    volume_24h = float(ticker_data["volume"])
+                    high_24h = float(ticker_data["highPrice"])
+                    low_24h = float(ticker_data["lowPrice"])
+                else:
+                    # Si falla ticker 24h, usar valores por defecto
+                    price_change_24h = 0.0
+                    volume_24h = 0.0
+                    high_24h = current_price
+                    low_24h = current_price
         
-        # Crear servicio Binance
-        from services.binance_service import BinanceService
-        
-        binance_service = BinanceService(
-            credentials["api_key"], 
-            credentials["api_secret"], 
-            testnet=True
-        )
-        
-        # Obtener precio real + estadísticas 24h
-        price_result = await binance_service.get_symbol_price(symbol.upper())
-        ticker_result = await binance_service.get_24hr_ticker(symbol.upper())
-        
-        # Combinar resultados
-        if price_result["status"] == "success" and ticker_result["status"] == "success":
-            return {
-                "status": "success",
-                "symbol": symbol.upper(),
-                "current_price": price_result["price"],
-                "price_change_24h": ticker_result["price_change_percent"],
-                "volume_24h": ticker_result["volume"],
-                "high_24h": ticker_result["high_price"],
-                "low_24h": ticker_result["low_price"],
-                "source": "binance_testnet_authenticated",
-                "timestamp": price_result["timestamp"]
-            }
-        else:
-            # Return any error from price or ticker
-            error_msg = price_result.get("message", "") or ticker_result.get("message", "")
-            return {
-                "status": "error",
-                "message": error_msg,
-                "symbol": symbol.upper()
-            }
+        # Retornar resultados combinados
+        return {
+            "status": "success",
+            "symbol": symbol.upper(),
+            "current_price": current_price,
+            "price_change_24h": price_change_24h,
+            "volume_24h": volume_24h,
+            "high_24h": high_24h,
+            "low_24h": low_24h,
+            "source": "binance_public_api",
+            "timestamp": int(time.time() * 1000)  # timestamp en milliseconds
+        }
         
     except HTTPException:
         raise
