@@ -413,7 +413,9 @@ async def execute_trade(request: TradeRequest):
 # get_current_user is now handled with lazy imports in each endpoint
 
 @router.get("/api/user/trading-status")
-async def get_user_trading_status():
+async def get_user_trading_status(
+    authorization: str = Header(None)
+):
     """
     Obtener estado de trading del usuario autenticado
     
@@ -426,13 +428,44 @@ async def get_user_trading_status():
     """
     try:
         # Lazy imports
-        from services.auth_service import get_current_user
-        from services.user_trading_service import UserTradingService
         from db.database import get_session
+        from services.auth_service import auth_service
+        from services.user_trading_service import UserTradingService
+        from fastapi import HTTPException, status, Header
+        import logging
         
-        # Get actual dependencies
-        current_user = await get_current_user()
-        session = get_session().__next__()
+        logger = logging.getLogger(__name__)
+        
+        # Manual authentication - Opción B con estándares de seguridad
+        if not authorization:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authorization header required"
+            )
+        
+        # Extract and validate JWT token using existing service methods
+        try:
+            token = auth_service.get_token_from_header(authorization)
+            token_data = auth_service.verify_jwt_token(token)
+            
+            # Get database session and user
+            session = get_session()
+            current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+            
+            if not current_user or not current_user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not found or inactive"
+                )
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Authentication error in get_user_trading_status: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication"
+            )
         
         # Initialize service
         user_trading_service = UserTradingService()
@@ -465,7 +498,8 @@ async def get_user_trading_status():
 
 @router.post("/api/user/technical-analysis")
 async def get_user_technical_analysis(
-    request: UserAnalysisRequest
+    request: UserAnalysisRequest,
+    authorization: str = Header(None)
 ):
     """
     Análisis técnico usando exchanges configurados del usuario
@@ -485,13 +519,44 @@ async def get_user_technical_analysis(
     """
     try:
         # Lazy imports
-        from services.auth_service import get_current_user
-        from services.user_trading_service import UserTradingService
         from db.database import get_session
+        from services.auth_service import auth_service
+        from services.user_trading_service import UserTradingService
+        from fastapi import HTTPException, status, Header
+        import logging
         
-        # Get actual dependencies
-        current_user = await get_current_user()
-        session = get_session().__next__()
+        logger = logging.getLogger(__name__)
+        
+        # Manual authentication - Opción B con estándares de seguridad
+        if not authorization:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authorization header required"
+            )
+        
+        # Extract and validate JWT token using existing service methods
+        try:
+            token = auth_service.get_token_from_header(authorization)
+            token_data = auth_service.verify_jwt_token(token)
+            
+            # Get database session and user
+            session = get_session()
+            current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+            
+            if not current_user or not current_user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not found or inactive"
+                )
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Authentication error in get_user_technical_analysis: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication"
+            )
         
         # Initialize service
         user_trading_service = UserTradingService()
@@ -523,7 +588,8 @@ async def get_user_technical_analysis(
 
 @router.post("/api/user/execute-trade")
 async def execute_user_trade(
-    request: TradeRequest
+    request: TradeRequest,
+    authorization: str = Header(None)
 ):
     """
     Ejecutar trade usando exchange configurado del usuario
@@ -545,13 +611,44 @@ async def execute_user_trade(
     """
     try:
         # Lazy imports
-        from services.auth_service import get_current_user
-        from services.user_trading_service import UserTradingService
         from db.database import get_session
+        from services.auth_service import auth_service
+        from services.user_trading_service import UserTradingService
+        from fastapi import HTTPException, status, Header
+        import logging
         
-        # Get actual dependencies
-        current_user = await get_current_user()
-        session = get_session().__next__()
+        logger = logging.getLogger(__name__)
+        
+        # Manual authentication - Opción B con estándares de seguridad
+        if not authorization:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authorization header required"
+            )
+        
+        # Extract and validate JWT token using existing service methods
+        try:
+            token = auth_service.get_token_from_header(authorization)
+            token_data = auth_service.verify_jwt_token(token)
+            
+            # Get database session and user
+            session = get_session()
+            current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+            
+            if not current_user or not current_user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not found or inactive"
+                )
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Authentication error in execute_user_trade: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication"
+            )
         
         # Initialize service
         user_trading_service = UserTradingService()

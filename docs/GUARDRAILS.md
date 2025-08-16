@@ -130,3 +130,13 @@ Antes de modificar cualquiera de estos, se debe:
    - **PROHIBIDO:** Considerar tarea completa sin homologación PRD
 
 **Regla:** Estos 3 puntos son **CRÍTICOS** y deben aplicarse a **CADA** cambio de código sin excepción.
+
+---
+
+## 9. SPEC_REF CENTRAL - Authentication Pattern (NUEVO)
+### **OPCIÓN B PATTERN - NUNCA OLVIDAR**
+- **ARCHIVO MAESTRO:** `docs/OPCION_B_PATTERN.md`
+- **REGLA:** SIEMPRE leer este archivo antes de tocar authentication
+- **CONTIENE:** DIFF exacto, imports, validación, metodología crítica
+- **PROPÓSITO:** Eliminar pérdida de conocimiento entre sesiones
+- **CRÍTICO:** Este archivo ES LA VERDAD ABSOLUTA para authentication fixes
