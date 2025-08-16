@@ -3,7 +3,7 @@
 Proporciona métricas en tiempo real de bots, balance, PnL y gráficos
 """
 
-from fastapi import APIRouter, Query, HTTPException, Header
+from fastapi import APIRouter, Query, HTTPException, Header, status
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from collections import defaultdict
