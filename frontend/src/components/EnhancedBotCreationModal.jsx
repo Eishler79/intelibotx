@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTemplate }) => {
-  const { userExchanges, isAuthenticated } = useAuth();
+  const { userExchanges, isAuthenticated, loadUserExchanges } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedExchange, setSelectedExchange] = useState(null);
@@ -34,6 +34,13 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     sl_order_type: 'STOP_MARKET',
     trailing_stop: false
   });
+
+  // ✅ FRONTEND_EXCHANGE_PERSISTENCE_FIX: Load exchanges when modal opens
+  useEffect(() => {
+    if (isOpen && isAuthenticated && (!userExchanges || userExchanges.length === 0)) {
+      loadUserExchanges();
+    }
+  }, [isOpen, isAuthenticated, loadUserExchanges]);
 
   // Pre-fill form with template data when template is selected
   useEffect(() => {
