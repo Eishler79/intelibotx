@@ -390,6 +390,24 @@ async def delete_user_exchange(
                 detail="Exchange not found"
             )
         
+        # ✅ VALIDAR: No se puede eliminar exchange que tiene bots asociados
+        from models.bot_config import BotConfig
+        
+        # Verificar si hay bots usando este exchange
+        bots_query = select(BotConfig).where(BotConfig.exchange_id == exchange_id)
+        associated_bots = session.exec(bots_query).all()
+        
+        if associated_bots:
+            bot_names = [bot.name for bot in associated_bots[:3]]  # Mostrar máximo 3 nombres
+            bot_list = ", ".join(bot_names)
+            if len(associated_bots) > 3:
+                bot_list += f" y {len(associated_bots) - 3} más"
+                
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No se puede eliminar el exchange. Está siendo usado por {len(associated_bots)} bot(s): {bot_list}. Elimina primero los bots asociados."
+            )
+        
         session.delete(user_exchange)
         session.commit()
         
