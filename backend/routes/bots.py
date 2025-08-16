@@ -326,16 +326,53 @@ def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe
 
 # 📈 RUTA ACTUAL: Gráfico de backtest (sin cambios)
 @router.get("/api/backtest-chart/{symbol}", response_class=HTMLResponse)
-async def get_backtest_chart(symbol: str):
+async def get_backtest_chart(symbol: str, authorization: str = Header(None)):
     # Lazy imports
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
     from services.backtest_bot import run_backtest_and_plot
+    from db.database import get_session
+    from fastapi import HTTPException, status, Header
     
-    # Get actual current user
-    current_user = await get_current_user()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
     
-    html_chart = run_backtest_and_plot(symbol)
-    return HTMLResponse(content=html_chart)
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_backtest_chart: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
+    
+    try:
+        html_chart = run_backtest_and_plot(symbol)
+        return HTMLResponse(content=html_chart)
+    except Exception as e:
+        logger.error(f"Error generating backtest chart for {symbol}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate backtest chart for {symbol}"
+        )
 
 
 # 🤖 RUTA ACTUAL: Ejecutar Smart Trade con validación de símbolo
