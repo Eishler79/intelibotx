@@ -343,7 +343,7 @@ async def get_user_exchanges(authorization: str = Header(None)):
         )
     
     try:
-        # Por ahora simulamos con datos mock basados en configuración del usuario
+        # Construir lista de exchanges basada en credenciales reales del usuario
         exchanges = []
         
         # Si tiene claves testnet configuradas, mostrar como Binance Testnet

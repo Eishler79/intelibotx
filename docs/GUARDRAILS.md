@@ -109,3 +109,24 @@ Antes de modificar cualquiera de estos, se debe:
   - Impacto en sistema
   - Plan de migración
 - **VALIDACIÓN:** Siempre confirmar URL antes de testing E2E
+
+---
+
+## 8. Premisas Críticas de Cumplimiento Riguroso (NUEVO)
+### **Metodología Obligatoria para Cualquier Cambio**
+1. **DIAGNÓSTICO SEGURO**
+   - **PROHIBIDO:** Asumir estado o comportamiento
+   - **REQUERIDO:** Verificar con herramientas (grep, read, test)
+   - **VALIDACIÓN:** Confirmar evidencia antes de proceder
+
+2. **CONFIRMACIÓN LOCAL OBLIGATORIA**
+   - **REQUERIDO:** Probar sintaxis localmente ANTES de commit
+   - **REQUERIDO:** Validar todas las premisas (DL-001, GUARDRAILS, CLAUDE_BASE)
+   - **PROHIBIDO:** Commit sin validación local exitosa
+
+3. **HOMOLOGACIÓN PRD VERIFICADA**
+   - **REQUERIDO:** Confirmar deployment completado en PRD
+   - **REQUERIDO:** Validar que LOCAL === PRD funcionalmente
+   - **PROHIBIDO:** Considerar tarea completa sin homologación PRD
+
+**Regla:** Estos 3 puntos son **CRÍTICOS** y deben aplicarse a **CADA** cambio de código sin excepción.
