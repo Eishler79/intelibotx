@@ -436,25 +436,24 @@ async def run_smart_trade(
             )
 
         # 🧠 Buscar configuración del bot en la base de datos
-        with Session(engine) as session:
-            query = select(BotConfig).where(BotConfig.symbol == normalized_symbol)
-            result = session.exec(query).first()
+        query = select(BotConfig).where(BotConfig.symbol == normalized_symbol)
+        result = session.exec(query).first()
 
-            if not result:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"⚠️ No hay configuración guardada para {normalized_symbol}"
-                )
-
-            # 🔍 Extraer los parámetros requeridos
-            interval = result.interval
-            strategy = result.strategy
-
-            # 🏛️ INSTITUCIONAL ÚNICAMENTE (DL-003): SIEMPRE usar Smart Scalper profesional
-            # ELIMINADO: Flujo retail legacy (CSV + indicadores básicos) - DECISIÓN ESTRATÉGICA
-            return await execute_smart_scalper_analysis(
-                normalized_symbol, result, quantity, execute_real
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail=f"⚠️ No hay configuración guardada para {normalized_symbol}"
             )
+
+        # 🔍 Extraer los parámetros requeridos
+        interval = result.interval
+        strategy = result.strategy
+
+        # 🏛️ INSTITUCIONAL ÚNICAMENTE (DL-003): SIEMPRE usar Smart Scalper profesional
+        # ELIMINADO: Flujo retail legacy (CSV + indicadores básicos) - DECISIÓN ESTRATÉGICA
+        return await execute_smart_scalper_analysis(
+            normalized_symbol, result, quantity, execute_real
+        )
     
     except HTTPException:
         # Re-raise HTTP exceptions as-is
