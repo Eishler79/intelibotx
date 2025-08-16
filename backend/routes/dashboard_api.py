@@ -6,7 +6,7 @@ Solo datos reales de BD, sin simulación - DL-001 Compliance
 Eduard Guzmán - InteliBotX
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Header
 from sqlmodel import Session, select
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
@@ -17,14 +17,51 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 @router.get("/summary", response_model=Dict[str, Any])
-async def get_dashboard_summary():
+async def get_dashboard_summary(
+    authorization: str = Header(None)
+):
     """
     Obtener resumen general dashboard del usuario.
     Solo datos reales de BD - DL-001 Compliance.
     """
     # Lazy imports
     from db.database import get_session
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
+    from fastapi import HTTPException, status, Header
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     from models.bot_config import BotConfig
     from models.trading_order import TradingOrder
     from sqlmodel import Session, func
@@ -32,7 +69,6 @@ async def get_dashboard_summary():
     # Get actual dependencies
     session_gen = get_session()
     session = next(session_gen)
-    current_user = await get_current_user()
     
     try:
         # Query real bots count
@@ -79,21 +115,57 @@ async def get_dashboard_summary():
         session.close()
 
 @router.get("/balance-evolution", response_model=Dict[str, Any])
-async def get_balance_evolution():
+async def get_balance_evolution(
+    authorization: str = Header(None)
+):
     """
     Obtener evolución balance usuario - últimos 30 días.
     Solo datos reales de BD - DL-001 Compliance.
     """
     # Lazy imports
     from db.database import get_session
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
+    from fastapi import HTTPException, status, Header
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     from models.trading_order import TradingOrder
     from sqlmodel import Session
     
     # Get actual dependencies
     session_gen = get_session()
     session = next(session_gen)
-    current_user = await get_current_user()
     
     try:
         # Query real trading history for balance evolution
@@ -131,21 +203,57 @@ async def get_balance_evolution():
         session.close()
 
 @router.get("/bots-performance", response_model=Dict[str, Any])
-async def get_bots_performance():
+async def get_bots_performance(
+    authorization: str = Header(None)
+):
     """
     Obtener performance de bots del usuario.
     Solo datos reales de BD - DL-001 Compliance.
     """
     # Lazy imports
     from db.database import get_session
-    from services.auth_service import get_current_user
+    from services.auth_service import auth_service
+    from fastapi import HTTPException, status, Header
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     from models.bot_config import BotConfig
     from sqlmodel import Session
     
     # Get actual dependencies
     session_gen = get_session()
     session = next(session_gen)
-    current_user = await get_current_user()
     
     try:
         # Query real bots of user
