@@ -139,6 +139,7 @@ export async function getLiveTradingFeed(options: any = {}) {
 export async function stopBot(botId: string) {
   const res = await fetch(`${BASE_URL}/api/bots/${botId}/stop`, {
     method: "POST",
+    headers: getAuthHeaders()
   });
   if (!res.ok) throw new Error("Error al detener bot");
   return safeJsonParse(res);
