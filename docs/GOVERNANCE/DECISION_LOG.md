@@ -92,4 +92,15 @@
 
 ---
 
-## YYYY-MM-DD — DL-008 · …
+## 2025-08-17 — DL-008 · Authentication System Refactoring - FastAPI Dependency Injection Migration  
+**Contexto:** 43 endpoints contenían manual "Opción B" authentication patterns violando DRY y creando inconsistencias.  
+**Decisión:** Migrar TODOS los endpoints a FastAPI dependency injection usando `get_current_user_safe()` centralizado.  
+**Implementación realizada:**
+- ✅ **7 archivos refactorizados:** routes/exchanges.py, routes/auth.py, routes/bots.py, routes/trading_operations.py, routes/dashboard_*.py, routes/real_trading_routes.py  
+- ✅ **43/43 endpoints migrados:** Manual JWT validation → `get_current_user_safe()` dependency  
+- ✅ **DL-003 compliance:** Lazy imports mantenidos en función dependency vs module-level  
+- ✅ **Production deployment:** Railway PRD validado, health check exitoso  
+- ✅ **Session fixes:** `session = get_session()` agregado donde faltaba  
+**Impacto:** Código ~90% más limpio, autenticación centralizada, DRY compliance, mantenimiento simplificado.  
+**Rollback:** Git revert commits 2025-08-17 + restaurar manual auth patterns por endpoint.  
+**SPEC_REF:** routes/exchanges.py:24 + routes/auth.py:12 + routes/bots.py:15 + backend/services/auth_service.py:get_current_user_safe

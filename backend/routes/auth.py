@@ -124,41 +124,12 @@ async def get_current_user_info(authorization: str = Header(None)):
     """
     Obtener información del usuario autenticado actual.
     """
-    # Lazy imports
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.user import UserResponse
-    from services.auth_service import auth_service
-    from db.database import get_session
+    from services.auth_service import get_current_user_safe
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in get_current_user_info: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     return UserResponse(
         id=current_user.id,
@@ -182,42 +153,12 @@ async def update_api_keys(
     
     Las claves se encriptan antes de almacenarse en la base de datos.
     """
-    # Lazy imports
-    from db.database import get_session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.user import ApiKeysUpdate
-    from services.auth_service import auth_service
-    from sqlmodel import Session
+    from services.auth_service import get_current_user_safe
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in update_api_keys: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     # Convert dict to ApiKeysUpdate
     api_keys_data = ApiKeysUpdate(**api_keys_data)
@@ -250,40 +191,11 @@ async def check_binance_status(authorization: str = Header(None)):
     """
     Verificar estado de configuración de Binance para el usuario.
     """
-    # Lazy imports
-    from services.auth_service import auth_service
-    from db.database import get_session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from services.auth_service import get_current_user_safe
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in check_binance_status: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     return {
         "api_keys_configured": current_user.api_keys_configured,
@@ -306,41 +218,11 @@ async def get_user_exchanges(authorization: str = Header(None)):
     """
     Obtener todos los exchanges configurados por el usuario.
     """
-    # Lazy imports
-    from db.database import get_session
-    from services.auth_service import auth_service
-    from sqlmodel import Session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from services.auth_service import get_current_user_safe
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in get_user_exchanges: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     try:
         # Construir lista de exchanges basada en credenciales reales del usuario
@@ -395,41 +277,11 @@ async def add_user_exchange(
     Agregar un nuevo exchange al usuario.
     Por ahora actualiza las claves API del usuario directamente.
     """
-    # Lazy imports
-    from db.database import get_session
-    from services.auth_service import auth_service
-    from sqlmodel import Session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from services.auth_service import get_current_user_safe
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in add_user_exchange: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     try:
         exchange_name = exchange_data.get("exchange_name", "").lower()
@@ -495,40 +347,11 @@ async def delete_user_exchange(
     Eliminar un exchange del usuario.
     """
     # Lazy imports
-    from db.database import get_session
-    from services.auth_service import auth_service
-    from sqlmodel import Session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from services.auth_service import get_current_user_safe
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in delete_user_exchange: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     try:
         # Determinar qué claves eliminar basado en el ID
@@ -573,40 +396,11 @@ async def test_user_exchange(
     """
     Probar conexión de un exchange específico del usuario.
     """
-    # Lazy imports
-    from services.auth_service import auth_service
-    from db.database import get_session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from services.auth_service import get_current_user_safe, auth_service
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in test_user_exchange: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     try:
         # Determinar tipo de credenciales basado en ID
@@ -649,40 +443,11 @@ async def test_binance_connection(authorization: str = Header(None)):
     Probar conexión REAL con Binance usando las claves del usuario.
     Solo para testnet por seguridad.
     """
-    # Lazy imports
-    from services.auth_service import auth_service
-    from db.database import get_session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from services.auth_service import get_current_user_safe, auth_service
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in test_binance_connection: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     try:
         # Obtener credenciales testnet del usuario
@@ -727,39 +492,11 @@ async def get_binance_account_info(authorization: str = Header(None)):
     Obtener información REAL de la cuenta Binance del usuario.
     """
     # Lazy imports
-    from services.auth_service import auth_service
-    from db.database import get_session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from services.auth_service import get_current_user_safe, auth_service
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in get_binance_account_info: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     try:
         # Obtener credenciales testnet del usuario
@@ -801,40 +538,11 @@ async def get_binance_price(
     """
     Obtener precio REAL de un símbolo desde Binance.
     """
-    # Lazy imports
-    from services.auth_service import auth_service
-    from db.database import get_session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from services.auth_service import get_current_user_safe
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in get_binance_price: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     try:
         # Los precios de Binance son públicos, no requieren API keys del usuario
@@ -1115,40 +823,11 @@ async def logout(authorization: str = Header(None)):
     
     En implementación completa se invalidaría el token JWT.
     """
-    # Lazy imports
-    from services.auth_service import auth_service
-    from db.database import get_session
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from services.auth_service import get_current_user_safe
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in logout: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     return {
         "message": "Logout successful",

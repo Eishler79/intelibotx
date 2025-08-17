@@ -19,33 +19,33 @@
 - [x] {LOGIN_E2E_COMPLETION} **Login E2E completion** — ✅ **COMPLETADO 2025-08-14** Auth flow completo + dashboard access
 - [x] {MASSIVE_AUTH_FIX} **Authentication architecture fix** — ✅ **COMPLETADO 2025-08-14** 43 endpoints corregidos CORS 500→401
 
-### **🚨 PRIORIDADES PRÓXIMA SESIÓN 2025-08-16** ⚠️ **ACTUALIZADO POST-DEPLOYMENT**
-- [ ] {POST_EXCHANGES_PRD_DEBUG} **CRÍTICO: Debug POST /exchanges en PRD** — Usuario reporta que aún no funciona post-deployment
+### **🚨 PRIORIDADES INMEDIATAS HOY 2025-08-16** ⚠️ **ACTUALIZADO POR USUARIO**
+- [ ] {AUTHENTICATION_DEPENDENCY_FIX_REMAINING} **Fix endpoints dependency injection restantes** — Continuar aplicando Opción B metodología exitosa
+  *(SPEC_REF: Auth module 8/11 endpoints + otros módulos pendientes)*
+- [ ] {POST_EXCHANGES_PRD_DEBUG} **Debug POST /exchanges en PRD** — Usuario reporta que aún no funciona post-deployment
   *(SPEC_REF: Validar hallazgos comportamiento PRD vs local testing)*
-- [ ] {AUTHENTICATION_DEPENDENCY_FIX_REMAINING} **Fix 43 endpoints dependency injection restantes** — `get_current_user()` roto por massive auth fix  
-  *(SPEC_REF: 6/7 Exchange + 37 otros endpoints - AttributeError línea 314 auth_service.py)*
 - [x] {EXCHANGE_OPENAPI_FIX} **OpenAPI schema fixed** — ✅ **COMPLETADO 2025-08-15** Forward references resueltos
 - [x] {POST_EXCHANGES_OPTION_B} **POST /exchanges Opción B implementada** — ✅ **COMPLETADO 2025-08-15** Manual auth + lazy imports
 - [ ] {EXCHANGE_TESTING_REAL} **Exchange testing con credenciales reales** — API connection validation post-fix
   *(SPEC_REF: Pendiente validación POST funcional + otros 6 endpoints)*
 - [ ] {BOT_CREATION_TESTING} **Bot creation endpoint testing** — Validar create-bot post auth fix
   *(SPEC_REF: 10 endpoints bots.py con mismo issue dependency injection)*
+### **🔄 PRIORIDADES FUTURAS (PRÓXIMA VENTANA)**
+- [ ] {ENCRYPTION_MASTER_KEY_RAILWAY} **CRÍTICO: Configurar ENCRYPTION_MASTER_KEY seguro** — Credenciales no persisten + evaluar alternativas seguridad
+  *(SPEC_REF: Usuario testing E2E 2025-08-16 - ERROR: Failed to decrypt credentials + análisis seguridad)*
 - [ ] {WEBSOCKET_LAZY_IMPORTS_COMPLETE} **WebSocket lazy imports** — Revertir disable + aplicar lazy imports RealtimeDataManager  
   *(SPEC_REF: DL-001 compliance final)*
 
-### **🔄 POST-E2E COMPLETION**
-- {WEBSOCKET_LAZY_IMPORTS_COMPLETE} **WebSocket lazy imports completos** — Revertir disable + aplicar lazy imports RealtimeDataManager  
-  *(SPEC_REF: DL-001 no-temporal + práctica completa)*
-
-### **📊 PROGRESO DEPENDENCY INJECTION - 2025-08-15**
+### **📊 PROGRESO DEPENDENCY INJECTION - 2025-08-16**
 - [x] {POST_EXCHANGES_OPTION_B_DONE} **POST /exchanges Opción B** — ✅ **COMPLETADO** Manual JWT auth implementado
 - [x] {GET_EXCHANGES_FIX} **GET /exchanges dependency fix** — ✅ **COMPLETADO** Opción B manual auth + session fix aplicado
-- [ ] {PUT_EXCHANGES_FIX} **PUT /exchanges/{id} dependency fix** — Pendiente (línea 229 routes/exchanges.py) 
-- [ ] {DELETE_EXCHANGES_FIX} **DELETE /exchanges/{id} dependency fix** — Pendiente (línea 296 routes/exchanges.py)
-- [ ] {TEST_EXCHANGES_FIX} **POST /exchanges/{id}/test dependency fix** — Pendiente (línea 338 routes/exchanges.py)
-- [ ] {BALANCE_EXCHANGES_FIX} **GET /exchanges/{id}/balance dependency fix** — Pendiente (línea 442 routes/exchanges.py)
-- [ ] {MARKET_TYPES_FIX} **GET /exchanges/{id}/market-types dependency fix** — Pendiente (línea 518 routes/exchanges.py)
-- [ ] {BOTS_ENDPOINTS_FIX} **10 endpoints bots.py dependency fix** — Pendiente (routes/bots.py múltiples líneas)
+- [x] {PUT_EXCHANGES_FIX} **PUT /exchanges/{id} dependency fix** — ✅ **COMPLETADO** Opción B implementada (línea 242-285 routes/exchanges.py) 
+- [x] {DELETE_EXCHANGES_FIX} **DELETE /exchanges/{id} dependency fix** — ✅ **COMPLETADO** Opción B implementada (línea 340-385 routes/exchanges.py)
+- [x] {TEST_EXCHANGES_FIX} **POST /exchanges/{id}/test dependency fix** — ✅ **COMPLETADO** Opción B implementada (línea 409-500 routes/exchanges.py)
+- [x] {BALANCE_EXCHANGES_FIX} **GET /exchanges/{id}/balance dependency fix** — ✅ **COMPLETADO** YA TIENE Opción B aplicada (línea 542-638 routes/exchanges.py)
+- [x] {MARKET_TYPES_FIX} **GET /exchanges/{id}/market-types dependency fix** — ✅ **COMPLETADO** Opción B implementada (línea 641-700 routes/exchanges.py)
+- [x] {BOT_CREATION_VALIDATION_FIX} **POST /api/create-bot exchange validation** — ✅ **COMPLETADO 2025-08-16** Validación exchange_id + DL-001 compliance
+- [ ] {BOTS_ENDPOINTS_FIX} **9 otros endpoints bots.py dependency fix** — Pendiente (routes/bots.py líneas restantes)
 - [ ] {AUTH_ENDPOINTS_FIX} **11 endpoints auth.py dependency fix** — Pendiente (routes/auth.py múltiples líneas)
 - [ ] {TRADING_OPS_FIX} **5 endpoints trading_operations.py dependency fix** — Pendiente
 - [ ] {REAL_TRADING_FIX} **3 endpoints real_trading_routes.py dependency fix** — Pendiente

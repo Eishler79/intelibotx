@@ -133,10 +133,10 @@ Antes de modificar cualquiera de estos, se debe:
 
 ---
 
-## 9. SPEC_REF CENTRAL - Authentication Pattern (NUEVO)
-### **OPCIÓN B PATTERN - NUNCA OLVIDAR**
-- **ARCHIVO MAESTRO:** `docs/OPCION_B_PATTERN.md`
-- **REGLA:** SIEMPRE leer este archivo antes de tocar authentication
-- **CONTIENE:** DIFF exacto, imports, validación, metodología crítica
-- **PROPÓSITO:** Eliminar pérdida de conocimiento entre sesiones
-- **CRÍTICO:** Este archivo ES LA VERDAD ABSOLUTA para authentication fixes
+## 9. SPEC_REF CENTRAL - Authentication Pattern (ACTUALIZADO)
+### **DL-008 AUTHENTICATION REFACTORING - REFERENCIA ABSOLUTA**
+- **SPEC_REF MAESTRO:** `DECISION_LOG.md#DL-008` + `backend/services/auth_service.py:get_current_user_safe()`
+- **REGLA:** SIEMPRE consultar DL-008 en DECISION_LOG.md antes de tocar authentication
+- **PATRÓN DEFINITIVO:** `get_current_user_safe()` dependency injection - NO más implementaciones manuales
+- **PROPÓSITO:** Mantener authentication centralizada bajo DL-003 compliance
+- **CRÍTICO:** DL-008 ES LA VERDAD ABSOLUTA para authentication - 43 endpoints ya migrados

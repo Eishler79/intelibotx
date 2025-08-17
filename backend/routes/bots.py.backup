@@ -37,7 +37,6 @@ async def execute_smart_scalper_analysis(
     """
     try:
         # Smart Scalper algorithm imports
-        import pandas as pd
         from services.binance_real_data import BinanceRealDataService
         from services.advanced_algorithm_selector import AdvancedAlgorithmSelector
         from services.market_microstructure_analyzer import MarketMicrostructureAnalyzer
@@ -327,24 +326,16 @@ def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe
 
 # 📈 RUTA ACTUAL: Gráfico de backtest (sin cambios)
 @router.get("/api/backtest-chart/{symbol}", response_class=HTMLResponse)
-async def get_backtest_chart(symbol: str, authorization: str = Header(None)):
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
-    from services.auth_service import get_current_user_safe
+async def get_backtest_chart(symbol: str):
+    # Lazy imports
+    from services.auth_service import get_current_user
     from services.backtest_bot import run_backtest_and_plot
-    from fastapi import HTTPException, status
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
+    # Get actual current user
+    current_user = await get_current_user()
     
-    try:
-        html_chart = run_backtest_and_plot(symbol)
-        return HTMLResponse(content=html_chart)
-    except Exception as e:
-        logger.error(f"Error generating backtest chart for {symbol}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate backtest chart for {symbol}"
-        )
+    html_chart = run_backtest_and_plot(symbol)
+    return HTMLResponse(content=html_chart)
 
 
 # 🤖 RUTA ACTUAL: Ejecutar Smart Trade con validación de símbolo
@@ -358,16 +349,43 @@ async def run_smart_trade(
     authorization: str = Header(None)
 ):
     """Ejecuta Smart Trade con análisis técnico completo"""
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user_safe
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
     from db.database import get_session
-    from fastapi import HTTPException, status
+    from fastapi import HTTPException, status, Header
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
-    session = get_session()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in run_smart_trade: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # ✅ Normalización del símbolo
@@ -381,24 +399,25 @@ async def run_smart_trade(
             )
 
         # 🧠 Buscar configuración del bot en la base de datos
-        query = select(BotConfig).where(BotConfig.symbol == normalized_symbol)
-        result = session.exec(query).first()
+        with Session(engine) as session:
+            query = select(BotConfig).where(BotConfig.symbol == normalized_symbol)
+            result = session.exec(query).first()
 
-        if not result:
-            raise HTTPException(
-                status_code=404,
-                detail=f"⚠️ No hay configuración guardada para {normalized_symbol}"
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"⚠️ No hay configuración guardada para {normalized_symbol}"
+                )
+
+            # 🔍 Extraer los parámetros requeridos
+            interval = result.interval
+            strategy = result.strategy
+
+            # 🏛️ INSTITUCIONAL ÚNICAMENTE (DL-003): SIEMPRE usar Smart Scalper profesional
+            # ELIMINADO: Flujo retail legacy (CSV + indicadores básicos) - DECISIÓN ESTRATÉGICA
+            return await execute_smart_scalper_analysis(
+                normalized_symbol, result, quantity, execute_real
             )
-
-        # 🔍 Extraer los parámetros requeridos
-        interval = result.interval
-        strategy = result.strategy
-
-        # 🏛️ INSTITUCIONAL ÚNICAMENTE (DL-003): SIEMPRE usar Smart Scalper profesional
-        # ELIMINADO: Flujo retail legacy (CSV + indicadores básicos) - DECISIÓN ESTRATÉGICA
-        return await execute_smart_scalper_analysis(
-            normalized_symbol, result, quantity, execute_real
-        )
     
     except HTTPException:
         # Re-raise HTTP exceptions as-is
@@ -416,16 +435,44 @@ async def run_smart_trade(
 @router.get("/api/bots")
 async def get_bots(authorization: str = Header(None)):
     """Obtener lista de todos los bots"""
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user_safe
+    from models.user import User
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
     from db.database import get_session
-    from fastapi import HTTPException, status
+    from fastapi import HTTPException, status, Header
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
-    session = get_session()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_bots: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # ✅ DL-006 COMPLIANCE: Solo bots del usuario autenticado
@@ -442,17 +489,45 @@ async def get_bots(authorization: str = Header(None)):
 @router.post("/api/create-bot")
 async def create_bot(bot_data: dict, authorization: str = Header(None)):
     """Crear un nuevo bot con autenticación JWT"""
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user_safe
+    from models.user import User
+    from services.auth_service import auth_service
     from sqlmodel import Session
     from db.database import get_session
     from utils.symbol_validator import validate_symbol
-    from fastapi import HTTPException, status
+    from fastapi import HTTPException, status, Header
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
-    session = get_session()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in create_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         # ✅ DL-006 COMPLIANCE: Usar JWT auth en lugar de hardcode user_id
@@ -556,16 +631,43 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
 @router.delete("/api/bots/{bot_id}")
 async def delete_bot(bot_id: int, authorization: str = Header(None)):
     """Eliminar un bot"""
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user_safe
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
     from db.database import get_session
     from fastapi import HTTPException, status
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
-    session = get_session()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in delete_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
         query = select(BotConfig).where(BotConfig.id == bot_id)
@@ -596,17 +698,44 @@ async def delete_bot(bot_id: int, authorization: str = Header(None)):
 @router.get("/api/backtest-results/{bot_id}")
 async def get_backtest_results(bot_id: int, authorization: str = Header(None)):
     """Obtener resultados de backtest para un bot específico"""
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user_safe
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
     from db.database import get_session
     from services.backtest_bot import run_backtest_and_plot
     from fastapi import HTTPException, status
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
-    session = get_session()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_backtest_results: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
             query = select(BotConfig).where(BotConfig.id == bot_id)
@@ -650,16 +779,43 @@ async def get_backtest_results(bot_id: int, authorization: str = Header(None)):
 @router.put("/api/bots/{bot_id}")
 async def update_bot(bot_id: int, bot_data: dict, authorization: str = Header(None)):
     """Actualizar configuración de un bot"""
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    # Lazy imports
     from models.bot_config import BotConfig
-    from services.auth_service import get_current_user_safe
+    from services.auth_service import auth_service
     from sqlmodel import Session, select
     from db.database import get_session
     from fastapi import HTTPException, status
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
-    session = get_session()
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in update_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     try:
             query = select(BotConfig).where(BotConfig.id == bot_id)
@@ -699,12 +855,41 @@ async def update_bot(bot_id: int, bot_data: dict, authorization: str = Header(No
 @router.post("/api/bots/{bot_id}/start")
 async def start_bot(bot_id: int, authorization: str = Header(None)):
     """Iniciar un bot"""
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
-    from services.auth_service import get_current_user_safe
+    # Lazy imports
+    from services.auth_service import auth_service
+    from db.database import get_session
     from fastapi import HTTPException, status
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in start_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     return {
         "message": f"✅ Bot {bot_id} iniciado",
@@ -716,12 +901,41 @@ async def start_bot(bot_id: int, authorization: str = Header(None)):
 @router.post("/api/bots/{bot_id}/pause")
 async def pause_bot(bot_id: int, authorization: str = Header(None)):
     """Pausar un bot"""
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
-    from services.auth_service import get_current_user_safe
+    # Lazy imports
+    from services.auth_service import auth_service
+    from db.database import get_session
     from fastapi import HTTPException, status
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in pause_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     return {
         "message": f"⏸️ Bot {bot_id} pausado",
@@ -733,12 +947,41 @@ async def pause_bot(bot_id: int, authorization: str = Header(None)):
 @router.post("/api/bots/{bot_id}/stop")
 async def stop_bot(bot_id: int, authorization: str = Header(None)):
     """Detener un bot"""
-    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
-    from services.auth_service import get_current_user_safe
+    # Lazy imports
+    from services.auth_service import auth_service
+    from db.database import get_session
     from fastapi import HTTPException, status
     
-    # DL-003 COMPLIANT: Authentication via dependency function
-    current_user = await get_current_user_safe(authorization)
+    # Manual authentication - Opción B con estándares de seguridad
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    # Extract and validate JWT token using existing service methods
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in stop_bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
     
     return {
         "message": f"⏹️ Bot {bot_id} detenido",
