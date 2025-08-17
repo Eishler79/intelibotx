@@ -323,6 +323,47 @@ async def get_current_user(
     
     return user
 
+# DL-003 COMPLIANT: Dependency with lazy imports inside function
+async def get_current_user_safe(authorization: str = None) -> User:
+    """
+    DL-003 COMPLIANT: Dependency para obtener usuario autenticado actual.
+    Lazy imports dentro de función para evitar deadlocks Railway.
+    """
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+    from fastapi import HTTPException, status
+    from db.database import get_session
+    
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    try:
+        token = auth_service.get_token_from_header(authorization)
+        token_data = auth_service.verify_jwt_token(token)
+        
+        # Get database session and user
+        session = get_session()
+        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
+        
+        if not current_user or not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+        
+        return current_user
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication error in get_current_user_safe: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
+
 # Dependency para obtener credenciales de Binance del usuario actual
 async def get_current_user_binance_creds(
     user: User = Depends(get_current_user),

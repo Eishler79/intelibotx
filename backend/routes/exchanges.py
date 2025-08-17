@@ -19,46 +19,17 @@ router = APIRouter(prefix="/api/user", tags=["exchanges"])
 @router.get("/exchanges")
 async def list_user_exchanges(authorization: str = Header(None)):
     """Listar exchanges del usuario"""
-    # Lazy imports
-    from models.user import User
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.user_exchange import UserExchange, ExchangeConnectionResponse
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from db.database import get_session
     from sqlmodel import Session, select
-    from fastapi import HTTPException, status
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
-    # Extract and validate JWT token using existing service methods
     try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
         session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in list_user_exchanges: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
-    
-    try:
         statement = select(UserExchange).where(UserExchange.user_id == current_user.id)
         exchanges = session.exec(statement).all()
         
@@ -93,46 +64,17 @@ async def add_user_exchange(
     authorization: str = Header(None)
 ):
     """Agregar nuevo exchange para usuario"""
-    # Lazy imports
-    from models.user import User
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.user_exchange import UserExchange, ExchangeConnectionRequest, ExchangeConnectionResponse
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from db.database import get_session
     from sqlmodel import Session, select
     from services.encryption_service import EncryptionService
     from services.exchange_factory import ExchangeFactory
     from fastapi import HTTPException, status
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in add_user_exchange: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -246,45 +188,16 @@ async def update_user_exchange(
     authorization: str = Header(None)
 ):
     """Actualizar exchange del usuario"""
-    # Lazy imports
-    from models.user import User
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.user_exchange import UserExchange, ExchangeConnectionRequest, ExchangeConnectionResponse
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from db.database import get_session
     from sqlmodel import Session, select
     from services.encryption_service import EncryptionService
     from fastapi import HTTPException, status
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in update_user_exchange: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -343,44 +256,15 @@ async def delete_user_exchange(
     authorization: str = Header(None)
 ):
     """Eliminar exchange del usuario"""
-    # Lazy imports
-    from models.user import User
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.user_exchange import UserExchange
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from db.database import get_session
     from sqlmodel import Session, select
     from fastapi import HTTPException, status
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in delete_user_exchange: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     try:
         user_exchange = session.get(UserExchange, exchange_id)
@@ -430,46 +314,17 @@ async def test_exchange_connection(
     authorization: str = Header(None)
 ):
     """Probar conexión con exchange"""
-    # Lazy imports
-    from models.user import User
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.user_exchange import UserExchange, ExchangeTestResponse
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from db.database import get_session
     from sqlmodel import Session, select
     from services.encryption_service import EncryptionService
     from services.exchange_factory import ExchangeFactory
     from fastapi import HTTPException, status
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in test_exchange_connection: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -563,46 +418,17 @@ async def get_exchange_balance(
     authorization: str = Header(None)
 ):
     """Obtener balance del exchange"""
-    # Lazy imports
-    from models.user import User
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.user_exchange import UserExchange
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from db.database import get_session
     from sqlmodel import Session, select
     from services.encryption_service import EncryptionService
     from services.exchange_factory import ExchangeFactory
     from fastapi import HTTPException, status
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in get_exchange_balance: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -670,44 +496,15 @@ async def get_exchange_market_types(
     - KuCoin: SPOT, FUTURES, MARGIN
     - OKX: SPOT, SWAP, FUTURES, OPTIONS
     """
-    # Lazy imports
-    from models.user import User
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.user_exchange import UserExchange
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from db.database import get_session
     from sqlmodel import Session, select
     from fastapi import HTTPException, status
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error in get_exchange_market_types: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     
     try:
         # Get user exchange
