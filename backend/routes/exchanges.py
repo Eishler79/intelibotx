@@ -198,6 +198,7 @@ async def update_user_exchange(
     
     # DL-003 COMPLIANT: Authentication via dependency function
     current_user = await get_current_user_safe(authorization)
+    session = get_session()
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -265,6 +266,7 @@ async def delete_user_exchange(
     
     # DL-003 COMPLIANT: Authentication via dependency function
     current_user = await get_current_user_safe(authorization)
+    session = get_session()
     
     try:
         user_exchange = session.get(UserExchange, exchange_id)
@@ -325,6 +327,7 @@ async def test_exchange_connection(
     
     # DL-003 COMPLIANT: Authentication via dependency function
     current_user = await get_current_user_safe(authorization)
+    session = get_session()
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -429,6 +432,7 @@ async def get_exchange_balance(
     
     # DL-003 COMPLIANT: Authentication via dependency function
     current_user = await get_current_user_safe(authorization)
+    session = get_session()
     
     # Initialize services
     encryption_service = EncryptionService()
@@ -505,6 +509,7 @@ async def get_exchange_market_types(
     
     # DL-003 COMPLIANT: Authentication via dependency function
     current_user = await get_current_user_safe(authorization)
+    session = get_session()
     
     try:
         # Get user exchange
