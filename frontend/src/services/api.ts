@@ -72,6 +72,7 @@ export async function updateBot(botId: string, data: any) {
 }
 
 export async function deleteBot(botId: string) {
+  console.log('deleteBot called with botId:', botId);
   const res = await fetch(`${BASE_URL}/api/bots/${botId}`, {
     method: "DELETE",
     headers: getAuthHeaders()
