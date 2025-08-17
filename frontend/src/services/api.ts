@@ -5,9 +5,13 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://intelibotx-produc
 // Helper function para obtener token JWT
 function getAuthHeaders() {
   const token = localStorage.getItem('intelibotx_token');
+  if (!token) {
+    console.error('No authentication token found - user needs to login');
+    throw new Error('Authentication required - please login first');
+  }
   return {
     'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    'Authorization': `Bearer ${token}`
   };
 }
 
