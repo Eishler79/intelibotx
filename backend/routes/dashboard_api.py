@@ -24,44 +24,16 @@ async def get_dashboard_summary(
     Obtener resumen general dashboard del usuario.
     Solo datos reales de BD - DL-001 Compliance.
     """
-    # Lazy imports
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from db.database import get_session
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from fastapi import HTTPException, status, Header
     import logging
     
     logger = logging.getLogger(__name__)
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     from models.bot_config import BotConfig
     from models.trading_order import TradingOrder
     from sqlmodel import Session, func
@@ -122,44 +94,16 @@ async def get_balance_evolution(
     Obtener evolución balance usuario - últimos 30 días.
     Solo datos reales de BD - DL-001 Compliance.
     """
-    # Lazy imports
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from db.database import get_session
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from fastapi import HTTPException, status, Header
     import logging
     
     logger = logging.getLogger(__name__)
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     from models.trading_order import TradingOrder
     from sqlmodel import Session
     
@@ -210,44 +154,16 @@ async def get_bots_performance(
     Obtener performance de bots del usuario.
     Solo datos reales de BD - DL-001 Compliance.
     """
-    # Lazy imports
+    # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from db.database import get_session
-    from services.auth_service import auth_service
+    from services.auth_service import get_current_user_safe
     from fastapi import HTTPException, status, Header
     import logging
     
     logger = logging.getLogger(__name__)
     
-    # Manual authentication - Opción B con estándares de seguridad
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    # Extract and validate JWT token using existing service methods
-    try:
-        token = auth_service.get_token_from_header(authorization)
-        token_data = auth_service.verify_jwt_token(token)
-        
-        # Get database session and user
-        session = get_session()
-        current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-        
-        if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Authentication error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
-        )
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
     from models.bot_config import BotConfig
     from sqlmodel import Session
     

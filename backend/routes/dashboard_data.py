@@ -24,7 +24,7 @@ async def get_dashboard_summary(
     try:
         # Lazy imports
         from db.database import get_session
-        from services.auth_service import auth_service
+        from services.auth_service import get_current_user_safe
         from models.bot_config import BotConfig
         from routes.trading_operations import TradingOperation
         from sqlmodel import select
@@ -33,36 +33,9 @@ async def get_dashboard_summary(
         
         logger = logging.getLogger(__name__)
         
-        # Manual authentication - Opción B con estándares de seguridad
-        if not authorization:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authorization header required"
-            )
-        
-        # Extract and validate JWT token using existing service methods
-        try:
-            token = auth_service.get_token_from_header(authorization)
-            token_data = auth_service.verify_jwt_token(token)
-            
-            # Get database session and user
-            session = get_session()
-            current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-            
-            if not current_user or not current_user.is_active:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User not found or inactive"
-                )
-                
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Authentication error in get_dashboard_summary: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication"
-            )
+        # DL-003 COMPLIANT: Authentication via dependency function
+        current_user = await get_current_user_safe(authorization)
+        session = get_session()
         
         # 🤖 Obtener bots del usuario
         bots_query = select(BotConfig).where(BotConfig.user_id == current_user.id)
@@ -155,41 +128,14 @@ async def get_balance_evolution(
     try:
         # Lazy imports
         from db.database import get_session
-        from services.auth_service import auth_service
+        from services.auth_service import get_current_user_safe
         from models.bot_config import BotConfig
         from routes.trading_operations import TradingOperation
         from sqlmodel import select
         
-        # Manual authentication - Opción B con estándares de seguridad
-        if not authorization:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authorization header required"
-            )
-        
-        # Extract and validate JWT token using existing service methods
-        try:
-            token = auth_service.get_token_from_header(authorization)
-            token_data = auth_service.verify_jwt_token(token)
-            
-            # Get database session and user
-            session = get_session()
-            current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-            
-            if not current_user or not current_user.is_active:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User not found or inactive"
-                )
-                
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Authentication error: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication"
-            )
+        # DL-003 COMPLIANT: Authentication via dependency function
+        current_user = await get_current_user_safe(authorization)
+        session = get_session()
         
         # Query base
         query = select(TradingOperation).where(
@@ -267,41 +213,14 @@ async def get_bots_performance(
     try:
         # Lazy imports
         from db.database import get_session
-        from services.auth_service import auth_service
+        from services.auth_service import get_current_user_safe
         from models.bot_config import BotConfig
         from routes.trading_operations import TradingOperation
         from sqlmodel import select
         
-        # Manual authentication - Opción B con estándares de seguridad
-        if not authorization:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authorization header required"
-            )
-        
-        # Extract and validate JWT token using existing service methods
-        try:
-            token = auth_service.get_token_from_header(authorization)
-            token_data = auth_service.verify_jwt_token(token)
-            
-            # Get database session and user
-            session = get_session()
-            current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-            
-            if not current_user or not current_user.is_active:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User not found or inactive"
-                )
-                
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Authentication error: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication"
-            )
+        # DL-003 COMPLIANT: Authentication via dependency function
+        current_user = await get_current_user_safe(authorization)
+        session = get_session()
         
         # Obtener bots del usuario
         bots_query = select(BotConfig).where(BotConfig.user_id == current_user.id)
@@ -373,40 +292,13 @@ async def get_symbols_analysis(
     try:
         # Lazy imports
         from db.database import get_session
-        from services.auth_service import auth_service
+        from services.auth_service import get_current_user_safe
         from routes.trading_operations import TradingOperation
         from sqlmodel import select
         
-        # Manual authentication - Opción B con estándares de seguridad
-        if not authorization:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authorization header required"
-            )
-        
-        # Extract and validate JWT token using existing service methods
-        try:
-            token = auth_service.get_token_from_header(authorization)
-            token_data = auth_service.verify_jwt_token(token)
-            
-            # Get database session and user
-            session = get_session()
-            current_user = auth_service.get_user_by_id(token_data["user_id"], session)
-            
-            if not current_user or not current_user.is_active:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User not found or inactive"
-                )
-                
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Authentication error: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication"
-            )
+        # DL-003 COMPLIANT: Authentication via dependency function
+        current_user = await get_current_user_safe(authorization)
+        session = get_session()
         
         # Obtener operaciones por símbolo
         operations_query = select(TradingOperation).where(
