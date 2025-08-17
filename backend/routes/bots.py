@@ -568,13 +568,16 @@ async def delete_bot(bot_id: int, authorization: str = Header(None)):
     session = get_session()
     
     try:
-        query = select(BotConfig).where(BotConfig.id == bot_id)
+        query = select(BotConfig).where(
+            BotConfig.id == bot_id,
+            BotConfig.user_id == current_user.id
+        )
         bot = session.exec(query).first()
         
         if not bot:
             raise HTTPException(
                 status_code=404,
-                detail=f"Bot con ID {bot_id} no encontrado"
+                detail=f"Bot con ID {bot_id} no encontrado o no pertenece al usuario"
             )
         
         session.delete(bot)
