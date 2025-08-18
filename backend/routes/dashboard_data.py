@@ -21,20 +21,21 @@ async def get_dashboard_summary(
     
     Reemplaza todos los valores hardcodeados del Dashboard.jsx
     """
+    # Lazy imports
+    from db.database import get_session
+    from services.auth_service import get_current_user_safe
+    from models.bot_config import BotConfig
+    from routes.trading_operations import TradingOperation
+    from sqlmodel import select
+    from fastapi import HTTPException, status, Header
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # DL-003 COMPLIANT: Authentication via dependency function
+    current_user = await get_current_user_safe(authorization)
+    
     try:
-        # Lazy imports
-        from db.database import get_session
-        from services.auth_service import get_current_user_safe
-        from models.bot_config import BotConfig
-        from routes.trading_operations import TradingOperation
-        from sqlmodel import select
-        from fastapi import HTTPException, status, Header
-        import logging
-        
-        logger = logging.getLogger(__name__)
-        
-        # DL-003 COMPLIANT: Authentication via dependency function
-        current_user = await get_current_user_safe(authorization)
         session = get_session()
         
         # 🤖 Obtener bots del usuario
