@@ -612,13 +612,17 @@ async def get_backtest_results(bot_id: int, authorization: str = Header(None)):
     session = get_session()
     
     try:
-            query = select(BotConfig).where(BotConfig.id == bot_id)
+            # AUTHORIZATION: Bot ownership validation (DL-008 + authorization standard)
+            query = select(BotConfig).where(
+                BotConfig.id == bot_id,
+                BotConfig.user_id == current_user.id
+            )
             bot = session.exec(query).first()
             
             if not bot:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Bot con ID {bot_id} no encontrado"
+                    detail="Bot not found or access denied"
                 )
             
             # ✅ DL-001 COMPLIANCE: Datos reales requeridos, no simulados
@@ -704,10 +708,27 @@ async def start_bot(bot_id: int, authorization: str = Header(None)):
     """Iniciar un bot"""
     # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from services.auth_service import get_current_user_safe
+    from models.bot_config import BotConfig
+    from sqlmodel import Session, select
+    from db.database import get_session
     from fastapi import HTTPException, status
     
     # DL-003 COMPLIANT: Authentication via dependency function
     current_user = await get_current_user_safe(authorization)
+    
+    # AUTHORIZATION: Bot ownership validation (DL-008 + authorization standard)
+    session = get_session()
+    query = select(BotConfig).where(
+        BotConfig.id == bot_id,
+        BotConfig.user_id == current_user.id
+    )
+    bot = session.exec(query).first()
+    
+    if not bot:
+        raise HTTPException(
+            status_code=404,
+            detail="Bot not found or access denied"
+        )
     
     return {
         "message": f"✅ Bot {bot_id} iniciado",
@@ -721,10 +742,27 @@ async def pause_bot(bot_id: int, authorization: str = Header(None)):
     """Pausar un bot"""
     # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from services.auth_service import get_current_user_safe
+    from models.bot_config import BotConfig
+    from sqlmodel import Session, select
+    from db.database import get_session
     from fastapi import HTTPException, status
     
     # DL-003 COMPLIANT: Authentication via dependency function
     current_user = await get_current_user_safe(authorization)
+    
+    # AUTHORIZATION: Bot ownership validation (DL-008 + authorization standard)
+    session = get_session()
+    query = select(BotConfig).where(
+        BotConfig.id == bot_id,
+        BotConfig.user_id == current_user.id
+    )
+    bot = session.exec(query).first()
+    
+    if not bot:
+        raise HTTPException(
+            status_code=404,
+            detail="Bot not found or access denied"
+        )
     
     return {
         "message": f"⏸️ Bot {bot_id} pausado",
@@ -738,10 +776,27 @@ async def stop_bot(bot_id: int, authorization: str = Header(None)):
     """Detener un bot"""
     # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from services.auth_service import get_current_user_safe
+    from models.bot_config import BotConfig
+    from sqlmodel import Session, select
+    from db.database import get_session
     from fastapi import HTTPException, status
     
     # DL-003 COMPLIANT: Authentication via dependency function
     current_user = await get_current_user_safe(authorization)
+    
+    # AUTHORIZATION: Bot ownership validation (DL-008 + authorization standard)
+    session = get_session()
+    query = select(BotConfig).where(
+        BotConfig.id == bot_id,
+        BotConfig.user_id == current_user.id
+    )
+    bot = session.exec(query).first()
+    
+    if not bot:
+        raise HTTPException(
+            status_code=404,
+            detail="Bot not found or access denied"
+        )
     
     return {
         "message": f"⏹️ Bot {bot_id} detenido",
