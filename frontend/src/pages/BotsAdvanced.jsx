@@ -617,12 +617,15 @@ export default function BotsAdvanced() {
   useEffect(() => {
     const loadBots = async () => {
       try {
-        // 🔐 Usar nueva función con autenticación
+        // 🔐 Usar nueva función con autenticación - ENHANCED response structure
         const botsData = await fetchBots();
         
-        // Procesar bots y cargar métricas reales desde DB
+        // ✅ Procesar enhanced bots con performance_metrics incluidas
         const processedBots = await Promise.all(botsData.map(async (bot) => {
-          // Crear objeto bot completo
+          // ✅ ENHANCED: Usar performance_metrics si están disponibles
+          const hasEnhancedMetrics = bot.performance_metrics;
+          
+          // Crear objeto bot completo con enhanced data
           const botConfig = {
             id: bot.id,
             name: bot.name,
@@ -639,11 +642,35 @@ export default function BotsAdvanced() {
             market_type: bot.market_type,
             leverage: bot.leverage || 1,
             margin_type: bot.margin_type || 'ISOLATED',
-            status: getBotStatus(bot)
+            status: getBotStatus(bot),
+            // ✅ ENHANCED: Include performance metrics from backend
+            enhanced_metrics: hasEnhancedMetrics ? {
+              user_configured_strategy: bot.performance_metrics.user_configured_strategy,
+              user_stake_amount: bot.performance_metrics.user_stake_amount,
+              user_risk_percentage: bot.performance_metrics.user_risk_percentage,
+              estimated_trades_per_day: bot.performance_metrics.estimated_trades_per_day,
+              risk_adjusted_return: bot.performance_metrics.risk_adjusted_return
+            } : null
           };
           
-          // 📊 Cargar métricas REALES desde base de datos persistente
-          botConfig.metrics = await loadRealBotMetrics(botConfig.id);
+          // 📊 ENHANCED: Priorizar métricas enhanced, fallback a DB tradicional
+          if (hasEnhancedMetrics) {
+            // ✅ Enhanced metrics ya disponibles, solo cargar trading operations
+            const basicMetrics = await loadRealBotMetrics(botConfig.id);
+            botConfig.metrics = {
+              ...basicMetrics,
+              // ✅ Enhanced data overlay
+              enhanced_trades_per_day: bot.performance_metrics.estimated_trades_per_day,
+              enhanced_risk_return: bot.performance_metrics.risk_adjusted_return,
+              user_strategy: bot.performance_metrics.user_configured_strategy,
+              user_stake: bot.performance_metrics.user_stake_amount,
+              user_risk: bot.performance_metrics.user_risk_percentage
+            };
+          } else {
+            // Fallback: cargar métricas tradicionales
+            botConfig.metrics = await loadRealBotMetrics(botConfig.id);
+          }
+          
           return botConfig;
         }));
           

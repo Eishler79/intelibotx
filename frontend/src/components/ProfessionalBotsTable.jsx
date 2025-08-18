@@ -191,6 +191,15 @@ export default function ProfessionalBotsTable({
                   <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
+              <th 
+                className="text-right px-4 py-4 font-medium text-gray-300 cursor-pointer hover:text-white transition-colors"
+                onClick={() => handleSort('enhanced_metrics.estimated_trades_per_day')}
+              >
+                Enhanced
+                {sortConfig.key === 'enhanced_metrics.estimated_trades_per_day' && (
+                  <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
               <th className="text-center px-4 py-4 font-medium text-gray-300">Acciones</th>
             </tr>
           </thead>
@@ -293,6 +302,25 @@ export default function ProfessionalBotsTable({
                       -{bot.metrics?.maxDrawdown || '0'}%
                     </div>
                     <div className="text-xs text-gray-400">DD</div>
+                  </td>
+
+                  {/* Enhanced Metrics */}
+                  <td className="px-4 py-4 text-right">
+                    {bot.enhanced_metrics ? (
+                      <>
+                        <div className="font-semibold text-purple-400">
+                          {bot.enhanced_metrics.estimated_trades_per_day || 0} trades/day
+                        </div>
+                        <div className="text-xs text-green-400">
+                          {bot.enhanced_metrics.risk_adjusted_return > 0 ? '+' : ''}{bot.enhanced_metrics.risk_adjusted_return?.toFixed(2) || '0.00'}% adj
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Risk: {bot.enhanced_metrics.user_risk_percentage?.toFixed(1) || '0.0'}%
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-xs text-gray-500">Legacy</div>
+                    )}
                   </td>
 
                   {/* Actions */}

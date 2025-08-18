@@ -12,6 +12,7 @@
 - backend/services/auth_service.py
 - backend/services/encryption_service.py
 - backend/routes/auth.py
+- backend/routes/exchanges.py *(exchange credentials + user configuration)*
 - frontend/src/contexts/AuthContext.jsx
 
 ### **Modelos de Datos (SQLModel)**
@@ -130,6 +131,12 @@ Antes de modificar cualquiera de estos, se debe:
    - **PROHIBIDO:** Considerar tarea completa sin homologación PRD
 
 **Regla:** Estos 3 puntos son **CRÍTICOS** y deben aplicarse a **CADA** cambio de código sin excepción.
+
+4. **PROHIBIDO: REDUNDANCIAS DE API SIN JUSTIFICACIÓN**
+   - **OBLIGATORIO:** Un solo endpoint por funcionalidad específica
+   - **PROHIBIDO:** Múltiples APIs que hacen lo mismo sin justificación técnica clara
+   - **VALIDACIÓN:** Antes de crear endpoint, verificar que NO existe funcionalidad similar
+   - **EXCEPCIÓN:** Solo permitir redundancia con justificación documentada en DECISION_LOG.md
 
 ---
 

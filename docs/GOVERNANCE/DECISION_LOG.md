@@ -137,3 +137,61 @@ admin_data = UserCreate(
 **Rollback plan:** `git revert [COMMIT_HASH_DL014] --no-edit && git push origin main`  
 **Testing plan:** Database init → No admin creation → /api/auth/register validation → Production verification  
 **SPEC_REF:** backend/main.py:162 + DECISION_LOG.md:DL-014
+
+---
+
+## 2025-08-18 — DL-015 · Exchange Management API Verification - Strict Compliance Implementation  
+**Contexto:** GET /api/user/exchanges endpoint requiere verificación estricta DL-001 + GUARDRAILS + CLAUDE_BASE compliance antes de declarar funcional.  
+**Decisión:** Aplicar compliance verification punto por punto SIN procesos masivos, cada violación resuelta individualmente.  
+**Scope específico:** SOLO endpoint GET /api/user/exchanges (exchange management functionality)  
+**Issues identificados:**  
+- ❌ **GUARDRAILS violations:** routes/exchanges.py no listado como archivo crítico, falta SPEC_REF, no diagnóstico previo  
+- ❌ **CLAUDE_BASE violations:** No validación con usuario, no plan detallado, authentication manual vs dependency injection  
+- ❌ **DL-001 violations:** Requiere análisis hardcode/test patterns, verificación APIs reales, DB persistence  
+**Solución target:**  
+```python
+# VERIFICACIÓN ESTRICTA - cada punto individualmente:
+# 1. GUARDRAILS 9/9 puntos aplicados y verificados
+# 2. CLAUDE_BASE 4/4 puntos aplicados y verificados  
+# 3. DL-001 5/5 puntos aplicados y verificados
+# CRITERIO: Solo status verde cuando REALMENTE aplicado
+```
+**Compliance garantizado:**  
+- ✅ **METODOLOGÍA:** Un punto a la vez, verificación real, no procesos masivos  
+- ✅ **TRANSPARENCIA:** Cada punto mostrado aquí individualmente  
+- ✅ **NO FRANKENSTEIN:** Conservar contexto refactoring, no parches que dañen  
+**Archivos afectados:** backend/routes/exchanges.py + docs/GOVERNANCE/ (compliance documentation)  
+**Rollback plan:** `git revert [COMMIT_HASH_DL015] --no-edit && git push origin main`  
+**Testing plan:** Point-by-point verification → Real functionality test → Production validation  
+**SPEC_REF:** backend/routes/exchanges.py + DECISION_LOG.md:DL-015
+
+---
+
+## 2025-08-18 — DL-016 · Exchange API Redundancy Resolution - REST Standards Compliance  
+**Contexto:** Redundancia crítica detectada entre dos endpoints para misma funcionalidad violando GUARDRAILS nueva regla anti-redundancia.  
+**Decisión:** Eliminar `/api/auth/user/exchanges` y mantener `/api/user/exchanges` como endpoint oficial según estándares REST API 2025.  
+**Análisis realizado:**  
+- ❌ **Redundancia violación:** `/api/user/exchanges` (routes/exchanges.py) vs `/api/auth/user/exchanges` (routes/auth.py)  
+- ✅ **REST API Standards 2025:** Resource-based design `/api/user/{resource}` superior a nested auth context  
+- ✅ **Arquitectura:** UserExchange model dedicado vs campos directos User (obsoleto)  
+- ✅ **Escalabilidad:** Multi-exchange support vs Binance-only hardcode  
+- ✅ **Seguridad idéntica:** Ambos usan DL-008 `get_current_user_safe()` - mismo nivel seguridad  
+**Solución implementada:**  
+```python
+# ANTES (REDUNDANCIA CRÍTICA):
+# /api/auth/user/exchanges (auth.py) - Binance hardcode + User direct fields  
+# /api/user/exchanges (exchanges.py) - UserExchange model + multi-exchange
+
+# DESPUÉS (DL-016 COMPLIANT):
+# ✅ OFICIAL: /api/user/exchanges (routes/exchanges.py)
+# ❌ ELIMINADO: /api/auth/user/exchanges (routes/auth.py líneas 216-269)
+```
+**Compliance garantizado:**  
+- ✅ **REST API 2025:** Resource-based design pattern estándar mundial  
+- ✅ **GUARDRAILS:** Anti-redundancia rule compliance  
+- ✅ **DL-008:** Authentication centralizada mantenida en ambos casos  
+- ✅ **Escalabilidad:** Multi-exchange architecture preserved  
+**Archivos afectados:** backend/routes/auth.py:216-269 (eliminated) + routes/exchanges.py (oficial)  
+**Rollback plan:** `git revert [COMMIT_HASH_DL016] --no-edit && git push origin main`  
+**Testing plan:** /api/user/exchanges validation → Multi-exchange functionality → Production verification  
+**SPEC_REF:** backend/routes/exchanges.py + DECISION_LOG.md:DL-016
