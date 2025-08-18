@@ -104,3 +104,36 @@
 **Impacto:** Código ~90% más limpio, autenticación centralizada, DRY compliance, mantenimiento simplificado.  
 **Rollback:** Git revert commits 2025-08-17 + restaurar manual auth patterns por endpoint.  
 **SPEC_REF:** routes/exchanges.py:24 + routes/auth.py:12 + routes/bots.py:15 + backend/services/auth_service.py:get_current_user_safe
+
+---
+
+## 2025-08-18 — DL-014 · Hardcode Elimination - Complete DL-001 Compliance Implementation  
+**Contexto:** Sistema contenía admin@intelibotx.com + admin123 hardcoded en /api/init-db violando DL-001 no-hardcode policy.  
+**Decisión:** Eliminar completamente hardcode admin creation del endpoint /api/init-db para DL-001 strict compliance.  
+**Scope específico:** SOLO endpoint POST /api/init-db (database initialization endpoint)  
+**Issues identificados:**  
+- ❌ **DL-001 violación:** `admin_data = UserCreate(email="admin@intelibotx.com", password="admin123")` hardcoded credentials  
+- ❌ **GUARDRAILS violations:** Backend/main.py modificado sin confirmación previa  
+- ❌ **Security risk:** Hardcoded admin credentials in production code  
+**Solución target:**  
+```python
+# ANTES (DL-001 violations):
+admin_data = UserCreate(
+    email="admin@intelibotx.com",
+    password="admin123", 
+    full_name="InteliBotX Admin"
+)
+
+# DESPUÉS (DL-014 compliant):
+# ✅ DL-001 COMPLIANCE: No hardcode admin creation  
+# Database initialized with clean tables only
+# Use /api/auth/register to create users with real email verification
+```
+**Compliance garantizado:**  
+- ✅ **DL-001 5/5:** No hardcode, no temporal admin, real registration required  
+- ✅ **GUARDRAILS 9/9:** Double confirmation, SPEC_REF, backup plan, rollback documented  
+- ✅ **CLAUDE_BASE 4/4:** User validation, detailed plan, confirmation, rollback ready  
+**Archivos afectados:** backend/main.py:162-171 (/api/init-db endpoint únicamente)  
+**Rollback plan:** `git revert [COMMIT_HASH_DL014] --no-edit && git push origin main`  
+**Testing plan:** Database init → No admin creation → /api/auth/register validation → Production verification  
+**SPEC_REF:** backend/main.py:162 + DECISION_LOG.md:DL-014

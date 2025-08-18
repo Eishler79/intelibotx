@@ -159,47 +159,16 @@ async def initialize_database():
         # Create only essential tables for auth system
         SQLModel.metadata.create_all(engine)
         
-        # Create admin user
-        from services.auth_service import auth_service
-        from models.user import UserCreate
-        
-        with Session(engine) as session:
-            # Check if admin already exists
-            existing_admin = session.exec(
-                select(User).where(User.email == "admin@intelibotx.com")
-            ).first()
-            
-            if not existing_admin:
-                # Create admin user
-                admin_data = UserCreate(
-                    email="admin@intelibotx.com",
-                    password="admin123",
-                    full_name="InteliBotX Admin"
-                )
-                
-                admin_user = auth_service.register_user(admin_data, session)
-                
-                # Add API keys from environment
-                import dotenv
-                dotenv.load_dotenv()
-                
-                testnet_key = os.getenv("BINANCE_TESTNET_API_KEY")
-                testnet_secret = os.getenv("BINANCE_TESTNET_API_SECRET")
-                
-                if testnet_key and testnet_secret:
-                    keys_data = {
-                        'testnet_key': testnet_key,
-                        'testnet_secret': testnet_secret,
-                        'preferred_mode': 'TESTNET'
-                    }
-                    auth_service.update_user_api_keys(admin_user.id, keys_data, session)
+        # ✅ DL-001 COMPLIANCE: No hardcode admin creation  
+        # Database initialized with clean tables only
+        # Use /api/auth/register to create users with real email verification
         
         return {
             "status": "success",
-            "message": "Database initialized successfully - Auth system ready",
+            "message": "Database initialized successfully - Use /api/auth/register to create users",
             "tables": ["user", "usersession", "botconfig"],
-            "admin_created": True,
-            "admin_email": "admin@intelibotx.com"
+            "registration_endpoint": "/api/auth/register",
+            "auth_system": "Email verification required"
         }
         
     except Exception as e:
