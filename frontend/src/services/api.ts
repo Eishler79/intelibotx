@@ -15,39 +15,6 @@ function getAuthHeaders() {
   };
 }
 
-// ✅ ENHANCED: Auto-login helper for testing
-export async function ensureAuthenticated() {
-  const token = localStorage.getItem('intelibotx_token');
-  if (!token) {
-    console.log('🔄 No token found, attempting auto-login...');
-    try {
-      // Auto-login with known credentials for testing
-      const loginResponse = await fetch(`${BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'e1g1@hotmail.com',
-          password: 'wofXod-nobqo3-wekfox'
-        })
-      });
-      
-      if (loginResponse.ok) {
-        const loginData = await loginResponse.json();
-        localStorage.setItem('intelibotx_token', loginData.auth.access_token);
-        console.log('✅ Auto-login successful');
-        return true;
-      } else {
-        console.error('❌ Auto-login failed');
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ Auto-login error:', error);
-      return false;
-    }
-  }
-  return true;
-}
-
 // Helper function para manejar respuestas JSON de forma segura
 async function safeJsonParse(response: Response) {
   const text = await response.text();
@@ -60,20 +27,10 @@ async function safeJsonParse(response: Response) {
 }
 
 export async function fetchBots() {
-  // ✅ ENHANCED: Ensure authentication before request
-  await ensureAuthenticated();
-  
   const res = await fetch(`${BASE_URL}/api/bots`, {
     headers: getAuthHeaders()
   });
-  
-  if (!res.ok) {
-    if (res.status === 401) {
-      localStorage.removeItem('intelibotx_token');
-      throw new Error('Session expired - please login again');
-    }
-    throw new Error("Error al obtener bots");
-  }
+  if (!res.ok) throw new Error("Error al obtener bots");
   return safeJsonParse(res);
 }
 
@@ -116,36 +73,11 @@ export async function updateBot(botId: string, data: any) {
 
 export async function deleteBot(botId: string) {
   console.log('deleteBot called with botId:', botId);
-  
-  // ✅ ENHANCED: Explicit token validation
-  const token = localStorage.getItem('intelibotx_token');
-  if (!token) {
-    const error = new Error('Authentication required - please login first');
-    console.error('❌ DELETE Bot failed: No token in localStorage');
-    throw error;
-  }
-  
-  console.log('✅ Token found, proceeding with DELETE request');
-  
   const res = await fetch(`${BASE_URL}/api/bots/${botId}`, {
     method: "DELETE",
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    }
+    headers: getAuthHeaders()
   });
-  
-  if (!res.ok) {
-    console.error(`❌ DELETE failed: ${res.status} ${res.statusText}`);
-    if (res.status === 401) {
-      // Token expired, clear localStorage
-      localStorage.removeItem('intelibotx_token');
-      throw new Error('Session expired - please login again');
-    }
-    throw new Error(`Error al eliminar bot: ${res.status}`);
-  }
-  
-  console.log('✅ DELETE successful');
+  if (!res.ok) throw new Error("Error al eliminar bot");
   return safeJsonParse(res);
 }
 
