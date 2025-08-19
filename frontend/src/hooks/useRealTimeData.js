@@ -92,10 +92,16 @@ export const useRealTimeData = (exchangeId, symbol) => {
   };
 
   const getRealPriceWithFailover = async (symbol) => {
+    // Get API base URL (same logic as AuthContext)
+    const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 
+      (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 
+        'http://localhost:8000' : 
+        'https://intelibotx-production.up.railway.app');
+
     // LAYER 1: Primary endpoint (/api/market-data with simple=true)
     if (!circuitBreaker.isOpen('primary')) {
       try {
-        const response = await fetch(`/api/market-data/${symbol}?simple=true`, {
+        const response = await fetch(`${API_BASE_URL}/api/market-data/${symbol}?simple=true`, {
           signal: AbortSignal.timeout(5000),
           headers: { 'Cache-Control': 'no-cache' }
         });
@@ -119,7 +125,7 @@ export const useRealTimeData = (exchangeId, symbol) => {
     // LAYER 2: Alternative backend endpoint
     if (!circuitBreaker.isOpen('alternative')) {
       try {
-        const response = await fetch(`/api/real-market/${symbol}`, {
+        const response = await fetch(`${API_BASE_URL}/api/real-market/${symbol}`, {
           signal: AbortSignal.timeout(5000)
         });
         if (response.ok) {
