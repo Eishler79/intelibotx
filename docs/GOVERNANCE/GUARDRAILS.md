@@ -34,6 +34,9 @@
 - frontend/package.json
 - Migraciones y esquemas de DB
 
+### **UX/UI Design System (NUEVO)**
+- docs/DESIGN/DESIGN_SYSTEM.md *(UX patterns, navigation behavior, visual specifications)*
+
 **Regla:**  
 Antes de modificar cualquiera de estos, se debe:
 1. Pedir confirmación explícita.

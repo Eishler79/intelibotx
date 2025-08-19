@@ -20,15 +20,12 @@ const AuthPage = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      // ✅ DL-017 FIX: Smart navigation - check exchanges first
-      if (!userExchanges || userExchanges.length === 0) {
-        navigate('/exchanges', { replace: true });
-      } else {
-        const from = location.state?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
-      }
+      // ✅ SPEC_REF: DESIGN_SYSTEM.md#login-redirect-behavior
+      // DASHBOARD FIRST: Always redirect to dashboard, show empty state if needed
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, userExchanges, navigate, location]);
+  }, [isAuthenticated, navigate, location]);
 
   // Redirect path after successful auth
   const from = location.state?.from?.pathname || '/dashboard';
@@ -77,14 +74,9 @@ const AuthPage = () => {
         return;
       }
       
-      // ✅ DL-017 FIX: Smart navigation based on user state
-      // Check if user has exchanges configured before redirecting
-      if (!userExchanges || userExchanges.length === 0) {
-        navigate('/exchanges', { replace: true });
-      } else {
-        // User has exchanges, proceed to dashboard or intended route
-        navigate(from, { replace: true });
-      }
+      // ✅ SPEC_REF: DESIGN_SYSTEM.md#login-redirect-behavior
+      // DASHBOARD FIRST: Always redirect to dashboard, show empty state if needed
+      navigate(from, { replace: true });
     } else {
       setError(result.error);
     }

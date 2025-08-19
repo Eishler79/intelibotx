@@ -436,6 +436,51 @@
 
 ---
 
+## 🔄 **UX/UI NAVIGATION PATTERNS**
+
+### **LOGIN REDIRECT BEHAVIOR - ESPECIFICACIÓN CRÍTICA:**
+
+#### **CURRENT ISSUE (2025-08-19):**
+- **Problema Reportado:** Login exitoso redirige a `/exchanges` en lugar de `/dashboard`
+- **Root Cause:** Smart navigation logic en AuthPage.jsx líneas 82-83, 24-25
+- **Comportamiento Actual:** `userExchanges.length === 0` → `/exchanges` (forzar configuración)
+
+#### **COMPORTAMIENTO ESPERADO (Especificación UX):**
+```javascript
+// ✅ SPEC_REF: DESIGN_SYSTEM.md#login-redirect-behavior
+// LOGIN REDIRECT PATTERN - DASHBOARD FIRST APPROACH
+
+const handleLoginSuccess = async (userData) => {
+  // SIEMPRE redirigir a dashboard después de login exitoso
+  // Dashboard debe mostrar estado "Configure exchanges" si vacío
+  // Usuario no debe ser forzado a configurar exchanges antes de explorar
+  navigate('/dashboard', { replace: true });
+};
+```
+
+#### **UX PRINCIPLES:**
+1. **NO DISRUPTIVO:** Usuario debe poder explorar dashboard inmediatamente
+2. **PROGRESSIVE DISCLOSURE:** Mostrar opciones de configuración dentro del dashboard
+3. **USER CHOICE:** No forzar flujos obligatorios, sugerir configuraciones
+4. **DASHBOARD FIRST:** Dashboard es la landing page natural post-login
+
+#### **DASHBOARD EMPTY STATE DESIGN:**
+```jsx
+// Dashboard cuando userExchanges.length === 0
+<EmptyState
+  title="Welcome to InteliBotX"
+  description="Connect your first exchange to start trading"
+  action={
+    <Button onClick={() => navigate('/exchanges')}>
+      Configure Exchange
+    </Button>
+  }
+  optional={true} // Usuario puede explorar otras secciones
+/>
+```
+
+---
+
 ## 💎 **OBJETIVO FINAL:**
 
 **Crear un sistema visual único y coherente para InteliBotX** que:

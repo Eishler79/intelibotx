@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import Chart from "react-apexcharts";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { 
   Banknote, 
   BarChart2, 
@@ -12,7 +14,9 @@ import {
   Calendar,
   Filter,
   Award,
-  Target
+  Target,
+  Settings,
+  ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +29,8 @@ import {
 } from "../services/dashboardService";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { userExchanges } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState(30);
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   const [chartType, setChartType] = useState('balance'); // 'balance', 'pnl', 'operations'
@@ -132,6 +138,43 @@ const Dashboard = () => {
     </motion.div>
   );
 
+  // 🎯 Empty State Component - Exchange Configuration Required
+  const ExchangeEmptyState = () => (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 shadow-xl p-12 text-center"
+    >
+      <div className="max-w-md mx-auto">
+        <div className="mb-6">
+          <Settings className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Welcome to InteliBotX</h2>
+          <p className="text-gray-400">
+            Connect your first exchange to start trading with professional algorithms
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <Button 
+            onClick={() => navigate('/exchanges')}
+            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
+          >
+            <Settings className="w-5 h-5 mr-2" />
+            Configure Exchange
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+          
+          <p className="text-sm text-gray-500">
+            You can explore other sections while setting up your exchange
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  // Check if user has exchanges configured
+  const hasExchanges = userExchanges && userExchanges.length > 0;
+
   return (
     <div className="flex flex-col gap-8 p-8">
       {/* 📊 Header con controles */}
@@ -166,6 +209,15 @@ const Dashboard = () => {
           ❌ Error cargando datos: {summaryError}
         </div>
       )}
+
+      {/* 🎯 Empty State - No Exchanges Configured */}
+      {!hasExchanges && (
+        <ExchangeEmptyState />
+      )}
+
+      {/* 📊 Dashboard Content - Show when has exchanges OR always show (user choice) */}
+      {hasExchanges && (
+        <div className="space-y-8">
 
       {/* 📊 Métricas principales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -330,6 +382,7 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
+        </div>
         </div>
       )}
     </div>
