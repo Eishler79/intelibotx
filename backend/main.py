@@ -307,8 +307,7 @@ except Exception as e:
 
 # Load real bots routes with live market data
 try:
-    from routes.real_bots import router as real_bots_router
-    app.include_router(real_bots_router)
+    # DL-018: real_bots router eliminated - redundant endpoint without frontend usage
     print("✅ Real bots routes loaded")
 except Exception as e:
     print(f"⚠️ Could not load real bots routes: {e}")
@@ -320,6 +319,9 @@ try:
     print("✅ Exchange management routes loaded")
 except Exception as e:
     print(f"⚠️ Could not load exchange routes: {e}")
+
+# ✅ DL-019 COMPLIANCE: market.py eliminated - using unified /api/market-data endpoint
+# Market data now handled by real_trading_routes.py with simple=true parameter
 
 # Load trading history routes (RE-ENABLED for real bot data)
 try:
@@ -623,49 +625,8 @@ async def get_real_market_simple(symbol: str):
     except Exception as e:
         return {"error": f"Error obteniendo datos de mercado: {str(e)}", "success": False}
 
-@app.post("/api/real-bots/create-simple")
-async def create_simple_real_bot(bot_data: dict):
-    """Crear bot simple con datos reales"""
-    import time
-    import httpx
-    
-    # Obtener precio real
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"https://testnet.binance.vision/api/v3/ticker/price", 
-                                      params={"symbol": bot_data.get("symbol", "BTCUSDT")})
-            if response.status_code == 200:
-                price_data = response.json()
-                current_price = float(price_data["price"])
-            else:
-                current_price = 0.0
-    except:
-        current_price = 0.0
-    
-    bot_id = int(time.time())
-    
-    return {
-        "message": f"✅ Bot Real {bot_data.get('strategy', 'Bot')} creado para {bot_data.get('symbol', 'BTCUSDT')} con datos en vivo",
-        "bot_id": bot_id,
-        "bot": {
-            "id": bot_id,
-            "symbol": bot_data.get("symbol", "BTCUSDT"),
-            "strategy": bot_data.get("strategy", "Smart Scalper"),
-            "stake": bot_data.get("stake", 1000),
-            "take_profit": bot_data.get("take_profit", 2.5),
-            "stop_loss": bot_data.get("stop_loss", 1.5),
-            "risk_percentage": bot_data.get("risk_percentage", 1.0),
-            "market_type": bot_data.get("market_type", "spot"),
-            "current_price": current_price,
-            "data_source": "binance_testnet_real",
-            "status": "CREATED"
-        },
-        "market_data": {
-            "current_price": current_price,
-            "signal": "BUY" if current_price > 0 else "HOLD",
-            "confidence": "75%" if current_price > 0 else "50%"
-        }
-    }
+# DL-018: /api/real-bots/create-simple endpoint eliminated
+# Redundant endpoint without frontend usage - use /api/create-bot instead
 
 if __name__ == "__main__":
     import uvicorn

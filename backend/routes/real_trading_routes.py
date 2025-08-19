@@ -199,12 +199,18 @@ async def get_real_indicators(
 async def get_market_data(
     symbol: str,
     timeframe: str = Query("15m", description="Marco temporal"),
-    limit: int = Query(100, description="Número de velas", ge=10, le=1000)
+    limit: int = Query(100, description="Número de velas", ge=10, le=1000),
+    simple: bool = Query(False, description="✅ DL-019: Solo precio actual - Unified endpoint")
 ):
     """
-    Obtener datos OHLCV reales de Binance
+    ✅ DL-019 COMPLIANCE: Datos OHLCV + precio simple unificado
+    ✅ GUARDRAILS COMPLIANCE: Endpoint consolidado - elimina redundancia API
     
-    **Para gráficos y análisis histórico**
+    **Para gráficos, análisis histórico Y precio simple frontend**
+    
+    Parámetros:
+    - simple=false: Retorna OHLCV completo para análisis técnico
+    - simple=true: Retorna solo precio actual para frontend useRealTimeData
     """
     try:
         # Lazy imports
@@ -234,33 +240,46 @@ async def get_market_data(
                 "volume": float(row['volume'])
             })
         
-        # Estadísticas básicas
-        stats = {
-            "total_periods": len(df),
-            "price_range": {
-                "high": float(df['high'].max()),
-                "low": float(df['low'].min()),
-                "latest": float(df['close'].iloc[-1])
-            },
-            "volume": {
-                "total": float(df['volume'].sum()),
-                "average": float(df['volume'].mean()),
-                "latest": float(df['volume'].iloc[-1])
-            }
-        }
-        
-        return JSONResponse(content={
-            "success": True,
-            "data": {
+        # ✅ DL-019 COMPLIANCE: Unified endpoint - simple vs full mode
+        if simple:
+            # Simple mode: Solo precio actual para frontend (replaces /api/market/price)
+            current_price = float(df['close'].iloc[-1])
+            return JSONResponse(content={
+                "success": True,
+                "price": current_price,
                 "symbol": symbol.upper(),
-                "timeframe": timeframe,
-                "limit": limit,
-                "klines": klines_data,
-                "statistics": stats,
-                "timestamp": datetime.utcnow().isoformat(),
-                "source": "binance_api"
+                "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                "data_source": "binance_api_unified"
+            })
+        else:
+            # Full mode: OHLCV completo para análisis técnico (modo original)
+            # Estadísticas básicas
+            stats = {
+                "total_periods": len(df),
+                "price_range": {
+                    "high": float(df['high'].max()),
+                    "low": float(df['low'].min()),
+                    "latest": float(df['close'].iloc[-1])
+                },
+                "volume": {
+                    "total": float(df['volume'].sum()),
+                    "average": float(df['volume'].mean()),
+                    "latest": float(df['volume'].iloc[-1])
+                }
             }
-        })
+            
+            return JSONResponse(content={
+                "success": True,
+                "data": {
+                    "symbol": symbol.upper(),
+                    "timeframe": timeframe,
+                    "limit": limit,
+                    "klines": klines_data,
+                    "statistics": stats,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "source": "binance_api"
+                }
+            })
         
     except Exception as e:
         logger.error(f"❌ Error obteniendo datos mercado {symbol}: {e}")

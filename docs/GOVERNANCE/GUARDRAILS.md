@@ -139,6 +139,14 @@ Antes de modificar cualquiera de estos, se debe:
    - **VALIDACIÓN:** Antes de crear endpoint, verificar que NO existe funcionalidad similar
    - **EXCEPCIÓN:** Solo permitir redundancia con justificación documentada en DECISION_LOG.md
 
+5. **OBLIGATORIO: SISTEMA DE RESILENCIA PROFESIONAL PARA APIs CRÍTICAS**
+   - **REQUERIDO:** Multi-layer failover para endpoints que afectan UX directo
+   - **CAPAS MÍNIMAS:** Primary → Alternative → External → Cache → Emergency → Graceful fail
+   - **CIRCUIT BREAKER:** Evitar hammering de endpoints fallidos
+   - **UX TRANSPARENCY:** Status indicators (Live/Cached/Aproximado/Sin datos)
+   - **VALIDACIÓN:** Testear cada layer de failover individualmente
+   - **SPEC_REF:** DL-019 professional resilience system
+
 ---
 
 ## 9. SPEC_REF CENTRAL - Authentication Pattern (ACTUALIZADO)

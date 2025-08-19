@@ -240,12 +240,27 @@ PROBLEMA SISTÉMICO: 5+ WORKAROUNDS ACUMULADOS
 
 ### **🚨 ETAPA 0 - REFACTORING ARQUITECTURAL (PRÓXIMAS 4-6 SEMANAS):**
 
+#### **📊 STATUS ACTUAL - PACK BÁSICO LOGIN → DASHBOARD:**
+
+| #  | API          | ENDPOINT                          | PURPOSE                         | STATUS      |
+|----|--------------|---------------------------------|----------------------------------|-------------|
+| 1. | ✅ LOGIN     | POST /api/auth/login              | User authentication → JWT token | ✅ FUNCIONANDO |
+| 2. | ✅ USER INFO | GET /api/auth/me                  | Get authenticated user details  | ✅ FUNCIONANDO |  
+| 3. | ✅ DASHBOARD | GET /api/dashboard/summary        | Main dashboard data             | ✅ FUNCIONANDO |
+| 4. | ❌ EXCHANGES | GET /api/user/exchanges           | User's configured exchanges     | ⏳ VERIFICAR   |
+| 5. | ❌ BOT DATA  | GET /api/bots                     | User's bots (default redirect)  | ⏳ VERIFICAR   |
+
+**🎯 CRITERIO SIMPLE:** Primero completar 5/5 endpoints básicos → Después optimización
+
 #### **SEMANA 1-2: SECURITY + AUTHENTICATION OVERHAUL**
-1. **FastAPI Authentication Refactoring** - Eliminar 43 parches Opción B
-2. **JWT Dependency Injection REAL** - get_current_user() dependency automation  
-3. **ENCRYPTION_MASTER_KEY Implementation** - Secure encryption architecture
-4. **Rate Limiting + CORS Strategy** - Professional security framework
-5. **Centralized Error Handling** - Unified exception management
+**INMEDIATO:** Completar endpoints 4-5 del pack básico
+1. **Verificar + Fix Exchanges API** - GET /api/user/exchanges functionality
+2. **Verificar + Fix Bots API** - GET /api/bots functionality  
+3. **FastAPI Authentication Refactoring** - Eliminar 43 parches Opción B (DESPUÉS)
+4. **JWT Dependency Injection REAL** - get_current_user() dependency automation  
+5. **ENCRYPTION_MASTER_KEY Implementation** - Secure encryption architecture
+6. **Rate Limiting + CORS Strategy** - Professional security framework
+7. **Centralized Error Handling** - Unified exception management
 
 #### **SEMANA 3-4: DATABASE + PERFORMANCE OPTIMIZATION**
 6. **PostgreSQL Connection Pooling** - Professional database management
