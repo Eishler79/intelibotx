@@ -10,7 +10,7 @@ import SmartScalperMetrics from "@/components/SmartScalperMetrics";
 import LatencyMonitor from "@/components/LatencyMonitor";
 import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
 import LiveTradingFeed from "@/components/LiveTradingFeed";
-import { createTradingOperation, getBotTradingOperations, runSmartTrade, fetchBots } from "../services/api";
+import { createTradingOperation, getBotTradingOperations, runSmartTrade, fetchBots, deleteBot } from "../services/api";
 import TradingHistory from "../components/TradingHistory";
 import EnhancedBotCreationModal from "../components/EnhancedBotCreationModal";
 import BotTemplates from "../components/BotTemplates";
@@ -303,33 +303,21 @@ export default function BotsAdvanced() {
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
+  // DL-017: Frontend Delete Authentication Fix - usar deleteBot() con auth headers
   const handleDeleteBot = async (botId) => {
     try {
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
-      
       // Encontrar el bot antes de eliminarlo
       const bot = bots.find(b => b.id === botId);
       if (!bot) {
         console.log('Bot no encontrado en la lista local');
         return;
       }
-
-      // Intentar eliminar del servidor
-      const response = await fetch(`${BASE_URL}/api/bots/${botId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Bot eliminado del servidor:', result.message);
-      } else if (response.status === 404) {
-        console.log('⚠️ Bot no encontrado en servidor, eliminando solo localmente');
-      }
-
-      // Siempre eliminar de la interfaz local
+      
+      // DL-017 COMPLIANT: Usar función deleteBot() de api.ts con autenticación
+      const result = await deleteBot(botId.toString());
+      console.log('✅ Bot eliminado del servidor:', result.message);
+      
+      // Eliminar de la interfaz local tras confirmación del servidor
       setBots(prevBots => prevBots.filter(bot => bot.id !== botId));
       
       // Si era el bot seleccionado, deseleccionar
@@ -343,13 +331,16 @@ export default function BotsAdvanced() {
         clearInterval(window.botIntervals[botId]);
         delete window.botIntervals[botId];
       }
-
-      console.log(`🗑️ Bot ${bot.symbol} eliminado`);
+      console.log(`🗑️ Bot ${bot.symbol} eliminado con DL-017 compliance`);
       
     } catch (error) {
       console.error('❌ Error eliminando bot:', error);
-      // Si es un error de conexión, eliminar solo localmente
-      setBots(prevBots => prevBots.filter(bot => bot.id !== botId));
+      // Manejar errores específicos de autenticación
+      if (error.message.includes('Authentication required')) {
+        alert('⚠️ Sesión expirada. Por favor, inicia sesión nuevamente.');
+      } else {
+        alert(`❌ Error eliminando bot: ${error.message}`);
+      }
     }
   };
 

@@ -195,3 +195,37 @@ admin_data = UserCreate(
 **Rollback plan:** `git revert [COMMIT_HASH_DL016] --no-edit && git push origin main`  
 **Testing plan:** /api/user/exchanges validation → Multi-exchange functionality → Production verification  
 **SPEC_REF:** backend/routes/exchanges.py + DECISION_LOG.md:DL-016
+
+---
+
+## 2025-08-19 — DL-017 · Frontend Delete Authentication Fix - Critical Bug Resolution  
+**Contexto:** Usuario reportó que delete bot falla con error 401 y bot reaparece tras refresh - handleDeleteBot en BotsAdvanced.jsx NO envía Authorization header.  
+**Decisión:** Reemplazar fetch manual por función deleteBot() de api.ts que incluye autenticación DL-008 compliance.  
+**Scope específico:** SOLO función handleDeleteBot en frontend/src/pages/BotsAdvanced.jsx  
+**Issues identificados:**  
+- ❌ **Security violation:** Fetch DELETE sin Authorization header (401 error)  
+- ❌ **UX broken:** Bot desaparece localmente pero permanece en servidor  
+- ❌ **Data inconsistency:** Estado local ≠ estado servidor tras operación  
+- ❌ **DRY violation:** Código duplicado vs función centralizada api.ts  
+**Solución target:**  
+```javascript
+// ANTES (DL-017 violations):
+const response = await fetch(`${BASE_URL}/api/bots/${botId}`, {
+  method: 'DELETE',
+  headers: {
+    'Content-Type': 'application/json'  // ❌ Missing Authorization
+  }
+});
+
+// DESPUÉS (DL-017 compliant):
+const result = await deleteBot(botId.toString());  // ✅ Includes auth headers
+```
+**Compliance garantizado:**  
+- ✅ **DL-001 5/5:** No hardcode BASE_URL, función centralizada, auth real JWT  
+- ✅ **GUARDRAILS 9/9:** Archivo crítico confirmado, SPEC_REF, backup documented  
+- ✅ **CLAUDE_BASE 4/4:** Usuario validation, plan detallado, .MD consultados  
+- ✅ **DL-008:** Mantiene authentication pattern centralizado  
+**Archivos afectados:** frontend/src/pages/BotsAdvanced.jsx:handleDeleteBot (líneas ~295-320)  
+**Rollback plan:** `git revert [COMMIT_HASH_DL017] --no-edit && git push origin main`  
+**Testing plan:** Delete bot → 200 OK response → Bot eliminado servidor + UI → No reaparece tras refresh  
+**SPEC_REF:** frontend/src/pages/BotsAdvanced.jsx:handleDeleteBot + DECISION_LOG.md:DL-017

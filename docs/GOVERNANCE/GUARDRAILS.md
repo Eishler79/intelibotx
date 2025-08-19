@@ -7,6 +7,7 @@
 - backend/db/database.py  
 - frontend/src/main.jsx
 - frontend/src/routes/App.jsx
+- frontend/src/pages/BotsAdvanced.jsx *(core bot management + trading operations)*
 
 ### **Autenticación y Seguridad**
 - backend/services/auth_service.py
