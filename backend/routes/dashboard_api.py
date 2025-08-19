@@ -65,15 +65,24 @@ async def get_dashboard_summary(
             total_orders = 0
         
         # Calculate basic portfolio value (simplified)
-        total_balance = 1000.0  # Default starting balance, will be real from exchange API later
+        initial_capital = 1000.0  # Default starting capital
+        total_balance = initial_capital  # Will be real from exchange API later
+        total_pnl = 0.0  # No trades yet for new users
         
+        # ✅ DL-017 FIX: Provide all required fields to prevent NaN in frontend
         return {
             "total_bots": bots_count,
             "active_bots": active_bots,
             "total_orders": total_orders,
             "total_balance": total_balance,
-            "balance_change_24h": 0.0,  # Will calculate from real trading data
-            "win_rate": 0.0,  # Will calculate from real orders
+            "current_balance": total_balance,  # Alias for frontend compatibility
+            "initial_capital": initial_capital,  # Required for percentage calculations
+            "total_pnl": total_pnl,  # Required for percentage calculations
+            "today_pnl": 0.0,  # Daily PnL
+            "today_operations": 0,  # Daily operations count
+            "win_rate": 0.0,  # Win rate percentage
+            "total_operations": total_orders,  # Total operations
+            "balance_change_24h": 0.0,  # 24h balance change
             "last_updated": datetime.utcnow().isoformat()
         }
         

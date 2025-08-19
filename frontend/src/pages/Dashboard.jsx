@@ -181,7 +181,7 @@ const Dashboard = () => {
           icon={TrendingUp}
           title="PnL de hoy"
           value={summary ? `$${summary.today_pnl}` : '$0'}
-          change={summary?.today_pnl}
+          change={summary?.today_pnl || 0}
           isLoading={summaryLoading}
           color={summary?.today_pnl >= 0 ? "text-green-400" : "text-red-400"}
         />
@@ -197,8 +197,10 @@ const Dashboard = () => {
         <MetricCard
           icon={Banknote}
           title="Balance actual"
-          value={summary ? `$${summary.current_balance}` : '$0'}
-          change={summary ? ((summary.total_pnl / summary.initial_capital) * 100).toFixed(1) : 0}
+          value={summary ? `$${summary.current_balance || summary.total_balance || 0}` : '$0'}
+          change={summary && summary.initial_capital && summary.total_pnl ? 
+            ((summary.total_pnl / summary.initial_capital) * 100).toFixed(1) : 
+            0}
           isLoading={summaryLoading}
           color="text-green-400"
         />
