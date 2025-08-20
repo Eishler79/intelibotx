@@ -494,7 +494,224 @@ const handleLoginSuccess = async (userData) => {
 
 ---
 
+## 🔍 **UX PATTERNS - DL-001 TRANSPARENCY COMPLIANCE**
+
+### **📊 Exchange Status Indicators:**
+
+#### **Dashboard Header Exchange Branding:**
+```css
+.exchange-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+}
+
+.exchange-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.exchange-name {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.exchange-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.exchange-status-dot.active {
+  background: var(--success-green);
+  box-shadow: 0 0 8px var(--success-green-light);
+}
+
+.exchange-status-dot.warning {
+  background: var(--accent-gold);
+  box-shadow: 0 0 8px var(--accent-gold-light);
+}
+```
+
+### **📈 Data Status Transparency Indicators:**
+
+#### **Price Status Badges:**
+```css
+.price-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.price-status.live {
+  background: var(--success-green-light);
+  color: var(--success-green);
+}
+
+.price-status.cached {
+  background: var(--accent-gold-light);
+  color: var(--accent-gold);
+}
+
+.price-status.emergency {
+  background: var(--error-red-light);
+  color: var(--error-red);
+}
+
+.price-status.failed {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+```
+
+#### **Data Transparency Icons:**
+```css
+.status-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status-icon.live { background: #00ff88; }     /* 🟢 En vivo */
+.status-icon.alternative { background: #0099ff; } /* 🔵 Alternativo */
+.status-icon.external { background: #ff9900; }    /* 🟠 Externo */
+.status-icon.cached { background: #ffdd00; }      /* 🟡 Cache */
+.status-icon.emergency { background: #ff4400; }   /* ⚠️ Aproximado */
+.status-icon.failed { background: #666666; }      /* 🔴 Sin datos */
+```
+
+### **🛠️ Bot Creation Advanced Configuration:**
+
+#### **Expandible Advanced Section:**
+```css
+.advanced-config {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  margin-top: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.advanced-config-header {
+  padding: 16px;
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.advanced-config-header:hover {
+  background: var(--bg-primary);
+}
+
+.advanced-config-content {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.advanced-field {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.advanced-field-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.advanced-field-tooltip {
+  color: var(--text-muted);
+  cursor: help;
+}
+```
+
+### **⚠️ Error Handling Transparency:**
+
+#### **Error States with User Guidance:**
+```css
+.error-banner {
+  background: var(--error-red-light);
+  border: 1px solid var(--error-red);
+  color: var(--error-red);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.warning-banner {
+  background: var(--accent-gold-light);
+  border: 1px solid var(--accent-gold);
+  color: var(--accent-gold);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retry-button {
+  background: var(--accent-gold);
+  color: var(--text-on-gold);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-button:hover {
+  background: var(--accent-gold-hover);
+  transform: translateY(-1px);
+}
+```
+
+### **🎯 UX Design Principles:**
+
+#### **DL-001 Transparency Guidelines:**
+1. **Always show data source status** - Usuario debe saber si datos son reales, cache, o approximados
+2. **Clear error communication** - Errores explicados con acciones sugeridas  
+3. **Exchange status visibility** - Estado conexión exchange siempre visible
+4. **Advanced controls accessible** - Parámetros críticos disponibles para usuario avanzado
+5. **Consistent status indicators** - Mismos colores/iconos para mismo tipo datos
+
+#### **Interaction Patterns:**
+- **Hover states**: Subtle elevation y color transitions
+- **Loading states**: Skeleton loaders con mismo color scheme
+- **Success states**: Verde success con animations suaves
+- **Warning states**: Dorado accent para llamar atención sin alarmar
+
+---
+
 > **Documento creado**: 08 Agosto 2025  
+> **Actualizado**: 20 Agosto 2025 - UX Patterns DL-001 Compliance  
 > **Para**: Eduard Guzmán - InteliBotX Design System  
 > **Basado en**: Paleta de colores Login Page que encantó al usuario  
-> **Objetivo**: Mantener coherencia visual en toda la aplicación con estilo personal único
+> **Objetivo**: Mantener coherencia visual en toda la aplicación con estilo personal único + transparencia DL-001
