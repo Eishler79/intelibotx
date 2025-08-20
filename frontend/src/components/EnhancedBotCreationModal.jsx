@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { motion } from 'framer-motion';
+import { 
+  Settings, 
+  Activity, 
+  Target, 
+  TrendingDown, 
+  Banknote, 
+  BarChart2, 
+  RefreshCw 
+} from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 
 const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTemplate }) => {
   const { userExchanges, isAuthenticated, loadUserExchanges } = useAuth();
@@ -11,6 +22,7 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
   const [symbolsLoading, setSymbolsLoading] = useState(false);
   const [marketTypes, setMarketTypes] = useState([]);
   const [marketTypesLoading, setMarketTypesLoading] = useState(false);
+  const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,6 +40,8 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     market_type: 'SPOT',
     leverage: 1,
     margin_type: 'ISOLATED',
+    max_open_positions: 3,
+    cooldown_minutes: 15,
     entry_order_type: 'MARKET',
     exit_order_type: 'MARKET',
     tp_order_type: 'LIMIT',
@@ -410,6 +424,8 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
           market_type: 'SPOT',
           leverage: 1,
           margin_type: 'ISOLATED',
+          max_open_positions: 3,
+          cooldown_minutes: 15,
           entry_order_type: 'MARKET',
           exit_order_type: 'MARKET',
           tp_order_type: 'LIMIT',
@@ -712,9 +728,22 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                   <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-4">
                     <h4 className="text-blue-400 font-medium text-sm mb-2">Datos en Tiempo Real - {formData.symbol}</h4>
                     <div className="text-xs space-y-1">
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-gray-400">Precio {formData.symbol}:</span>
-                        <span className="text-white">${realTimeData.currentPrice.toLocaleString()}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white">${realTimeData.currentPrice.toLocaleString()}</span>
+                          {/* 🔍 DL-001 Price Status Transparency */}
+                          <span className={`price-status inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            realTimeData.isReal 
+                              ? 'bg-green-500/20 text-green-400' 
+                              : 'bg-orange-500/20 text-orange-400'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              realTimeData.isReal ? 'bg-green-400' : 'bg-orange-400'
+                            }`} />
+                            {realTimeData.isReal ? 'LIVE' : 'APROX'}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Balance Disponible:</span>
@@ -732,6 +761,170 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* 🛠️ Advanced Configuration Section - DL-001 Compliance */}
+            <div className="advanced-config bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl mt-6 overflow-hidden">
+              <div className="advanced-config-header bg-white/5 px-6 py-4 cursor-pointer flex items-center justify-between hover:bg-white/10 transition-colors"
+                   onClick={() => setShowAdvancedConfig(!showAdvancedConfig)}>
+                <div className="flex items-center gap-3">
+                  <Settings className="w-5 h-5 text-yellow-400" />
+                  <h3 className="text-white font-semibold">Configuración Avanzada</h3>
+                  <Badge className="bg-blue-500/20 text-blue-400 text-xs">
+                    DL-001 Compliance
+                  </Badge>
+                </div>
+                <motion.div 
+                  animate={{ rotate: showAdvancedConfig ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </motion.div>
+              </div>
+              
+              {showAdvancedConfig && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="advanced-config-content p-6 grid grid-cols-1 md:grid-cols-2 gap-6"
+                >
+                  {/* Intervalo de Trading */}
+                  <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                    <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-blue-400" />
+                      Intervalo de Trading
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Timeframe para análisis técnico del bot">ⓘ</span>
+                    </label>
+                    <select
+                      name="interval"
+                      value={formData.interval}
+                      onChange={handleInputChange}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    >
+                      <option value="1m">1 Minuto - Ultra rápido</option>
+                      <option value="5m">5 Minutos - Scalping agresivo</option>
+                      <option value="15m">15 Minutos - Scalping moderado</option>
+                      <option value="1h">1 Hora - Swing trading</option>
+                      <option value="4h">4 Horas - Position trading</option>
+                      <option value="1d">1 Día - Inversión long term</option>
+                    </select>
+                  </div>
+
+                  {/* Risk Percentage */}
+                  <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                    <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-red-400" />
+                      Riesgo por Trade (%)
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Porcentaje máximo del capital en riesgo por operación">ⓘ</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="risk_percentage"
+                      value={formData.risk_percentage}
+                      onChange={handleInputChange}
+                      min="0.1"
+                      max="10"
+                      step="0.1"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      placeholder="1.0"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">
+                      Recomendado: 1-2% para traders conservadores, 3-5% agresivos
+                    </p>
+                  </div>
+
+                  {/* DCA Levels */}
+                  <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                    <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
+                      <TrendingDown className="w-4 h-4 text-orange-400" />
+                      Niveles DCA
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Cantidad de órdenes adicionales en caso de precio adverso">ⓘ</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="dca_levels"
+                      value={formData.dca_levels}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="10"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      placeholder="3"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">
+                      0 = Sin DCA, 3-5 = Estrategia moderada, 5+ = Agresiva
+                    </p>
+                  </div>
+
+                  {/* Margin Type */}
+                  <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                    <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
+                      <Banknote className="w-4 h-4 text-yellow-400" />
+                      Tipo de Margen
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Tipo de margen para trading con apalancamiento">ⓘ</span>
+                    </label>
+                    <select
+                      name="margin_type"
+                      value={formData.margin_type}
+                      onChange={handleInputChange}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    >
+                      <option value="ISOLATED">ISOLATED - Margen aislado</option>
+                      <option value="CROSS">CROSS - Margen cruzado</option>
+                    </select>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Isolated: Riesgo limitado por posición | Cross: Comparte margen total
+                    </p>
+                  </div>
+
+                  {/* Max Open Positions */}
+                  <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                    <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
+                      <BarChart2 className="w-4 h-4 text-purple-400" />
+                      Posiciones Máximas
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Máximo número de posiciones abiertas simultáneamente">ⓘ</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="max_open_positions"
+                      value={formData.max_open_positions}
+                      onChange={handleInputChange}
+                      min="1"
+                      max="20"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      placeholder="3"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">
+                      1-3 = Conservador | 4-8 = Moderado | 8+ = Agresivo
+                    </p>
+                  </div>
+
+                  {/* Cooldown Minutes */}
+                  <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                    <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 text-cyan-400" />
+                      Cooldown (minutos)
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Tiempo de espera entre trades para evitar overtrading">ⓘ</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="cooldown_minutes"
+                      value={formData.cooldown_minutes}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="1440"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      placeholder="15"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">
+                      0 = Sin cooldown | 5-15 = Scalping | 30-60 = Swing | 240+ = Position
+                    </p>
+                  </div>
+                </motion.div>
+              )}
             </div>
 
             {/* Botones */}
