@@ -11,6 +11,7 @@ import {
   RefreshCw 
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { useRealTimeData } from '../hooks/useRealTimeData';
 
 const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTemplate }) => {
   const { userExchanges, isAuthenticated, loadUserExchanges } = useAuth();
@@ -206,48 +207,20 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     }
   };
 
+  // ✅ DL-001 + DL-019 COMPLIANCE: Use professional 6-layer failover system
+  const { 
+    currentPrice: realTimePrice, 
+    priceStatus,
+    isConnected 
+  } = useRealTimeData(selectedExchange?.id, formData.symbol);
+
   const loadRealTimeData = async () => {
     try {
       const token = localStorage.getItem('intelibotx_token');
       
-      // Intentar obtener precio real desde el exchange
-      let currentPrice = null;
+      // ✅ Use DL-019 professional failover system price
+      const currentPrice = realTimePrice || null;
       let balance = 1000.00; // Default balance
-      
-      try {
-        // Obtener precio real desde Binance (fallback a cualquier exchange)
-        const priceResponse = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/auth/binance-price/${formData.symbol}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        
-        if (priceResponse.ok) {
-          const priceData = await priceResponse.json();
-          if (priceData.price) {
-            currentPrice = parseFloat(priceData.price);
-            console.log(`✅ Real price loaded for ${formData.symbol}: $${currentPrice}`);
-          }
-        }
-      } catch (priceErr) {
-        console.warn('Could not load real price, using fallback:', priceErr);
-      }
-      
-      // Si no se pudo obtener precio real, usar fallback inteligente
-      if (!currentPrice) {
-        const fallbackPrices = {
-          'BTCUSDT': 43250.50, 'ETHUSDT': 2650.75, 'BNBUSDT': 315.20,
-          'ADAUSDT': 0.485, 'SOLUSDT': 98.35, 'DOGEUSDT': 0.085,
-          'XRPUSDT': 0.635, 'DOTUSDT': 7.25, 'AVAXUSDT': 38.90,
-          'LINKUSDT': 14.75, 'MATICUSDT': 0.895, 'UNIUSDT': 6.35
-        };
-        currentPrice = fallbackPrices[formData.symbol] || 100.00;
-        console.log(`⚠️ Using fallback price for ${formData.symbol}: $${currentPrice}`);
-      }
       
       // Intentar obtener balance del exchange si es posible
       try {
@@ -282,7 +255,8 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
         balance,
         symbol: formData.symbol,
         exchange: selectedExchange?.exchange_name || 'binance',
-        isReal: currentPrice !== null
+        isReal: priceStatus?.status === 'live' || priceStatus?.status === 'alternative',
+        priceStatus: priceStatus
       });
       
     } catch (err) {
@@ -733,15 +707,24 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                         <div className="flex items-center gap-2">
                           <span className="text-white">${realTimeData.currentPrice.toLocaleString()}</span>
                           {/* 🔍 DL-001 Price Status Transparency */}
+                          {/* 🔍 DL-019 Professional Status Transparency */}
                           <span className={`price-status inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            realTimeData.isReal 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : 'bg-orange-500/20 text-orange-400'
+                            realTimeData.priceStatus?.status === 'live' ? 'bg-green-500/20 text-green-400' :
+                            realTimeData.priceStatus?.status === 'alternative' ? 'bg-blue-500/20 text-blue-400' :
+                            realTimeData.priceStatus?.status === 'external' ? 'bg-orange-500/20 text-orange-400' :
+                            realTimeData.priceStatus?.status === 'cached' ? 'bg-yellow-500/20 text-yellow-400' :
+                            realTimeData.priceStatus?.status === 'emergency' ? 'bg-red-500/20 text-red-400' :
+                            'bg-gray-500/20 text-gray-400'
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${
-                              realTimeData.isReal ? 'bg-green-400' : 'bg-orange-400'
+                              realTimeData.priceStatus?.status === 'live' ? 'bg-green-400' :
+                              realTimeData.priceStatus?.status === 'alternative' ? 'bg-blue-400' :
+                              realTimeData.priceStatus?.status === 'external' ? 'bg-orange-400' :
+                              realTimeData.priceStatus?.status === 'cached' ? 'bg-yellow-400' :
+                              realTimeData.priceStatus?.status === 'emergency' ? 'bg-red-400' :
+                              'bg-gray-400'
                             }`} />
-                            {realTimeData.isReal ? 'LIVE' : 'APROX'}
+                            {realTimeData.priceStatus?.text || 'VERIFICANDO'}
                           </span>
                         </div>
                       </div>
