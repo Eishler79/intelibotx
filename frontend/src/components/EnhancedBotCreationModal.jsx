@@ -23,6 +23,11 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
   const [marketTypes, setMarketTypes] = useState([]);
   const [marketTypesLoading, setMarketTypesLoading] = useState(false);
   const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
+  
+  // ✅ Auto-refresh system states (Binance-like behavior)
+  const [countdown, setCountdown] = useState(5);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -94,19 +99,34 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     }
   }, [selectedExchange]);
 
-  // Cargar datos reales cuando cambia símbolo
+  // ✅ DL-001 COMPLIANCE: Auto-refresh system with real data (Binance-like)
   useEffect(() => {
-    if (formData.symbol) {
-      loadRealTimeData();
-    }
-  }, [formData.symbol]);
-
-  // Cargar balance cuando se selecciona exchange
-  useEffect(() => {
-    if (selectedExchange && formData.symbol) {
-      loadRealTimeData();
-    }
-  }, [selectedExchange]);
+    if (!formData.symbol || !selectedExchange) return;
+    
+    // ✅ Función refresh con datos reales únicamente
+    const performRefresh = async () => {
+      setIsRefreshing(true);
+      await loadRealTimeData();
+      setLastUpdate(new Date());
+      setIsRefreshing(false);
+    };
+    
+    // ✅ Refresh inicial
+    performRefresh();
+    
+    // ✅ Auto-refresh cada 5 segundos (como Binance)
+    const refreshInterval = setInterval(performRefresh, 5000);
+    
+    // ✅ Countdown visual cada segundo
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => prev > 1 ? prev - 1 : 5);
+    }, 1000);
+    
+    return () => {
+      clearInterval(refreshInterval);
+      clearInterval(countdownInterval);
+    };
+  }, [formData.symbol, selectedExchange]);
 
   const loadAvailableSymbols = async () => {
     setSymbolsLoading(true);
@@ -786,6 +806,16 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                           <span className="text-white">
                             {realTimeData.currentPrice ? `$${realTimeData.currentPrice.toLocaleString()}` : 'Cargando...'}
                           </span>
+                          
+                          {/* ✅ Auto-refresh countdown indicator (Binance-like) */}
+                          <div className="flex items-center gap-1 text-xs">
+                            <div className={`flex items-center justify-center w-5 h-5 rounded-full border ${
+                              isRefreshing ? 'border-blue-400 text-blue-400 animate-spin' : 'border-gray-500 text-gray-400'
+                            }`}>
+                              {isRefreshing ? '⟳' : countdown}
+                            </div>
+                            <span className="text-gray-500">auto</span>
+                          </div>
                           {/* 🔍 DL-001 Price Status Transparency */}
                           {/* 🔍 DL-019 Professional Status Transparency */}
                           <span className={`price-status inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
@@ -820,6 +850,14 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                         <span className="text-gray-400">Mercado:</span>
                         <span className="text-yellow-400">{formData.market_type}</span>
                       </div>
+                      
+                      {/* ✅ Timestamp última actualización */}
+                      {lastUpdate && (
+                        <div className="flex justify-between text-xs text-gray-500 pt-1 border-t border-gray-600/30">
+                          <span>Última actualización:</span>
+                          <span>{lastUpdate.toLocaleTimeString()}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
