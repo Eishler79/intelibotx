@@ -46,8 +46,7 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     exit_order_type: 'MARKET',
     tp_order_type: 'LIMIT',
     sl_order_type: 'STOP_MARKET',
-    trailing_stop: false,
-    min_entry_price: null
+    trailing_stop: false
   });
 
   // ✅ FRONTEND_EXCHANGE_PERSISTENCE_FIX: Load exchanges when modal opens
@@ -108,19 +107,6 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
       loadRealTimeData();
     }
   }, [selectedExchange]);
-
-  // ✅ DL-001 COMPLIANCE: Connect real-time price to formData
-  useEffect(() => {
-    if (priceData?.currentPrice && priceData.currentPrice > 0) {
-      setFormData(prev => ({
-        ...prev,
-        min_entry_price: priceData.currentPrice
-      }));
-      console.log('📊 Precio de entrada actualizado:', priceData.currentPrice);
-    } else {
-      console.warn('⚠️ GUARDRAILS WARNING: Precio inválido o null, no actualizado min_entry_price');
-    }
-  }, [priceData?.currentPrice]);
 
   const loadAvailableSymbols = async () => {
     setSymbolsLoading(true);
