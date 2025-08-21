@@ -11,7 +11,6 @@ import {
   RefreshCw 
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { useRealTimeData } from '../hooks/useRealTimeData';
 
 const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTemplate }) => {
   const { userExchanges, isAuthenticated, loadUserExchanges } = useAuth();
@@ -95,12 +94,19 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     }
   }, [selectedExchange]);
 
-  // Cargar datos reales cuando se selecciona exchange
+  // Cargar datos reales cuando cambia símbolo
+  useEffect(() => {
+    if (formData.symbol) {
+      loadRealTimeData();
+    }
+  }, [formData.symbol]);
+
+  // Cargar balance cuando se selecciona exchange
   useEffect(() => {
     if (selectedExchange && formData.symbol) {
       loadRealTimeData();
     }
-  }, [selectedExchange, formData.symbol]);
+  }, [selectedExchange]);
 
   const loadAvailableSymbols = async () => {
     setSymbolsLoading(true);
@@ -207,19 +213,91 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     }
   };
 
-  // ✅ DL-001 + DL-019 COMPLIANCE: Use professional 6-layer failover system
-  const { 
-    currentPrice: realTimePrice, 
-    priceStatus,
-    isConnected 
-  } = useRealTimeData(selectedExchange?.id, formData.symbol);
+  // ✅ DL-019 COMPLIANCE: Use professional failover system directly
+  const [priceData, setPriceData] = useState({
+    currentPrice: null,
+    priceStatus: { status: 'unknown', text: 'Verificando...', color: 'gray', icon: '⚪' }
+  });
+
+  // ✅ DL-019 PROFESSIONAL FAILOVER SYSTEM DIRECT IMPLEMENTATION
+  const getRealPriceWithFailover = async (symbol) => {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
+
+    // LAYER 1: Primary endpoint
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/market-data/${symbol}?simple=true`, {
+        signal: AbortSignal.timeout(5000),
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const price = parseFloat(data.price || 0);
+        if (price > 0) {
+          setPriceData({ 
+            currentPrice: price,
+            priceStatus: { status: 'live', text: 'En vivo', color: 'green', icon: '🟢' }
+          });
+          return price;
+        }
+      }
+    } catch (error) {
+      console.warn(`Layer 1 failed for ${symbol}:`, error.message);
+    }
+
+    // LAYER 2: Alternative backend endpoint
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/real-market/${symbol}`, {
+        signal: AbortSignal.timeout(5000)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const price = parseFloat(data.current_price || 0);
+        if (price > 0) {
+          setPriceData({ 
+            currentPrice: price,
+            priceStatus: { status: 'alternative', text: 'Alternativo', color: 'blue', icon: '🔵' }
+          });
+          return price;
+        }
+      }
+    } catch (error) {
+      console.warn(`Layer 2 failed for ${symbol}:`, error.message);
+    }
+
+    // LAYER 3: External Binance API
+    try {
+      const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`, {
+        signal: AbortSignal.timeout(3000)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const price = parseFloat(data.price || 0);
+        if (price > 0) {
+          setPriceData({ 
+            currentPrice: price,
+            priceStatus: { status: 'external', text: 'Externo', color: 'orange', icon: '🟠' }
+          });
+          return price;
+        }
+      }
+    } catch (error) {
+      console.warn(`Layer 3 failed for ${symbol}:`, error.message);
+    }
+
+    // LAYER 4-6: Graceful degradation
+    setPriceData({ 
+      currentPrice: null,
+      priceStatus: { status: 'failed', text: 'Sin datos', color: 'red', icon: '🔴' }
+    });
+    return null;
+  };
 
   const loadRealTimeData = async () => {
     try {
       const token = localStorage.getItem('intelibotx_token');
       
-      // ✅ Use DL-019 professional failover system price
-      const currentPrice = realTimePrice || null;
+      // ✅ Use DL-019 professional failover system
+      const currentPrice = await getRealPriceWithFailover(formData.symbol);
       let balance = 1000.00; // Default balance
       
       // Intentar obtener balance del exchange si es posible
@@ -255,8 +333,8 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
         balance,
         symbol: formData.symbol,
         exchange: selectedExchange?.exchange_name || 'binance',
-        isReal: priceStatus?.status === 'live' || priceStatus?.status === 'alternative',
-        priceStatus: priceStatus
+        isReal: priceData.priceStatus?.status === 'live' || priceData.priceStatus?.status === 'alternative',
+        priceStatus: priceData.priceStatus
       });
       
     } catch (err) {
@@ -705,7 +783,9 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400">Precio {formData.symbol}:</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-white">${realTimeData.currentPrice.toLocaleString()}</span>
+                          <span className="text-white">
+                            {realTimeData.currentPrice ? `$${realTimeData.currentPrice.toLocaleString()}` : 'Cargando...'}
+                          </span>
                           {/* 🔍 DL-001 Price Status Transparency */}
                           {/* 🔍 DL-019 Professional Status Transparency */}
                           <span className={`price-status inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
@@ -923,9 +1003,12 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
               <button
                 type="submit"
                 className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-50"
-                disabled={loading || userExchanges.length === 0}
+                disabled={loading || userExchanges.length === 0 || !realTimeData.isReal}
               >
-                {loading ? 'Creando Bot...' : 'Crear Bot'}
+                {loading ? 'Creando Bot...' : 
+                 userExchanges.length === 0 ? 'Configura un Exchange primero' :
+                 !realTimeData.isReal ? 'Esperando precio real...' : 
+                 'Crear Bot'}
               </button>
             </div>
           </form>

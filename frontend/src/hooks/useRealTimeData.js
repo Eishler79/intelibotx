@@ -25,14 +25,8 @@ export const useRealTimeData = (exchangeId, symbol) => {
     setData(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      // Obtener precio actual del símbolo
-      const priceResponse = await authenticatedFetch(`/api/exchanges/${exchangeId}/ticker/${symbol}`);
-      let currentPrice = null;
-      
-      if (priceResponse.ok) {
-        const priceData = await priceResponse.json();
-        currentPrice = parseFloat(priceData.price || priceData.last || 0);
-      }
+      // ✅ DL-001 COMPLIANCE: Use professional DL-019 failover system instead of amateur endpoint
+      let currentPrice = await getRealPriceWithFailover(symbol);
 
       // Obtener balance de la cuenta
       const balanceResponse = await authenticatedFetch(`/api/exchanges/${exchangeId}/balance`);
@@ -340,28 +334,17 @@ export const useSymbolPrice = (exchangeId, symbol, updateInterval = 30000) => {
 
     setLoading(true);
     try {
-      const response = await authenticatedFetch(`/api/exchanges/${exchangeId}/ticker/${symbol}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPrice(parseFloat(data.price || data.last || 0));
-        setError(null);
-      } else {
-        throw new Error('Error fetching price');
+      // ✅ DL-001 COMPLIANCE: Use professional DL-019 failover system exclusively
+      const fallbackPrice = await getRealPriceWithFailover(symbol);
+      setPrice(fallbackPrice || 0);
+      setError(null);
+      if (fallbackPrice === null) {
+        setError('Todos los servicios de precio no disponibles temporalmente');
       }
-    } catch (err) {
-      setError(err.message);
-      // ✅ DL-019 COMPLIANCE: Use professional failover system
-      try {
-        const fallbackPrice = await getRealPriceWithFailover(symbol);
-        setPrice(fallbackPrice || 0);
-        if (fallbackPrice === null) {
-          setError('Todos los servicios de precio no disponibles temporalmente');
-        }
-      } catch (realPriceError) {
-        console.error('Complete failover system failed:', realPriceError);
-        setPrice(0);
-        setError('Sistema de precios no disponible');
-      }
+    } catch (realPriceError) {
+      console.error('Complete failover system failed:', realPriceError);
+      setPrice(0);
+      setError('Sistema de precios no disponible');
     } finally {
       setLoading(false);
     }
