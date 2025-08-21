@@ -81,8 +81,8 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
 
     fetchCurrentPrice();
     
-    // ✅ Auto-refresh precio cada 30 segundos en modification modal
-    const priceInterval = setInterval(fetchCurrentPrice, 30000);
+    // ✅ Auto-refresh precio cada 2 segundos según requerimiento usuario
+    const priceInterval = setInterval(fetchCurrentPrice, 2000);
     
     return () => clearInterval(priceInterval);
   }, [bot?.symbol]);
@@ -316,7 +316,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
               <Activity className="text-green-400" size={20} />
               Estado del Bot - Tiempo Real
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
                 <Activity className="mx-auto mb-2 text-green-400" size={20} />
                 <p className="text-xs text-gray-400">Estado</p>
@@ -339,8 +339,22 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 </p>
               </div>
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
+                <Target className="mx-auto mb-2 text-orange-400" size={20} />
+                <p className="text-xs text-gray-400">Precio de Entrada</p>
+                <p className="font-semibold text-orange-400">
+                  {bot?.min_entry_price && bot.min_entry_price > 0 ? (
+                    `$${bot.min_entry_price.toLocaleString()} USDT`
+                  ) : (
+                    <span className="text-red-400">No capturado</span>
+                  )}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {bot?.min_entry_price ? 'Al crear bot' : '⚠️ Error captura'}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
                 <TrendingUp className="mx-auto mb-2 text-blue-400" size={20} />
-                <p className="text-xs text-gray-400">Precio Actual {bot?.symbol}</p>
+                <p className="text-xs text-gray-400">Precio Mercado {bot?.symbol}</p>
                 <p className="font-semibold text-blue-400">
                   {loadingPrice ? (
                     'Cargando...'
@@ -351,7 +365,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   )}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {currentPrice ? 'Tiempo real' : 'Error API'}
+                  {currentPrice ? '🟢 En vivo 2s' : 'Error API'}
                 </p>
               </div>
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
