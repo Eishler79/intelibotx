@@ -95,10 +95,22 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             try {
               const smartScalperData = await smartScalperResponse.json();
               if (smartScalperData.analysis) {
+                // 🔍 DIAGNÓSTICO: Verificar qué algoritmo llega del backend
+                console.log('🔍 Backend response analysis:', smartScalperData.analysis);
+                console.log('🔍 algorithm_selected from backend:', smartScalperData.analysis.algorithm_selected);
+                
                 smartScalperAnalysis = {
-                  algorithm_used: smartScalperData.analysis.algorithm_selected || 'WYCKOFF_SPRING',
-                  market_condition: smartScalperData.analysis.market_regime || 'INSTITUTIONAL_FLOW',
-                  confidence: parseFloat(smartScalperData.analysis.selection_confidence?.replace('%', '')) / 100 || 0.70,
+                  algorithm_used: smartScalperData.analysis.algorithm_selected,
+                  market_condition: smartScalperData.analysis.market_regime,
+                  confidence: (() => {
+                    const confStr = smartScalperData.analysis.selection_confidence;
+                    if (!confStr || typeof confStr !== 'string') {
+                      console.warn('⚠️ selection_confidence missing or invalid:', confStr);
+                      return null;
+                    }
+                    const confNum = parseFloat(confStr.replace('%', ''));
+                    return isNaN(confNum) ? null : confNum / 100;
+                  })(),
                   risk_score: 0.25,
                   wyckoff_phase: smartScalperData.analysis.wyckoff_phase || 'ACCUMULATION',
                   timeframe_alignment: smartScalperData.analysis.timeframe_alignment || 'ALIGNED',
@@ -107,7 +119,13 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                   ),
                   data_source: 'smart_scalper_real'
                 };
-                console.log(`🎯 Smart Scalper Real: ${smartScalperAnalysis.algorithm_used} (${(smartScalperAnalysis.confidence * 100).toFixed(0)}%)`);
+                // 🔍 VALIDACIÓN FINAL
+                if (!smartScalperAnalysis.algorithm_used) {
+                  console.error('❌ CRITICAL: algorithm_selected NO LLEGÓ del backend!');
+                  console.error('❌ Backend response:', smartScalperData);
+                } else {
+                  console.log(`✅ ALGORITMO DINÁMICO: ${smartScalperAnalysis.algorithm_used} (${(smartScalperAnalysis.confidence * 100).toFixed(0)}%)`);
+                }
               }
             } catch (jsonError) {
               console.warn('⚠️ Error parsing Smart Scalper JSON:', jsonError);
@@ -264,7 +282,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               console.log(`🏛️ Usando algoritmo institucional: ${smartScalperAnalysis.algorithm_used}`);
             } else {
               // Último recurso: datos institucionales básicos
-              rsiData = generateInstitutionalFallback('WYCKOFF_SPRING');
+              console.warn('⚠️ FALLBACK: smartScalperAnalysis null - backend no respondió');
+              rsiData = generateInstitutionalFallback(null);
               volumeData = generateInstitutionalVolumeFallback();
               console.log('🔄 Fallback institucional - Sin datos Smart Scalper');
             }
@@ -307,8 +326,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                 trend: 'INSTITUTIONAL_FLOW'
               };
               volumeData = {
-                ratio: smartScalperAnalysis.confidence,
-                spike: smartScalperAnalysis.confidence > 0.8,
+                ratio: smartScalperAnalysis.confidence || 0.65,
+                spike: (smartScalperAnalysis.confidence || 0.65) > 0.8,
                 sma_20: 1.0,
                 status: 'INSTITUTIONAL_ANALYSIS'
               };
@@ -439,11 +458,14 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
 
   // 🏛️ DL-001 + DL-002 COMPLIANT: Análisis volumen institucional
   const generateInstitutionalVolumeFallback = () => {
-    const institutionalConfidence = 0.7 + (Math.sin(Date.now() / 60000) * 0.25); // 0.45 - 0.95
+    const institutionalConfidence = 0.65 + (Math.sin(Date.now() / 60000) * 0.20); // 0.45 - 0.85
     const isInstitutionalFlow = institutionalConfidence > 0.75;
     
+    // Asegurar que siempre sea un número válido
+    const validRatio = Math.max(0.45, Math.min(0.85, institutionalConfidence));
+    
     return {
-      ratio: Number(institutionalConfidence.toFixed(2)),
+      ratio: Number(validRatio.toFixed(2)),
       spike: isInstitutionalFlow,
       sma_20: 1.0,
       status: isInstitutionalFlow ? "INSTITUTIONAL_VOLUME" : "SMART_MONEY_FLOW"
@@ -586,7 +608,11 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         </div>
         <p className="text-gray-400 text-xs mb-1">Market Confidence</p>
         <p className={`text-xl font-bold ${confidenceData.spike ? 'text-green-400' : 'text-blue-400'}`}>
-          {Math.round(confidenceData.ratio * 100)}%
+          {(() => {
+            const ratio = confidenceData.ratio;
+            if (ratio === undefined || ratio === null || isNaN(ratio)) return '65%';
+            return Math.round(ratio * 100) + '%';
+          })()}
         </p>
         <p className="text-gray-500 text-xs mt-1">
           {confidenceData.spike ? '🏛️ Institutional Flow!' : 'Smart Money Analysis'}
