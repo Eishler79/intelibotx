@@ -17,6 +17,8 @@ import {
 
 export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
   const [parameters, setParameters] = useState({});
+  const [currentPrice, setCurrentPrice] = useState(null);
+  const [loadingPrice, setLoadingPrice] = useState(false);
   
   // Efecto para cargar los datos reales del bot cuando se abre el modal
   useEffect(() => {
@@ -55,6 +57,35 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
       });
     }
   }, [bot]);
+
+  // ✅ Efecto para cargar precio actual del bot symbol
+  useEffect(() => {
+    const fetchCurrentPrice = async () => {
+      if (!bot?.symbol) return;
+      
+      setLoadingPrice(true);
+      try {
+        // Usar misma API que EnhancedBotCreationModal para consistency
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${bot.symbol}`);
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentPrice(parseFloat(data.price));
+        }
+      } catch (error) {
+        console.error('Error fetching price:', error);
+        setCurrentPrice(null);
+      } finally {
+        setLoadingPrice(false);
+      }
+    };
+
+    fetchCurrentPrice();
+    
+    // ✅ Auto-refresh precio cada 30 segundos en modification modal
+    const priceInterval = setInterval(fetchCurrentPrice, 30000);
+    
+    return () => clearInterval(priceInterval);
+  }, [bot?.symbol]);
 
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -298,35 +329,39 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 </Badge>
               </div>
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-                <DollarSign className="mx-auto mb-2 text-blue-400" size={20} />
-                <p className="text-xs text-gray-400">Balance Exchange</p>
+                <DollarSign className="mx-auto mb-2 text-green-400" size={20} />
+                <p className="text-xs text-gray-400">Capital Asignado</p>
+                <p className="font-semibold text-green-400">
+                  ${(bot?.stake || 0).toLocaleString()} {parameters.base_currency}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {parameters.leverage || 1}x leverage
+                </p>
+              </div>
+              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
+                <TrendingUp className="mx-auto mb-2 text-blue-400" size={20} />
+                <p className="text-xs text-gray-400">Precio Actual {bot?.symbol}</p>
                 <p className="font-semibold text-blue-400">
-                  ${(bot?.exchange_balance || 1000).toFixed(2)} {parameters.base_currency}
+                  {loadingPrice ? (
+                    'Cargando...'
+                  ) : currentPrice ? (
+                    `$${currentPrice.toLocaleString()} USDT`
+                  ) : (
+                    'Sin datos'
+                  )}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {bot?.exchange_name || 'Binance'}
+                  {currentPrice ? 'Tiempo real' : 'Error API'}
                 </p>
               </div>
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-                <TrendingUp className="mx-auto mb-2 text-purple-400" size={20} />
-                <p className="text-xs text-gray-400">PnL Hoy</p>
-                <p className={`font-semibold ${
-                  (bot?.daily_pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                }`}>
-                  {(bot?.daily_pnl || 0) >= 0 ? '+' : ''}${(bot?.daily_pnl || 0).toFixed(2)}
+                <Target className="mx-auto mb-2 text-purple-400" size={20} />
+                <p className="text-xs text-gray-400">Creado</p>
+                <p className="font-semibold text-purple-400">
+                  {bot?.created_at ? new Date(bot.created_at).toLocaleDateString('es-ES') : 'N/A'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {new Date().toLocaleDateString('es-ES')}
-                </p>
-              </div>
-              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-                <Target className="mx-auto mb-2 text-yellow-400" size={20} />
-                <p className="text-xs text-gray-400">Trades Hoy</p>
-                <p className="font-semibold text-yellow-400">
-                  {bot?.daily_trades || 0}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Órdenes ejecutadas
+                  Fecha inicio
                 </p>
               </div>
             </div>
