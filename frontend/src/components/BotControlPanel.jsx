@@ -342,8 +342,8 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 <Target className="mx-auto mb-2 text-orange-400" size={20} />
                 <p className="text-xs text-gray-400">Precio de Entrada</p>
                 <p className="font-semibold text-orange-400">
-                  {bot?.min_entry_price && bot.min_entry_price > 0 ? (
-                    `$${bot.min_entry_price.toLocaleString()} USDT`
+                  {bot?.min_entry_price && bot?.min_entry_price > 0 ? (
+                    `$${bot?.min_entry_price.toLocaleString()} USDT`
                   ) : (
                     <span className="text-red-400">No capturado</span>
                   )}
