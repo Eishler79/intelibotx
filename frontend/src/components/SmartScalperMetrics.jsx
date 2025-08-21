@@ -595,7 +595,14 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
     };
   };
 
-  // 🏛️ INSTITUCIONAL CORRECTO: Store performance cuando hay datos reales
+  // 🏛️ INSTITUCIONAL CORRECTO: Renderizado seguro de métricas
+  const renderMetricValue = (value, decimals = 1, suffix = '%', unavailableText = 'N/A') => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return unavailableText;
+    }
+    return `${Number(value).toFixed(decimals)}${suffix}`;
+  };
+  
   const storePerformanceIfAvailable = (performanceData) => {
     if (performanceData && typeof performanceData === 'object' && performanceData.expected_win_rate) {
       storeLastKnownGoodValue('performance', performanceData);
@@ -706,7 +713,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             {signal.current}
           </p>
           <p className="text-gray-500 text-xs mt-1">
-            Confidence: {(signal.confidence * 100).toFixed(0)}%
+            Confidence: {renderMetricValue(signal.confidence ? signal.confidence * 100 : null, 0)}
           </p>
         </CardContent>
       </Card>
@@ -786,13 +793,13 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               <div>
                 <p className="text-gray-400 text-xs">Risk Score</p>
                 <p className={`text-sm font-bold ${getRiskColor()}`}>
-                  {(advanced.risk_score * 100).toFixed(0)}%
+                  {renderMetricValue(advanced.risk_score ? advanced.risk_score * 100 : null, 0)}
                 </p>
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Confidence</p>
                 <p className="text-sm font-bold text-blue-400">
-                  {(advanced.confidence * 100).toFixed(0)}%
+                  {renderMetricValue(advanced.confidence ? advanced.confidence * 100 : null, 0)}
                 </p>
               </div>
             </div>
@@ -941,10 +948,10 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               </div>
               <p className="text-gray-400 text-xs mb-1">Avg Slippage</p>
               <p className="text-xl font-bold text-orange-400">
-                {(executionMetrics.avg_slippage_pct * 100).toFixed(3)}%
+                {renderMetricValue(executionMetrics.avg_slippage_pct ? executionMetrics.avg_slippage_pct * 100 : null, 3)}
               </p>
               <p className="text-gray-500 text-xs mt-1">
-                Cost: ${executionMetrics.total_slippage_cost}
+                Cost: {executionMetrics.total_slippage_cost !== null ? `$${executionMetrics.total_slippage_cost}` : 'N/A'}
               </p>
             </CardContent>
           </Card>
@@ -956,7 +963,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               </div>
               <p className="text-gray-400 text-xs mb-1">Total Fees</p>
               <p className="text-xl font-bold text-yellow-400">
-                ${executionMetrics.total_commission_cost}
+                {executionMetrics.total_commission_cost !== null ? `$${executionMetrics.total_commission_cost}` : 'N/A'}
               </p>
               <p className="text-gray-500 text-xs mt-1">
                 Commission costs
@@ -971,7 +978,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               </div>
               <p className="text-gray-400 text-xs mb-1">Success Rate</p>
               <p className="text-xl font-bold text-green-400">
-                {executionMetrics.success_rate.toFixed(1)}%
+                {renderMetricValue(executionMetrics.success_rate, 1)}
               </p>
             </CardContent>
           </Card>
@@ -980,13 +987,13 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Award className="text-blue-400" size={20} />
-                <Badge className={`text-xs ${executionMetrics.efficiency_score > 95 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                  {executionMetrics.efficiency_score > 95 ? 'EXCELLENT' : 'GOOD'}
+                <Badge className={`text-xs ${(executionMetrics.efficiency_score || 0) > 95 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                  {(executionMetrics.efficiency_score || 0) > 95 ? 'EXCELLENT' : 'GOOD'}
                 </Badge>
               </div>
               <p className="text-gray-400 text-xs mb-1">Efficiency Score</p>
               <p className="text-xl font-bold text-blue-400">
-                {executionMetrics.efficiency_score.toFixed(1)}%
+                {renderMetricValue(executionMetrics.efficiency_score, 1)}
               </p>
             </CardContent>
           </Card>
@@ -1075,7 +1082,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300 text-sm">Smart Money Flow</span>
-                  <Badge className={`text-xs ${executionMetrics.avg_latency_ms < 100 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  <Badge className={`text-xs ${(executionMetrics.avg_latency_ms || 999) < 100 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                     {metrics.smart_money_flow_detected ? '✅' : '❌'}
                   </Badge>
                 </div>
