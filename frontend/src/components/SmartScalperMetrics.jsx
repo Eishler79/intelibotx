@@ -119,12 +119,26 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                   ),
                   data_source: 'smart_scalper_real'
                 };
-                // 🔍 VALIDACIÓN FINAL
+                // 🔍 VALIDACIÓN FINAL + ALMACENAR LKG
                 if (!smartScalperAnalysis.algorithm_used) {
                   console.error('❌ CRITICAL: algorithm_selected NO LLEGÓ del backend!');
                   console.error('❌ Backend response:', smartScalperData);
                 } else {
                   console.log(`✅ ALGORITMO DINÁMICO: ${smartScalperAnalysis.algorithm_used} (${(smartScalperAnalysis.confidence * 100).toFixed(0)}%)`);
+                  
+                  // 📋 ALMACENAR datos reales para Last Known Good
+                  storeLastKnownGoodValue('algorithm', {
+                    current: Math.round(smartScalperAnalysis.confidence * 100),
+                    status: smartScalperAnalysis.algorithm_used,
+                    signal: smartScalperAnalysis.market_condition,
+                    trend: 'INSTITUTIONAL_FLOW'
+                  });
+                  
+                  storeLastKnownGoodValue('confidence', {
+                    ratio: smartScalperAnalysis.confidence,
+                    spike: smartScalperAnalysis.confidence > 0.8,
+                    status: smartScalperAnalysis.confidence > 0.7 ? 'HIGH_CONFIDENCE' : 'MODERATE_CONFIDENCE'
+                  });
                 }
               }
             } catch (jsonError) {
@@ -166,8 +180,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             quality: (wsData.conditions_met?.length || 0) >= 2 ? 'HIGH' : (wsData.conditions_met?.length || 0) === 1 ? 'MEDIUM' : 'LOW'
           };
           
-          // Simular execution data (no disponible en WebSocket aún)
-          executionData = await simulateExecutionMetrics(bot.id);
+          // INSTITUCIONAL: Intentar obtener execution data real, sino LKG
+          executionData = getLastKnownGoodValue('execution') || handleExecutionDataUnavailable();
           
         } else {
           console.log('📡 Fallback a APIs REST - WebSocket no disponible');
@@ -283,9 +297,18 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             } else {
               // Último recurso: datos institucionales básicos
               console.warn('⚠️ FALLBACK: smartScalperAnalysis null - backend no respondió');
-              rsiData = generateInstitutionalFallback(null);
-              volumeData = generateInstitutionalVolumeFallback();
-              console.log('🔄 Fallback institucional - Sin datos Smart Scalper');
+              rsiData = getLastKnownGoodValue('algorithm') || { 
+                status: 'ALGORITHM_DATA_UNAVAILABLE',
+                current: null,
+                signal: 'DATA_UNAVAILABLE',
+                trend: 'UNKNOWN'
+              };
+              volumeData = getLastKnownGoodValue('confidence') || {
+                status: 'CONFIDENCE_DATA_UNAVAILABLE', 
+                ratio: null,
+                spike: false
+              };
+              console.log('📋 Using Last Known Good values or showing unavailable state');
             }
           }
           
@@ -312,7 +335,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             }
           } catch (execError) {
             console.warn('⚠️ Error obteniendo execution data:', execError);
-            executionData = await simulateExecutionMetrics(bot.id);
+            executionData = handleExecutionDataUnavailable();
           }
           
           } catch (error) {
@@ -332,10 +355,19 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                 status: 'INSTITUTIONAL_ANALYSIS'
               };
             } else {
-              rsiData = generateInstitutionalFallback('WYCKOFF_SPRING');
-              volumeData = generateInstitutionalVolumeFallback();
+              rsiData = getLastKnownGoodValue('algorithm') || { 
+                status: 'ALGORITHM_DATA_UNAVAILABLE',
+                current: null,
+                signal: 'DATA_UNAVAILABLE', 
+                trend: 'UNKNOWN'
+              };
+              volumeData = getLastKnownGoodValue('confidence') || {
+                status: 'CONFIDENCE_DATA_UNAVAILABLE',
+                ratio: null,
+                spike: false
+              };
             }
-            executionData = await simulateExecutionMetrics(bot.id);
+            executionData = handleExecutionDataUnavailable();
           }
         } // Fin del bloque else (WebSocket no disponible)
 
@@ -362,8 +394,16 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           signal = generateSmartScalperSignal(rsiData, volumeData);
         }
         
-        // 📈 Calcular métricas de performance
-        const performanceMetrics = calculateSmartScalperPerformance(bot, signal);
+        // 🏛️ INSTITUCIONAL: Performance de LKG o unavailable  
+        const performanceMetrics = getLastKnownGoodValue('performance') || {
+          status: 'PERFORMANCE_DATA_UNAVAILABLE',
+          expected_win_rate: null,
+          avg_trade_duration: null,
+          daily_trade_frequency: null,
+          risk_reward_ratio: null,
+          max_concurrent_trades: null,
+          current_signal_quality: signal?.quality || 'UNKNOWN'
+        };
 
         setMetrics({
           // RSI Metrics
@@ -437,56 +477,82 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
     return () => clearInterval(interval);
   }, [bot, realTimeData, realtimeData]);
 
-  // 🏛️ DL-001 + DL-002 COMPLIANT: Generador institucional para fallback
-  const generateInstitutionalFallback = (algorithmType) => {
-    // Algoritmos institucionales rotativos
-    const institutionalAlgorithms = [
-      'WYCKOFF_SPRING', 'ORDER_BLOCK_RETEST', 'LIQUIDITY_GRAB_FADE',
-      'FAIR_VALUE_GAP', 'STOP_HUNT_REVERSAL', 'SMART_MONEY_CONCEPTS'
-    ];
+  // 🏛️ INSTITUCIONAL CORRECTO: Last Known Good Value System
+  const getLastKnownGoodValue = (dataType, fallbackValue = null) => {
+    const lkgKey = `lkg_${dataType}_${bot?.id || 'default'}`;
+    const stored = localStorage.getItem(lkgKey);
     
-    const randomAlgorithm = institutionalAlgorithms[Math.floor(Date.now() / 30000) % institutionalAlgorithms.length];
-    const confidence = 65 + (Math.sin(Date.now() / 45000) * 20); // 45-85%
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const ageMinutes = (Date.now() - parsed.timestamp) / (1000 * 60);
+        
+        // Datos válidos hasta 5 minutos
+        if (ageMinutes <= 5) {
+          console.log(`📋 LKG: Using cached ${dataType} (${ageMinutes.toFixed(1)}min old)`);
+          return {
+            ...parsed.data,
+            dataAge: ageMinutes,
+            dataSource: 'LAST_KNOWN_GOOD',
+            staleness: ageMinutes > 2 ? 'STALE' : 'RECENT'
+          };
+        } else {
+          console.warn(`⚠️ LKG: ${dataType} too old (${ageMinutes.toFixed(1)}min), removing`);
+          localStorage.removeItem(lkgKey);
+        }
+      } catch (e) {
+        console.error(`❌ LKG: Invalid ${dataType} cache`, e);
+        localStorage.removeItem(lkgKey);
+      }
+    }
     
-    return {
-      current: Math.round(confidence),
-      status: algorithmType || randomAlgorithm,
-      signal: confidence > 75 ? 'INSTITUTIONAL_FLOW' : 'SMART_MONEY_NEUTRAL',
-      trend: 'INSTITUTIONAL_ANALYSIS'
-    };
+    return fallbackValue;
   };
 
-  // 🏛️ DL-001 + DL-002 COMPLIANT: Análisis volumen institucional
-  const generateInstitutionalVolumeFallback = () => {
-    const institutionalConfidence = 0.65 + (Math.sin(Date.now() / 60000) * 0.20); // 0.45 - 0.85
-    const isInstitutionalFlow = institutionalConfidence > 0.75;
+  // 🏛️ INSTITUCIONAL CORRECTO: Store Last Known Good Value
+  const storeLastKnownGoodValue = (dataType, data) => {
+    if (!data || !bot?.id) return;
     
-    // Asegurar que siempre sea un número válido
-    const validRatio = Math.max(0.45, Math.min(0.85, institutionalConfidence));
-    
-    return {
-      ratio: Number(validRatio.toFixed(2)),
-      spike: isInstitutionalFlow,
-      sma_20: 1.0,
-      status: isInstitutionalFlow ? "INSTITUTIONAL_VOLUME" : "SMART_MONEY_FLOW"
+    const lkgKey = `lkg_${dataType}_${bot.id}`;
+    const storeData = {
+      data,
+      timestamp: Date.now(),
+      botId: bot.id,
+      symbol: bot.symbol
     };
+    
+    try {
+      localStorage.setItem(lkgKey, JSON.stringify(storeData));
+      console.log(`📋 LKG: Stored ${dataType} for future fallback`);
+    } catch (e) {
+      console.error(`❌ LKG: Failed to store ${dataType}`, e);
+    }
   };
 
-  // ⚡ Simular métricas de ejecución
-  const simulateExecutionMetrics = async (botId) => {
-    // Simular latencias realistas de scalping
-    const baseLatency = 45 + (Math.random() * 30); // 45-75ms base
-    const spikes = Math.random() < 0.1; // 10% probabilidad de spike
-    const currentLatency = spikes ? baseLatency * 2.5 : baseLatency;
-
+  // 🏛️ INSTITUCIONAL CORRECTO: Error Handling sin datos falsos
+  const handleExecutionDataUnavailable = () => {
+    console.warn('⚠️ Execution data unavailable - checking Last Known Good');
+    
+    const lkgExecution = getLastKnownGoodValue('execution');
+    if (lkgExecution) {
+      return {
+        ...lkgExecution,
+        status: 'EXECUTION_DATA_STALE',
+        warning: `Data from ${lkgExecution.dataAge.toFixed(1)} minutes ago`
+      };
+    }
+    
+    // NO datos falsos - mostrar estado real
     return {
-      avg_latency_ms: Number(currentLatency.toFixed(2)),
-      max_latency_ms: Number((currentLatency * 1.8).toFixed(2)),
-      success_rate: 96.5 + (Math.random() * 3), // 96.5-99.5%
-      avg_slippage_pct: 0.002 + (Math.random() * 0.008), // 0.002%-0.01%
-      total_slippage_cost: Number((Math.random() * 2.5).toFixed(4)),
-      total_commission_cost: Number((Math.random() * 1.8).toFixed(4)),
-      efficiency_score: 94 + (Math.random() * 5) // 94-99%
+      status: 'EXECUTION_DATA_UNAVAILABLE',
+      error: 'Real-time execution metrics not available',
+      avg_latency_ms: null,
+      max_latency_ms: null,
+      success_rate: null,
+      avg_slippage_pct: null,
+      total_slippage_cost: null,
+      total_commission_cost: null,
+      efficiency_score: null
     };
   };
 
@@ -529,21 +595,12 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
     };
   };
 
-  // 📈 Calcular performance específico Smart Scalper
-  const calculateSmartScalperPerformance = (bot, signal) => {
-    // Simular métricas basadas en configuración real del bot
-    const winRate = 68 + (Math.random() * 12); // 68-80% típico Smart Scalper
-    const avgTradeTime = 15 + (Math.random() * 30); // 15-45 min promedio
-    const tradesPerDay = 18 + (Math.random() * 12); // 18-30 trades/día
-    
-    return {
-      expected_win_rate: Number(winRate.toFixed(1)),
-      avg_trade_duration: Number(avgTradeTime.toFixed(1)),
-      daily_trade_frequency: Number(tradesPerDay.toFixed(0)),
-      risk_reward_ratio: 2.1, // Típico Smart Scalper
-      max_concurrent_trades: 3,
-      current_signal_quality: signal.quality
-    };
+  // 🏛️ INSTITUCIONAL CORRECTO: Store performance cuando hay datos reales
+  const storePerformanceIfAvailable = (performanceData) => {
+    if (performanceData && typeof performanceData === 'object' && performanceData.expected_win_rate) {
+      storeLastKnownGoodValue('performance', performanceData);
+      console.log('📋 LKG: Stored real performance data');
+    }
   };
 
   // 🏛️ DL-001 + DL-002 COMPLIANT: Componente algoritmo institucional dinámico
