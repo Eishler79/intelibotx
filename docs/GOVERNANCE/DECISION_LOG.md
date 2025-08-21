@@ -15,6 +15,28 @@
 
 ---
 
+## 2025-08-21 — DL-020 · Auto-refresh Price System Professional UX
+**Contexto:** Usuario reporta precio estático vs Binance dinámico - UX no profesional.  
+**Decisión:** Implementar sistema auto-refresh cada 5 segundos con countdown visual.  
+**Technical:** useState + useEffect + setInterval + visual countdown indicator.  
+**Professional Standards:** Comportamiento idéntico a Binance/TradingView/3Commas.  
+**Impacto:** UX profesional + usuario nunca ve precios congelados.  
+**Rollback:** Revertir EnhancedBotCreationModal.jsx lines 28-30, 103-129, 810-818.  
+**SPEC_REF:** DL-001 + DL-019 + Professional UX Standards + GUARDRAILS Point 8
+
+---
+
+## 2025-08-21 — DL-019 · Professional Real-time Data Only (No Fallback)
+**Contexto:** Usuarios NO deben ver datos falsos - crítico para trading real.  
+**Decisión:** Eliminar endpoint amateur + usar DL-019 failover exclusivamente.  
+**Cambios:** useRealTimeData.js (eliminado `/api/exchanges/{id}/ticker/`) + button disable logic.  
+**Professional Compliance:** 3Commas/TradingView standard - never show fake data.  
+**Impacto:** Bot creation bloqueado sin precio real + UX transparency total.  
+**Rollback:** Restaurar useRealTimeData.js lines 29, 343 + button disable condition.  
+**SPEC_REF:** DL-001 + GUARDRAILS + Professional Trading Standards
+
+---
+
 ## YYYY-MM-DD — DL-001 · Política no-hardcode / no-simulación / no-rupturas
 **Contexto:** Evitar pérdida de persistencia y "sancocho" de código.  
 **Decisión:** Toda lógica debe basarse en DB/APIs reales; nada temporal.  

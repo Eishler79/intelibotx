@@ -23,11 +23,6 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
   const [marketTypes, setMarketTypes] = useState([]);
   const [marketTypesLoading, setMarketTypesLoading] = useState(false);
   const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
-  
-  // ✅ Auto-refresh system states (Binance-like behavior)
-  const [countdown, setCountdown] = useState(5);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -99,34 +94,19 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     }
   }, [selectedExchange]);
 
-  // ✅ DL-001 COMPLIANCE: Auto-refresh system with real data (Binance-like)
+  // Cargar datos reales cuando cambia símbolo
   useEffect(() => {
-    if (!formData.symbol || !selectedExchange) return;
-    
-    // ✅ Función refresh con datos reales únicamente
-    const performRefresh = async () => {
-      setIsRefreshing(true);
-      await loadRealTimeData();
-      setLastUpdate(new Date());
-      setIsRefreshing(false);
-    };
-    
-    // ✅ Refresh inicial
-    performRefresh();
-    
-    // ✅ Auto-refresh cada 5 segundos (como Binance)
-    const refreshInterval = setInterval(performRefresh, 5000);
-    
-    // ✅ Countdown visual cada segundo
-    const countdownInterval = setInterval(() => {
-      setCountdown(prev => prev > 1 ? prev - 1 : 5);
-    }, 1000);
-    
-    return () => {
-      clearInterval(refreshInterval);
-      clearInterval(countdownInterval);
-    };
-  }, [formData.symbol, selectedExchange]);
+    if (formData.symbol) {
+      loadRealTimeData();
+    }
+  }, [formData.symbol]);
+
+  // Cargar balance cuando se selecciona exchange
+  useEffect(() => {
+    if (selectedExchange && formData.symbol) {
+      loadRealTimeData();
+    }
+  }, [selectedExchange]);
 
   const loadAvailableSymbols = async () => {
     setSymbolsLoading(true);
@@ -797,69 +777,12 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
 
                 {/* Datos en Tiempo Real */}
                 {realTimeData && selectedExchange && (
-                  <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-4">
-                    <h4 className="text-blue-400 font-medium text-sm mb-2">Datos en Tiempo Real - {formData.symbol}</h4>
-                    <div className="text-xs space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Precio {formData.symbol}:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-white">
-                            {realTimeData.currentPrice ? `$${realTimeData.currentPrice.toLocaleString()}` : 'Cargando...'}
-                          </span>
-                          
-                          {/* ✅ Auto-refresh countdown indicator (Binance-like) */}
-                          <div className="flex items-center gap-1 text-xs">
-                            <div className={`flex items-center justify-center w-5 h-5 rounded-full border ${
-                              isRefreshing ? 'border-blue-400 text-blue-400 animate-spin' : 'border-gray-500 text-gray-400'
-                            }`}>
-                              {isRefreshing ? '⟳' : countdown}
-                            </div>
-                            <span className="text-gray-500">auto</span>
-                          </div>
-                          {/* 🔍 DL-001 Price Status Transparency */}
-                          {/* 🔍 DL-019 Professional Status Transparency */}
-                          <span className={`price-status inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            realTimeData.priceStatus?.status === 'live' ? 'bg-green-500/20 text-green-400' :
-                            realTimeData.priceStatus?.status === 'alternative' ? 'bg-blue-500/20 text-blue-400' :
-                            realTimeData.priceStatus?.status === 'external' ? 'bg-orange-500/20 text-orange-400' :
-                            realTimeData.priceStatus?.status === 'cached' ? 'bg-yellow-500/20 text-yellow-400' :
-                            realTimeData.priceStatus?.status === 'emergency' ? 'bg-red-500/20 text-red-400' :
-                            'bg-gray-500/20 text-gray-400'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              realTimeData.priceStatus?.status === 'live' ? 'bg-green-400' :
-                              realTimeData.priceStatus?.status === 'alternative' ? 'bg-blue-400' :
-                              realTimeData.priceStatus?.status === 'external' ? 'bg-orange-400' :
-                              realTimeData.priceStatus?.status === 'cached' ? 'bg-yellow-400' :
-                              realTimeData.priceStatus?.status === 'emergency' ? 'bg-red-400' :
-                              'bg-gray-400'
-                            }`} />
-                            {realTimeData.priceStatus?.text || 'VERIFICANDO'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Balance Disponible:</span>
-                        <span className="text-white">${realTimeData.balance.toFixed(2)} {formData.base_currency}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Exchange:</span>
-                        <span className="text-blue-400">{selectedExchange.exchange_name.toUpperCase()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Mercado:</span>
-                        <span className="text-yellow-400">{formData.market_type}</span>
-                      </div>
-                      
-                      {/* ✅ Timestamp última actualización */}
-                      {lastUpdate && (
-                        <div className="flex justify-between text-xs text-gray-500 pt-1 border-t border-gray-600/30">
-                          <span>Última actualización:</span>
-                          <span>{lastUpdate.toLocaleTimeString()}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <PriceRefreshSection 
+                    realTimeData={realTimeData} 
+                    formData={formData} 
+                    selectedExchange={selectedExchange}
+                    loadRealTimeData={loadRealTimeData}
+                  />
                 )}
               </div>
             </div>
@@ -941,50 +864,51 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                   {/* DCA Levels */}
                   <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
                     <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
-                      <TrendingDown className="w-4 h-4 text-orange-400" />
+                      <TrendingDown className="w-4 h-4 text-purple-400" />
                       Niveles DCA
-                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Cantidad de órdenes adicionales en caso de precio adverso">ⓘ</span>
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Número de niveles Dollar Cost Average para promedio de entrada">ⓘ</span>
                     </label>
                     <input
                       type="number"
                       name="dca_levels"
                       value={formData.dca_levels}
                       onChange={handleInputChange}
-                      min="0"
+                      min="1"
                       max="10"
                       className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                       placeholder="3"
                     />
                     <p className="text-xs text-gray-400 mt-2">
-                      0 = Sin DCA, 3-5 = Estrategia moderada, 5+ = Agresiva
+                      1 = Sin DCA | 2-3 = Conservador | 4-6 = Moderado | 7+ = Agresivo
                     </p>
                   </div>
 
                   {/* Margin Type */}
                   <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
                     <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
-                      <Banknote className="w-4 h-4 text-yellow-400" />
+                      <BarChart2 className="w-4 h-4 text-yellow-400" />
                       Tipo de Margen
-                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Tipo de margen para trading con apalancamiento">ⓘ</span>
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Para trading con futuros: Cross o Isolated margin">ⓘ</span>
                     </label>
                     <select
                       name="margin_type"
                       value={formData.margin_type}
                       onChange={handleInputChange}
                       className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      disabled={formData.market_type === 'SPOT'}
                     >
+                      <option value="CROSS">CROSS - Margen compartido</option>
                       <option value="ISOLATED">ISOLATED - Margen aislado</option>
-                      <option value="CROSS">CROSS - Margen cruzado</option>
                     </select>
                     <p className="text-xs text-gray-400 mt-2">
-                      Isolated: Riesgo limitado por posición | Cross: Comparte margen total
+                      Solo para Futures | Cross = riesgo total | Isolated = riesgo limitado
                     </p>
                   </div>
 
                   {/* Max Open Positions */}
                   <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
                     <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
-                      <BarChart2 className="w-4 h-4 text-purple-400" />
+                      <Activity className="w-4 h-4 text-green-400" />
                       Posiciones Máximas
                       <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Máximo número de posiciones abiertas simultáneamente">ⓘ</span>
                     </label>
@@ -1041,16 +965,111 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
               <button
                 type="submit"
                 className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-50"
-                disabled={loading || userExchanges.length === 0 || !realTimeData.isReal}
+                disabled={loading || userExchanges.length === 0}
               >
-                {loading ? 'Creando Bot...' : 
-                 userExchanges.length === 0 ? 'Configura un Exchange primero' :
-                 !realTimeData.isReal ? 'Esperando precio real...' : 
-                 'Crear Bot'}
+                {loading ? 'Creando Bot...' : 'Crear Bot'}
               </button>
             </div>
           </form>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// ✅ Componente separado para auto-refresh SOLO en cuadro precio
+const PriceRefreshSection = ({ realTimeData, formData, selectedExchange, loadRealTimeData }) => {
+  const [countdown, setCountdown] = useState(5);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  // ✅ DL-001 COMPLIANCE: Auto-refresh SOLO cuando cuadro está visible
+  useEffect(() => {
+    if (!realTimeData || !selectedExchange || !formData.symbol) return;
+    
+    const performRefresh = async () => {
+      setIsRefreshing(true);
+      await loadRealTimeData();
+      setLastUpdate(new Date());
+      setIsRefreshing(false);
+    };
+    
+    // ✅ Auto-refresh cada 5 segundos SOLO en cuadro precio
+    const refreshInterval = setInterval(performRefresh, 5000);
+    
+    // ✅ Countdown visual cada segundo
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => prev > 1 ? prev - 1 : 5);
+    }, 1000);
+    
+    return () => {
+      clearInterval(refreshInterval);
+      clearInterval(countdownInterval);
+    };
+  }, [realTimeData, selectedExchange, formData.symbol, loadRealTimeData]);
+
+  return (
+    <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-4">
+      <h4 className="text-blue-400 font-medium text-sm mb-2">Datos en Tiempo Real - {formData.symbol}</h4>
+      <div className="text-xs space-y-1">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Precio {formData.symbol}:</span>
+          <div className="flex items-center gap-2">
+            <span className="text-white">
+              {realTimeData.currentPrice ? `$${realTimeData.currentPrice.toLocaleString()}` : 'Cargando...'}
+            </span>
+            
+            {/* ✅ Auto-refresh countdown indicator (Binance-like) - SCOPE CORRECTO */}
+            <div className="flex items-center gap-1 text-xs">
+              <div className={`flex items-center justify-center w-5 h-5 rounded-full border ${
+                isRefreshing ? 'border-blue-400 text-blue-400 animate-spin' : 'border-gray-500 text-gray-400'
+              }`}>
+                {isRefreshing ? '⟳' : countdown}
+              </div>
+              <span className="text-gray-500">auto</span>
+            </div>
+            
+            {/* 🔍 DL-001 Price Status Transparency */}
+            <span className={`price-status inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+              realTimeData.priceStatus?.status === 'live' ? 'bg-green-500/20 text-green-400' :
+              realTimeData.priceStatus?.status === 'alternative' ? 'bg-blue-500/20 text-blue-400' :
+              realTimeData.priceStatus?.status === 'external' ? 'bg-orange-500/20 text-orange-400' :
+              realTimeData.priceStatus?.status === 'cached' ? 'bg-yellow-500/20 text-yellow-400' :
+              realTimeData.priceStatus?.status === 'emergency' ? 'bg-red-500/20 text-red-400' :
+              'bg-gray-500/20 text-gray-400'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                realTimeData.priceStatus?.status === 'live' ? 'bg-green-400' :
+                realTimeData.priceStatus?.status === 'alternative' ? 'bg-blue-400' :
+                realTimeData.priceStatus?.status === 'external' ? 'bg-orange-400' :
+                realTimeData.priceStatus?.status === 'cached' ? 'bg-yellow-400' :
+                realTimeData.priceStatus?.status === 'emergency' ? 'bg-red-400' :
+                'bg-gray-400'
+              }`} />
+              {realTimeData.priceStatus?.text || 'VERIFICANDO'}
+            </span>
+          </div>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Balance Disponible:</span>
+          <span className="text-white">${realTimeData.balance?.toFixed(2) || '0.00'} {formData.base_currency}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Exchange:</span>
+          <span className="text-blue-400">{selectedExchange.exchange_name.toUpperCase()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Mercado:</span>
+          <span className="text-yellow-400">{formData.market_type}</span>
+        </div>
+        
+        {/* ✅ Timestamp última actualización - SCOPE CORRECTO */}
+        {lastUpdate && (
+          <div className="flex justify-between text-xs text-gray-500 pt-1 border-t border-gray-600/30">
+            <span>Última actualización:</span>
+            <span>{lastUpdate.toLocaleTimeString()}</span>
+          </div>
+        )}
       </div>
     </div>
   );
