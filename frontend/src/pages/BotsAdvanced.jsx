@@ -10,7 +10,7 @@ import SmartScalperMetrics from "@/components/SmartScalperMetrics";
 import LatencyMonitor from "@/components/LatencyMonitor";
 import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
 import LiveTradingFeed from "@/components/LiveTradingFeed";
-import { createTradingOperation, getBotTradingOperations, runSmartTrade, fetchBots, deleteBot } from "../services/api";
+import { createTradingOperation, getBotTradingOperations, runSmartTrade, fetchBots, deleteBot, updateBot } from "../services/api";
 import TradingHistory from "../components/TradingHistory";
 import EnhancedBotCreationModal from "../components/EnhancedBotCreationModal";
 import BotTemplates from "../components/BotTemplates";
@@ -914,13 +914,36 @@ export default function BotsAdvanced() {
         {controlPanelBot && (
           <BotControlPanel
             bot={controlPanelBot}
-            onUpdateBot={(botId, params) => {
-              setBots(prevBots => 
-                prevBots.map(bot => 
-                  bot.id === botId ? { ...bot, ...params } : bot
-                )
-              );
-              setControlPanelBot(null);
+            onUpdateBot={async (botId, params) => {
+              try {
+                console.log('🔄 Actualizando bot:', botId, 'con parámetros:', params);
+                
+                // ✅ DL-001 COMPLIANCE: API call real para persistencia
+                const response = await updateBot(botId.toString(), params);
+                console.log('✅ Bot actualizado exitosamente en backend:', response);
+                
+                // ✅ Actualizar estado local SOLO si API exitoso
+                setBots(prevBots => 
+                  prevBots.map(bot => 
+                    bot.id === botId ? { ...bot, ...params } : bot
+                  )
+                );
+                
+                setControlPanelBot(null);
+                
+                // ✅ Success feedback al usuario
+                setSuccessMessage('Bot actualizado exitosamente - Cambios guardados');
+                setTimeout(() => setSuccessMessage(null), 3000);
+                
+              } catch (error) {
+                console.error('❌ Error actualizando bot:', error);
+                
+                // ✅ NO actualizar estado local si API falla
+                setSuccessMessage(null);
+                
+                // ✅ Error feedback específico al usuario  
+                alert('Error al actualizar bot: ' + (error.message || 'Error de conexión'));
+              }
             }}
             onClose={() => setControlPanelBot(null)}
           />
