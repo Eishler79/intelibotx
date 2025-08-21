@@ -672,6 +672,9 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                         <p className="text-xs text-gray-400 mt-1">
                           Max: {maxLeverage}x para {selectedType ? selectedType.label.split(' - ')[0] : 'este tipo'}
                         </p>
+                        <p className="text-xs text-orange-400 mt-1">
+                          ⚠️ Apalancamiento {formData.leverage}x: Multiplica ganancias Y pérdidas
+                        </p>
                       </div>
                     ) : null;
                   })()}
@@ -695,6 +698,9 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                       step="0.01"
                       className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                     />
+                    <p className="text-xs text-blue-400 mt-1">
+                      💰 Capital utilizado por cada operación del bot
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -731,7 +737,7 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                     />
                     {realTimeData && (
                       <p className="text-green-400 text-xs mt-1">
-                        ≈ +${monetaryValues.tp.toFixed(2)} {formData.base_currency}
+                        🎯 Ganancia objetivo: +${monetaryValues.tp.toFixed(2)} {formData.base_currency} por trade exitoso
                       </p>
                     )}
                   </div>
@@ -750,7 +756,7 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                     />
                     {realTimeData && (
                       <p className="text-red-400 text-xs mt-1">
-                        ≈ -${monetaryValues.sl.toFixed(2)} {formData.base_currency}
+                        ⚠️ Pérdida máxima: -${monetaryValues.sl.toFixed(2)} {formData.base_currency} por trade fallido
                       </p>
                     )}
                   </div>

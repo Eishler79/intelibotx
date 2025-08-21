@@ -235,6 +235,9 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   <option value="1h">1 hora</option>
                   <option value="4h">4 horas</option>
                 </select>
+                <p className="text-xs text-gray-400 mt-1">
+                  📈 Intervalo de tiempo para análisis técnico del bot
+                </p>
               </div>
             </div>
             
@@ -392,7 +395,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   icon={Shield}
                 />
                 <p className="text-xs text-yellow-400">
-                  🎯 Porcentaje del capital que arriesgas por operación
+                  🎯 Porcentaje máximo del capital en riesgo por operación
                 </p>
               </div>
               
@@ -533,16 +536,21 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
           <div>
             <h3 className="text-lg font-semibold mb-4">Controles Operacionales</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SliderInput
-                label="Max Posiciones Abiertas"
-                value={parameters.maxOpenPositions}
-                min={1}
-                max={10}
-                step={1}
-                suffix=""
-                onChange={(value) => handleParameterChange('maxOpenPositions', value)}
-                icon={Activity}
-              />
+              <div className="space-y-2">
+                <SliderInput
+                  label="Max Posiciones Abiertas"
+                  value={parameters.maxOpenPositions}
+                  min={1}
+                  max={10}
+                  step={1}
+                  suffix=""
+                  onChange={(value) => handleParameterChange('maxOpenPositions', value)}
+                  icon={Activity}
+                />
+                <p className="text-xs text-purple-400 mt-1">
+                  🎯 Máximo número de posiciones abiertas simultáneamente por el bot
+                </p>
+              </div>
               <div className="space-y-2">
                 <SliderInput
                   label="Cooldown (minutos)"
