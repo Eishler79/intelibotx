@@ -532,42 +532,110 @@ export default function BotsAdvanced() {
     }
   };
 
-  // Señales específicas por estrategia
-  const getTradeSignals = (strategy) => {
-    const signals = {
+  // DL-001 + DL-002 COMPLIANT: Institutional Algorithms from API
+  const [tradeSignals, setTradeSignals] = useState({});
+  const [loadingSignals, setLoadingSignals] = useState({});
+
+  // Load institutional algorithms from backend API
+  const loadInstitutionalSignals = async (strategy) => {
+    if (tradeSignals[strategy] || loadingSignals[strategy]) {
+      return; // Already loaded or loading
+    }
+
+    setLoadingSignals(prev => ({ ...prev, [strategy]: true }));
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app'}/api/algorithms/${encodeURIComponent(strategy)}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.algorithms) {
+          setTradeSignals(prev => ({
+            ...prev,
+            [strategy]: data.algorithms
+          }));
+        } else {
+          // Fallback to institutional default if API returns empty
+          setTradeSignals(prev => ({
+            ...prev,
+            [strategy]: getInstitutionalFallback(strategy)
+          }));
+        }
+      } else {
+        // API error - use institutional fallback
+        setTradeSignals(prev => ({
+          ...prev,
+          [strategy]: getInstitutionalFallback(strategy)
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading institutional signals:', error);
+      // Network error - use institutional fallback
+      setTradeSignals(prev => ({
+        ...prev,
+        [strategy]: getInstitutionalFallback(strategy)
+      }));
+    } finally {
+      setLoadingSignals(prev => ({ ...prev, [strategy]: false }));
+    }
+  };
+
+  // DL-002 COMPLIANT: Institutional fallback algorithms (NO retail indicators)
+  const getInstitutionalFallback = (strategy) => {
+    const institutionalSignals = {
       'Smart Scalper': [
-        'RSI Oversold + Volume Spike',
-        'Bollinger Band Touch + Momentum',
-        'Support Bounce + MACD Divergence',
-        'EMA Crossover + Low Volatility'
-      ],
-      'Trend Hunter': [
-        'Breakout Above Resistance',
-        'Higher High Formation', 
-        'Moving Average Alignment',
-        'Volume Confirmation Trend'
+        'Wyckoff Spring Detection',
+        'Order Block Confirmation',
+        'Liquidity Grab Pattern',
+        'Smart Money Flow Analysis'
       ],
       'Manipulation Detector': [
-        'Whale Movement Detected',
-        'Stop Hunt Pattern',
-        'Order Book Imbalance',
-        'Unusual Volume Activity'
+        'Stop Hunt Pattern Recognition',
+        'Institutional Order Flow',
+        'Composite Man Theory',
+        'Whale Movement Detection'
+      ],
+      'Trend Hunter': [
+        'Smart Money Concepts (SMC)',
+        'Market Profile Analysis', 
+        'Volume Spread Analysis (VSA)',
+        'Institutional Trend Confirmation'
       ],
       'News Sentiment': [
-        'Bullish News Impact',
-        'Market Sentiment Shift',
-        'Social Media Trend',
-        'Fundamental Analysis Signal'  
+        'Central Bank Policy Analysis',
+        'Options Flow Institutional',
+        'Institutional Positioning',
+        'Smart Money Sentiment'
       ],
       'Volatility Master': [
-        'Volatility Expansion',
-        'ATR Breakout Signal',
-        'Implied Volatility Edge',
-        'Range Breakout Confirmed'
+        'VSA Volatility Analysis',
+        'Market Profile Adaptive',
+        'Institutional Volatility Trading',
+        'Smart Money Volatility Patterns'
       ]
     };
     
-    return signals[strategy] || signals['Smart Scalper'];
+    return institutionalSignals[strategy] || institutionalSignals['Smart Scalper'];
+  };
+
+  // DL-001 COMPLIANT: Get signals with API integration
+  const getTradeSignals = (strategy) => {
+    // Load signals if not already loaded
+    if (!tradeSignals[strategy] && !loadingSignals[strategy]) {
+      loadInstitutionalSignals(strategy);
+    }
+    
+    // Return loaded signals or loading state
+    if (loadingSignals[strategy]) {
+      return ['Cargando algoritmos institucionales...', 'Conectando con motor de análisis'];
+    }
+    
+    return tradeSignals[strategy] || getInstitutionalFallback(strategy);
   };
 
   const stopBotTrading = (botId) => {

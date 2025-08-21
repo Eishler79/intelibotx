@@ -297,6 +297,14 @@ except Exception as e:
 
 # Smart trade routes removed - now using Smart Scalper Engine in bots.py
 
+# Load algorithms routes - DL-001 + DL-002 COMPLIANT
+try:
+    from routes.algorithms import router as algorithms_router
+    app.include_router(algorithms_router)
+    print("✅ Algorithms routes loaded - DL-001 + DL-002 compliant")
+except Exception as e:
+    print(f"⚠️ Could not load algorithms routes: {e}")
+
 # Load bots routes last (newest/most complex) - Con lazy imports aplicados
 try:
     from routes.bots import router as bots_router
