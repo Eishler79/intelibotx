@@ -480,7 +480,19 @@ def calculate_risk_return(bot_config):
 
 @router.post("/api/create-bot")
 async def create_bot(bot_data: dict, authorization: str = Header(None)):
-    """Crear un nuevo bot con autenticación JWT"""
+    """
+    Crear un nuevo bot con autenticación JWT
+    
+    GUARDRAILS UPDATE: Procesa min_entry_price del frontend para capturar 
+    precio real-time al momento de creación del bot.
+    
+    Args:
+        bot_data: Incluye min_entry_price (float) - precio capturado del mercado
+        authorization: JWT token del usuario
+        
+    Returns:
+        Bot creado con min_entry_price almacenado
+    """
     # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.bot_config import BotConfig
     from services.auth_service import get_current_user_safe
@@ -546,6 +558,10 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
                 detail=f"Exchange con ID {exchange_id} no encontrado o no pertenece al usuario"
             )
         
+        # ✅ GUARDRAILS LOGGING: Monitor min_entry_price processing
+        min_entry_price = bot_data.get("min_entry_price")
+        logger.info(f"🎯 Creating bot with min_entry_price: {min_entry_price} for symbol: {symbol}")
+        
         # Crear instancia de BotConfig con los datos recibidos
         bot = BotConfig(
             user_id=current_user.id,  # ✅ DL-006 COMPLIANCE: JWT auth user_id
@@ -565,6 +581,9 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
             market_type=bot_data["market_type"],  # REQUERIDO
             leverage=bot_data["leverage"],  # REQUERIDO
             margin_type=bot_data["margin_type"],  # REQUERIDO
+            
+            # ✅ GUARDRAILS SYNC: Procesar min_entry_price del frontend
+            min_entry_price=min_entry_price,  # Precio real-time capturado (logged above)
             
             # ✅ DL-001 COMPLIANCE: Campos avanzados con defaults seguros
             entry_order_type=bot_data.get("entry_order_type", "MARKET"),  # Default seguro
