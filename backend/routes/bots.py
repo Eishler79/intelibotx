@@ -357,7 +357,12 @@ async def run_smart_trade(
     execute_real: bool = False,
     authorization: str = Header(None)
 ):
-    """Ejecuta Smart Trade con análisis técnico completo"""
+    """
+    Ejecuta Smart Trade con análisis técnico completo
+    
+    REFACTORED: quantity solo relevante cuando execute_real=true
+    Para análisis (execute_real=false), quantity es ignorado internamente
+    """
     # DL-003: Lazy imports to avoid psycopg2 dependency at module level
     from models.bot_config import BotConfig
     from services.auth_service import get_current_user_safe
@@ -380,6 +385,13 @@ async def run_smart_trade(
                 detail=f"❌ Símbolo inválido: {normalized_symbol}"
             )
 
+        # ✅ REFACTORING: Validar quantity solo si execute_real=true
+        if execute_real and (not quantity or quantity <= 0):
+            raise HTTPException(
+                status_code=400,
+                detail="❌ Quantity válido requerido para trading real"
+            )
+
         # 🧠 Buscar configuración del bot en la base de datos
         query = select(BotConfig).where(BotConfig.symbol == normalized_symbol)
         result = session.exec(query).first()
@@ -396,6 +408,7 @@ async def run_smart_trade(
 
         # 🏛️ INSTITUCIONAL ÚNICAMENTE (DL-003): SIEMPRE usar Smart Scalper profesional
         # ELIMINADO: Flujo retail legacy (CSV + indicadores básicos) - DECISIÓN ESTRATÉGICA
+        # REFACTORED: quantity pasado pero internamente manejado según execute_real
         return await execute_smart_scalper_analysis(
             normalized_symbol, result, quantity, execute_real
         )
