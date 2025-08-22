@@ -139,6 +139,16 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                     spike: smartScalperAnalysis.confidence > 0.8,
                     status: smartScalperAnalysis.confidence > 0.7 ? 'HIGH_CONFIDENCE' : 'MODERATE_CONFIDENCE'
                   });
+                  
+                  // 📋 ALMACENAR smartscalper_advanced completo
+                  storeLastKnownGoodValue('smartscalper_advanced', {
+                    algorithm_used: smartScalperAnalysis.algorithm_used,
+                    conditions_met: smartScalperAnalysis.conditions_met,
+                    market_condition: smartScalperAnalysis.market_condition,
+                    risk_score: smartScalperAnalysis.risk_score,
+                    confidence: smartScalperAnalysis.confidence,
+                    data_source: 'last_known_good'
+                  });
                 }
               }
             } catch (jsonError) {
@@ -297,17 +307,27 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             } else {
               // Último recurso: datos institucionales básicos
               console.warn('⚠️ FALLBACK: smartScalperAnalysis null - backend no respondió');
-              rsiData = getLastKnownGoodValue('algorithm') || { 
+              
+              const algorithmLKG = getLastKnownGoodValue('algorithm');
+              const confidenceLKG = getLastKnownGoodValue('confidence');
+              
+              console.log('🔍 INCONSISTENCY DEBUG: algorithmLKG =', algorithmLKG);
+              console.log('🔍 INCONSISTENCY DEBUG: confidenceLKG =', confidenceLKG);
+              
+              rsiData = algorithmLKG || { 
                 status: 'ALGORITHM_DATA_UNAVAILABLE',
                 current: null,
                 signal: 'DATA_UNAVAILABLE',
                 trend: 'UNKNOWN'
               };
-              volumeData = getLastKnownGoodValue('confidence') || {
+              volumeData = confidenceLKG || {
                 status: 'CONFIDENCE_DATA_UNAVAILABLE', 
                 ratio: null,
                 spike: false
               };
+              
+              console.log('🔍 FINAL DEBUG: rsiData =', rsiData);
+              console.log('🔍 FINAL DEBUG: volumeData =', volumeData);
               console.log('📋 Using Last Known Good values or showing unavailable state');
             }
           }
@@ -371,22 +391,26 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           }
         } // Fin del bloque else (WebSocket no disponible)
 
-        // 🧠 Asegurar que smartScalperAdvanced esté disponible (ambos flujos)
+        // 🏛️ INSTITUCIONAL: smartScalperAdvanced solo con datos reales o LKG
         const smartScalperAdvanced = smartScalperAnalysis || 
           (wsData && wsData.type === 'smart_scalper' ? {
-            algorithm_used: wsData.algorithm_used || wsData.algorithm_selected || 'WYCKOFF_SPRING',
+            algorithm_used: wsData.algorithm_used || wsData.algorithm_selected,
             conditions_met: wsData.conditions_met || [],
-            market_condition: wsData.market_condition || 'INSTITUTIONAL_FLOW',
-            risk_score: wsData.risk_score || 0.25,
-            confidence: wsData.confidence || 0.70,
+            market_condition: wsData.market_condition,
+            risk_score: wsData.risk_score,
+            confidence: wsData.confidence,
             data_source: 'websocket_realtime'
-          } : {
-            algorithm_used: 'WYCKOFF_SPRING',
+          } : getLastKnownGoodValue('smartscalper_advanced') || {
+            // TRANSPARENCIA TOTAL - sin datos = sin mostrar valores falsos
+            algorithm_used: null,
             conditions_met: [],
-            market_condition: 'INSTITUTIONAL_FLOW',
-            risk_score: 0.25,
-            confidence: 0.70,
-            data_source: 'fallback'
+            market_condition: null,
+            risk_score: null,
+            confidence: null,
+            data_source: 'unavailable',
+            error_state: 'ANALYSIS_ENGINE_UNAVAILABLE',
+            last_attempt: new Date().toISOString(),
+            message: 'Real-time analysis engine not responding'
           });
 
         // 🎯 Generar señal basada en algoritmo Smart Scalper real (si no viene de WebSocket)
@@ -490,6 +514,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         // Datos válidos hasta 5 minutos
         if (ageMinutes <= 5) {
           console.log(`📋 LKG: Using cached ${dataType} (${ageMinutes.toFixed(1)}min old)`);
+          console.log(`🔍 LKG DEBUG: Returning data:`, parsed.data);
+          console.log(`🔍 LKG DEBUG: Original timestamp:`, new Date(parsed.timestamp));
           return {
             ...parsed.data,
             dataAge: ageMinutes,
@@ -639,9 +665,17 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               INSTITUTIONAL
             </Badge>
           </div>
-          <p className="text-gray-400 text-xs mb-1">{getAlgorithmDisplayName(algorithmData.status)}</p>
+          <p className="text-gray-400 text-xs mb-1">
+            {algorithmData.status === 'ALGORITHM_DATA_UNAVAILABLE' 
+              ? 'Algorithm Analysis' 
+              : getAlgorithmDisplayName(algorithmData.status)
+            }
+          </p>
           <p className={`text-2xl font-bold ${getColor()}`}>
-            {algorithmData.current}%
+            {algorithmData.status === 'ALGORITHM_DATA_UNAVAILABLE' 
+              ? 'UNAVAILABLE'
+              : algorithmData.current ? `${algorithmData.current}%` : 'N/A'
+            }
           </p>
           <div className="flex justify-between text-xs text-gray-500 mt-2">
             <span>Low</span>
@@ -672,11 +706,14 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         </div>
         <p className="text-gray-400 text-xs mb-1">Market Confidence</p>
         <p className={`text-xl font-bold ${confidenceData.spike ? 'text-green-400' : 'text-blue-400'}`}>
-          {(() => {
-            const ratio = confidenceData.ratio;
-            if (ratio === undefined || ratio === null || isNaN(ratio)) return '65%';
-            return Math.round(ratio * 100) + '%';
-          })()}
+          {confidenceData.status === 'CONFIDENCE_DATA_UNAVAILABLE' 
+            ? 'UNAVAILABLE'
+            : (() => {
+                const ratio = confidenceData.ratio;
+                if (ratio === undefined || ratio === null || isNaN(ratio)) return 'N/A';
+                return Math.round(ratio * 100) + '%';
+              })()
+          }
         </p>
         <p className="text-gray-500 text-xs mt-1">
           {confidenceData.spike ? '🏛️ Institutional Flow!' : 'Smart Money Analysis'}
@@ -769,25 +806,57 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             </div>
             <Badge className={`text-xs ${
               advanced.data_source === 'websocket_realtime' 
-                ? 'bg-green-500/20 text-green-400' 
+                ? 'bg-green-500/20 text-green-400'
+                : advanced.data_source === 'last_known_good' 
+                ? 'bg-yellow-500/20 text-yellow-400'
+                : advanced.data_source === 'unavailable'
+                ? 'bg-red-500/20 text-red-400'
                 : 'bg-gray-500/20 text-gray-400'
             }`}>
-              {advanced.data_source === 'websocket_realtime' ? '🔥 LIVE' : 'FALLBACK'}
+              {advanced.data_source === 'websocket_realtime' ? '🔥 LIVE' 
+                : advanced.data_source === 'last_known_good' ? '🕰️ STALE'
+                : advanced.data_source === 'unavailable' ? '❌ UNAVAILABLE'
+                : 'FALLBACK'}
             </Badge>
           </div>
 
-          <div className="space-y-2">
-            <div>
-              <p className="text-gray-400 text-xs">Algorithm Used</p>
-              <p className="text-sm font-semibold text-blue-400">{advanced.algorithm_used}</p>
+          {/* 🏛️ TRANSPARENCIA INSTITUCIONAL: Mostrar estado real */}
+          {advanced.data_source === 'unavailable' ? (
+            <div className="space-y-3">
+              <div className="text-center py-4">
+                <p className="text-red-400 font-semibold">{advanced.error_state}</p>
+                <p className="text-gray-400 text-sm mt-1">{advanced.message}</p>
+                <p className="text-gray-500 text-xs mt-2">
+                  Last attempt: {new Date(advanced.last_attempt).toLocaleTimeString()}
+                </p>
+              </div>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded"
+              >
+                🔄 Retry Connection
+              </button>
             </div>
+          ) : (
+            <div className="space-y-2">
+              <div>
+                <p className="text-gray-400 text-xs">Algorithm Used</p>
+                <p className="text-sm font-semibold text-blue-400">
+                  {advanced.algorithm_used || 'N/A'}
+                  {advanced.data_source === 'last_known_good' && advanced.dataAge && (
+                    <span className="text-yellow-400 text-xs ml-2">
+                      ({advanced.dataAge.toFixed(1)}min ago)
+                    </span>
+                  )}
+                </p>
+              </div>
 
-            <div>
-              <p className="text-gray-400 text-xs">Market Condition</p>
-              <p className={`text-sm font-semibold ${getMarketConditionColor()}`}>
-                {advanced.market_condition?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
-              </p>
-            </div>
+              <div>
+                <p className="text-gray-400 text-xs">Market Condition</p>
+                <p className={`text-sm font-semibold ${getMarketConditionColor()}`}>
+                  {advanced.market_condition?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
+                </p>
+              </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -804,19 +873,20 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               </div>
             </div>
 
-            {advanced.conditions_met && advanced.conditions_met.length > 0 && (
-              <div>
-                <p className="text-gray-400 text-xs mb-1">Conditions Met</p>
-                <div className="flex flex-wrap gap-1">
-                  {advanced.conditions_met.map((condition, idx) => (
-                    <Badge key={idx} className="text-xs bg-blue-500/20 text-blue-400">
-                      {condition.replace('_', ' ')}
-                    </Badge>
-                  ))}
+              {advanced.conditions_met && advanced.conditions_met.length > 0 && (
+                <div>
+                  <p className="text-gray-400 text-xs mb-1">Conditions Met</p>
+                  <div className="flex flex-wrap gap-1">
+                    {advanced.conditions_met.map((condition, idx) => (
+                      <Badge key={idx} className="text-xs bg-blue-500/20 text-blue-400">
+                        {condition.replace('_', ' ')}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
