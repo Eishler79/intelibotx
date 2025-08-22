@@ -77,7 +77,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         const token = localStorage.getItem('intelibotx_token');
         
         // Obtener datos reales si están disponibles
-        let rsiData, volumeData, executionData, signal;
+        let institutionalAlgorithmData, volumeData, executionData, signal;
         
         // 🎯 Primero intentar obtener datos Smart Scalper reales (para ambos flujos)
         let smartScalperResponse, smartScalperAnalysis = null;
@@ -165,7 +165,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         if (wsData && wsData.type === 'smart_scalper') {
           console.log(`🔥 Usando datos WebSocket tiempo real: ${bot.symbol}`, wsData);
           
-          rsiData = {
+          // 🏛️ DL-002 COMPLIANCE: Institutional algorithm data (NOT RSI retail)
+          institutionalAlgorithmData = {
             current: wsData.rsi || 50,
             status: wsData.rsi_status || 'NEUTRAL',
             signal: wsData.signal || 'HOLD',
@@ -237,7 +238,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                   const analysis = realIndicators.data.analysis;
                   
                   // Mapear datos del análisis a formato esperado
-                  rsiData = {
+                  // 🏛️ DL-002 COMPLIANCE: Institutional algorithm confidence (NOT RSI retail)
+                  institutionalAlgorithmData = {
                     current: analysis.indicators?.rsi || 50,
                     status: analysis.indicators?.rsi < 30 ? 'OVERSOLD' : analysis.indicators?.rsi > 70 ? 'OVERBOUGHT' : 'NEUTRAL',
                     signal: analysis.signal || 'HOLD',
@@ -264,7 +266,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                   
                 } else if (realIndicators.data?.rsi) {
                   // Datos del endpoint público
-                  rsiData = realIndicators.data.rsi;
+                  // 🏛️ DL-002 COMPLIANCE: Real institutional algorithm data
+                  institutionalAlgorithmData = realIndicators.data.rsi;
                   volumeData = realIndicators.data.volume;
                   const signalData = realIndicators.data.signal || {};
                   
@@ -290,9 +293,9 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             }
           } catch (apiError) {
             console.warn('⚠️ Error procesando API response:', apiError);
-            // DL-001 + DL-002 COMPLIANT: Usar datos institucionales dinámicos
+            // 🏛️ DL-001 + DL-002 COMPLIANT: Usar datos institucionales dinámicos
             if (smartScalperAnalysis) {
-              rsiData = {
+              institutionalAlgorithmData = {
                 current: Math.round(smartScalperAnalysis.confidence * 100),
                 status: smartScalperAnalysis.algorithm_used,
                 signal: smartScalperAnalysis.market_condition,
@@ -315,7 +318,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               console.log('🔍 INCONSISTENCY DEBUG: algorithmLKG =', algorithmLKG);
               console.log('🔍 INCONSISTENCY DEBUG: confidenceLKG =', confidenceLKG);
               
-              rsiData = algorithmLKG || { 
+              institutionalAlgorithmData = algorithmLKG || { 
                 status: 'ALGORITHM_DATA_UNAVAILABLE',
                 current: null,
                 signal: 'DATA_UNAVAILABLE',
@@ -327,7 +330,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                 spike: false
               };
               
-              console.log('🔍 FINAL DEBUG: rsiData =', rsiData);
+              console.log('🏛️ INSTITUTIONAL DEBUG: algorithmData =', institutionalAlgorithmData);
               console.log('🔍 FINAL DEBUG: volumeData =', volumeData);
               console.log('📋 Using Last Known Good values or showing unavailable state');
             }
@@ -361,9 +364,9 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           
           } catch (error) {
             console.error('Error obteniendo datos reales:', error);
-            // DL-001 + DL-002 COMPLIANT: Fallback institucional completo
+            // 🏛️ DL-001 + DL-002 COMPLIANT: Fallback institucional completo
             if (smartScalperAnalysis) {
-              rsiData = {
+              institutionalAlgorithmData = {
                 current: Math.round(smartScalperAnalysis.confidence * 100),
                 status: smartScalperAnalysis.algorithm_used,
                 signal: smartScalperAnalysis.market_condition,
@@ -376,7 +379,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                 status: 'INSTITUTIONAL_ANALYSIS'
               };
             } else {
-              rsiData = getLastKnownGoodValue('algorithm') || { 
+              institutionalAlgorithmData = getLastKnownGoodValue('algorithm') || { 
                 status: 'ALGORITHM_DATA_UNAVAILABLE',
                 current: null,
                 signal: 'DATA_UNAVAILABLE', 
@@ -448,14 +451,14 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         };
 
         setMetrics({
-          // RSI Metrics
-          rsi: {
-            current: rsiData.current,
-            status: rsiData.status,
-            signal: rsiData.signal,
+          // 🏛️ INSTITUTIONAL ALGORITHM CONFIDENCE METRICS (DL-002 compliant)
+          institutionalAlgorithm: {
+            current: institutionalAlgorithmData.current,
+            status: institutionalAlgorithmData.status,
+            signal: institutionalAlgorithmData.signal,
             oversold_threshold: 30,
             overbought_threshold: 70,
-            trend: rsiData.trend
+            trend: institutionalAlgorithmData.trend
           },
           
           // Volume Metrics  
@@ -629,13 +632,16 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
     };
 
     const getAlgorithmDisplayName = (algorithm) => {
+      // 🏛️ DL-002 COMPLIANCE: Backend enum values mapping
       const displayNames = {
-        'WYCKOFF_SPRING': 'Wyckoff Spring',
-        'ORDER_BLOCK_RETEST': 'Order Block',
-        'LIQUIDITY_GRAB_FADE': 'Liquidity Grab',
-        'FAIR_VALUE_GAP': 'Fair Value Gap',
-        'STOP_HUNT_REVERSAL': 'Stop Hunt Rev',
-        'SMART_MONEY_CONCEPTS': 'Smart Money'
+        'wyckoff_spring': 'Wyckoff Spring',
+        'liquidity_grab_fade': 'Liquidity Grab', 
+        'stop_hunt_reversal': 'Stop Hunt Rev',
+        'order_block_retest': 'Order Block',
+        'fair_value_gap': 'Fair Value Gap',
+        'volume_breakout': 'Volume Breakout',
+        'ma_alignment': 'MA Alignment', 
+        'higher_high_formation': 'Higher High'
       };
       return displayNames[algorithm] || algorithm;
     };
@@ -646,7 +652,10 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           <div className="flex items-center justify-between mb-2">
             <Gauge className={getColor()} size={20} />
             <Badge className={`text-xs ${algorithmData.current > 70 ? 'bg-green-500/20 text-green-400' : algorithmData.current > 50 ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-              INSTITUTIONAL
+              {algorithmData.status === 'ALGORITHM_DATA_UNAVAILABLE' 
+                ? 'INSTITUTIONAL' 
+                : getAlgorithmDisplayName(algorithmData.status).toUpperCase()
+              }
             </Badge>
           </div>
           <p className="text-gray-400 text-xs mb-1">
@@ -965,7 +974,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           Core Algorithm Indicators
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <InstitutionalAlgorithmGauge algorithmData={metrics.rsi} />
+          <InstitutionalAlgorithmGauge algorithmData={metrics.institutionalAlgorithm} />
           <InstitutionalConfidenceMeter confidenceData={metrics.volume} />
           <SignalGenerator signal={metrics.signal} />
           <LatencyMonitor execution={executionMetrics} />
@@ -1124,7 +1133,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300 text-sm">Liquidity Grab Detection</span>
-                  <Badge className={`text-xs ${metrics.rsi?.current < 30 ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                  <Badge className={`text-xs ${metrics.institutionalAlgorithm?.current < 30 ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
                     {metrics.liquidity_grab_detected ? '✅' : '❌'}
                   </Badge>
                 </div>
