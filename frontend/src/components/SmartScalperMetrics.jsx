@@ -511,8 +511,9 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
 
     calculateSmartScalperMetrics();
     
-    // Intervalos diferentes según el tipo de datos
-    const updateInterval = wsData && wsData.type === 'smart_scalper' ? 2000 : 5000; // 2s para WebSocket, 5s para REST
+    // CRISIS FIX: Reduced refresh rate to prevent backend hammering
+    // Institutional algorithms don't need high-frequency updates like scalping retail
+    const updateInterval = wsData && wsData.type === 'smart_scalper' ? 30000 : 60000; // 30s para WebSocket, 60s para REST
     const interval = setInterval(calculateSmartScalperMetrics, updateInterval);
     
     return () => clearInterval(interval);
