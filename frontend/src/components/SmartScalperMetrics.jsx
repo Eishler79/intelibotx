@@ -120,9 +120,16 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                   risk_score: smartScalperData.analysis.risk_assessment?.overall_risk || null,
                   wyckoff_phase: smartScalperData.analysis.wyckoff_phase || 'ACCUMULATION',
                   timeframe_alignment: smartScalperData.analysis.timeframe_alignment || 'ALIGNED',
-                  conditions_met: Object.keys(smartScalperData.signals || {}).filter(key => 
-                    key.includes('detected') && smartScalperData.signals[key]
-                  ),
+                  // 📊 DL-001 COMPLIANCE: Extract real institutional conditions from backend
+                  conditions_met: [
+                    ...(smartScalperData.signals?.liquidity_grab_detected ? ['LIQUIDITY_GRAB'] : []),
+                    ...(smartScalperData.signals?.order_block_confirmed ? ['ORDER_BLOCK'] : []),
+                    ...(smartScalperData.signals?.smart_money_flow_detected ? ['SMART_MONEY_FLOW'] : []),
+                    ...(smartScalperData.analysis?.institutional_confirmations ? 
+                        Object.keys(smartScalperData.analysis.institutional_confirmations) : [])
+                  ],
+                  // 📊 DL-001 COMPLIANCE: Use real expected_performance from backend 
+                  expected_performance: smartScalperData.analysis?.expected_performance || null,
                   data_source: 'smart_scalper_real'
                 };
                 // 🔍 VALIDACIÓN FINAL + ALMACENAR LKG
@@ -1030,46 +1037,43 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
           </Badge>
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <AlgorithmMatrixCard 
-            algorithm="wyckoff_spring" 
-            confidence={metrics.institutionalAlgorithm?.status === 'wyckoff_spring' ? metrics.institutionalAlgorithm?.current : 67} 
-            isActive={metrics.institutionalAlgorithm?.status === 'wyckoff_spring'} 
-          />
-          <AlgorithmMatrixCard 
-            algorithm="order_block_retest" 
-            confidence={metrics.institutionalAlgorithm?.status === 'order_block_retest' ? metrics.institutionalAlgorithm?.current : 72} 
-            isActive={metrics.institutionalAlgorithm?.status === 'order_block_retest'} 
-          />
-          <AlgorithmMatrixCard 
-            algorithm="liquidity_grab_fade" 
-            confidence={metrics.institutionalAlgorithm?.status === 'liquidity_grab_fade' ? metrics.institutionalAlgorithm?.current : 68} 
-            isActive={metrics.institutionalAlgorithm?.status === 'liquidity_grab_fade'} 
-          />
-          <AlgorithmMatrixCard 
-            algorithm="stop_hunt_reversal" 
-            confidence={metrics.institutionalAlgorithm?.status === 'stop_hunt_reversal' ? metrics.institutionalAlgorithm?.current : 45} 
-            isActive={metrics.institutionalAlgorithm?.status === 'stop_hunt_reversal'} 
-          />
-          <AlgorithmMatrixCard 
-            algorithm="fair_value_gap" 
-            confidence={metrics.institutionalAlgorithm?.status === 'fair_value_gap' ? metrics.institutionalAlgorithm?.current : 52} 
-            isActive={metrics.institutionalAlgorithm?.status === 'fair_value_gap'} 
-          />
-          <AlgorithmMatrixCard 
-            algorithm="volume_breakout" 
-            confidence={metrics.institutionalAlgorithm?.status === 'volume_breakout' ? metrics.institutionalAlgorithm?.current : 64} 
-            isActive={metrics.institutionalAlgorithm?.status === 'volume_breakout'} 
-          />
-          <AlgorithmMatrixCard 
-            algorithm="ma_alignment" 
-            confidence={metrics.institutionalAlgorithm?.status === 'ma_alignment' ? metrics.institutionalAlgorithm?.current : 59} 
-            isActive={metrics.institutionalAlgorithm?.status === 'ma_alignment'} 
-          />
-          <AlgorithmMatrixCard 
-            algorithm="higher_high_formation" 
-            confidence={metrics.institutionalAlgorithm?.status === 'higher_high_formation' ? metrics.institutionalAlgorithm?.current : 42} 
-            isActive={metrics.institutionalAlgorithm?.status === 'higher_high_formation'} 
-          />
+          {/* 📊 DL-001 COMPLIANCE: Solo mostrar algoritmo activo real del backend */}
+          {metrics.institutionalAlgorithm?.status && (
+            <AlgorithmMatrixCard 
+              algorithm={metrics.institutionalAlgorithm.status}
+              confidence={metrics.institutionalAlgorithm.current || 0}
+              isActive={true}
+            />
+          )}
+          
+          {/* 📊 DL-001 COMPLIANCE: Algoritmos disponibles pero NO activos */}
+          {metrics.advanced?.all_algorithms_evaluated?.map((algo, index) => {
+            if (algo.algorithm !== metrics.institutionalAlgorithm?.status) {
+              return (
+                <AlgorithmMatrixCard 
+                  key={algo.algorithm}
+                  algorithm={algo.algorithm}
+                  confidence={algo.confidence || 0}
+                  isActive={false}
+                />
+              );
+            }
+            return null;
+          }).filter(Boolean) || 
+          
+          // Fallback: Solo mostrar algoritmo activo si no hay data completa
+          ['wyckoff_spring', 'order_block_retest', 'liquidity_grab_fade', 'stop_hunt_reversal', 
+           'fair_value_gap', 'volume_breakout', 'ma_alignment', 'higher_high_formation']
+          .filter(algo => algo !== metrics.institutionalAlgorithm?.status)
+          .map(algo => (
+            <AlgorithmMatrixCard 
+              key={algo}
+              algorithm={algo}
+              confidence={null} // 📊 DL-001: NO hardcode - mostrar 'N/A' si no hay data
+              isActive={false}
+            />
+          ))
+          }
         </div>
       </div>
 
@@ -1320,7 +1324,11 @@ const ExpandedMultiAlgorithmEngine = ({ advanced, institutionalAlgorithm }) => {
               <div>
                 <p className="text-gray-400">Expected Performance</p>
                 <p className="text-purple-400 font-semibold">
-                  Win Rate: {confidence > 80 ? '78%' : confidence > 60 ? '65%' : '52%'}
+                  {/* 📊 DL-001 COMPLIANCE: Usar expected_performance real del backend */}
+                  {advanced?.expected_performance?.win_rate ? 
+                    `Win Rate: ${(advanced.expected_performance.win_rate * 100).toFixed(0)}%` : 
+                    'Win Rate: N/A'
+                  }
                 </p>
               </div>
             </div>

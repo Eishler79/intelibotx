@@ -61,7 +61,11 @@ const DynamicEntryConditions = ({ algorithm, conditions = [] }) => {
 
         <div className="space-y-3">
           {algorithmConditions.map((condition, index) => {
-            const isSet = Math.random() > 0.4; // TODO: Replace with real condition status
+            // 📊 DL-001 COMPLIANCE: Usar conditions reales del backend únicamente
+            const isSet = conditions.includes(condition.key.toUpperCase()) || 
+                         conditions.includes(condition.key.toLowerCase()) ||
+                         conditions.some(c => c.toLowerCase().includes(condition.key.toLowerCase()));
+            
             return (
               <div key={condition.key} className="flex items-center justify-between">
                 <span className="text-gray-300 text-sm">{condition.name}:</span>
@@ -183,6 +187,8 @@ const AlgorithmMatrixCard = ({ algorithm, confidence, isActive }) => {
 
   const getStatus = () => {
     if (isActive) return { text: 'ACTIVE', color: 'text-green-400', bg: 'bg-green-500/20' };
+    // 📊 DL-001 COMPLIANCE: Handle null confidence (no backend data available)
+    if (confidence === null || confidence === undefined) return { text: 'NO DATA', color: 'text-gray-500', bg: 'bg-gray-600/20' };
     if (confidence > 70) return { text: 'READY', color: 'text-blue-400', bg: 'bg-blue-500/20' };
     if (confidence > 50) return { text: 'MONITORING', color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
     if (confidence > 30) return { text: 'STANDBY', color: 'text-gray-400', bg: 'bg-gray-500/20' };
@@ -190,7 +196,13 @@ const AlgorithmMatrixCard = ({ algorithm, confidence, isActive }) => {
   };
 
   const status = getStatus();
-  const confidenceLevel = confidence > 70 ? 'HIGH' : confidence > 50 ? 'MEDIUM' : 'LOW';
+  // 📊 DL-001 COMPLIANCE: Handle null confidence properly
+  const confidenceLevel = confidence === null ? 'NO DATA' : 
+                          confidence > 70 ? 'HIGH' : 
+                          confidence > 50 ? 'MEDIUM' : 'LOW';
+
+  // 📊 DL-001 COMPLIANCE: Display real confidence or N/A
+  const displayConfidence = confidence !== null ? confidence : 'N/A';
 
   return (
     <Card className={`bg-gray-800/50 border-gray-700/50 ${isActive ? 'ring-2 ring-green-400/50' : ''}`}>
@@ -205,7 +217,7 @@ const AlgorithmMatrixCard = ({ algorithm, confidence, isActive }) => {
           
           <div>
             <p className={`text-lg font-bold ${status.color}`}>
-              {confidence}%
+              {displayConfidence !== 'N/A' ? `${displayConfidence}%` : 'N/A'}
             </p>
             <Badge className={`text-xs ${status.bg} ${status.color}`}>
               {status.text}
