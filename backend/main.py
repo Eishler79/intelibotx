@@ -379,15 +379,15 @@ try:
 except Exception as e:
     print(f"⚠️  Warning: Could not load Dashboard API router: {e}")
 
-# Load WebSocket routes (NEW - Real-time data streaming) - TEMPORARILY DISABLED
-# WebSocket routes require complex lazy imports for RealtimeDataManager
-# Core trading functionality (11/12 routers) is fully operational
+# Load WebSocket routes (NEW - Real-time data streaming) - ETAPA 0.2 ENABLED
+# WebSocket routes for real-time institutional algorithm data
 try:
-    # from routes.websocket_routes import router as websocket_router
-    # app.include_router(websocket_router)
-    print("⚠️ WebSocket routes temporarily disabled - Core trading fully functional")
+    from routes.websocket_routes import router as websocket_router
+    app.include_router(websocket_router)
+    print("✅ WebSocket routes loaded successfully - Real-time data enabled")
 except Exception as e:
     print(f"⚠️ Could not load WebSocket routes: {e}")
+    print("⚠️ WebSocket routes disabled - Core trading fully functional")
     
     # Fallback endpoints for trading history
     @app.get("/api/bots/{bot_id}/orders")
