@@ -413,9 +413,26 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             message: 'Real-time analysis engine not responding'
           });
 
-        // 🎯 Generar señal basada en algoritmo Smart Scalper real (si no viene de WebSocket)
+        // 🏛️ INSTITUCIONAL: Usar SOLO datos del Smart Scalper backend - NO algoritmo retail
         if (!signal) {
-          signal = generateSmartScalperSignal(rsiData, volumeData);
+          signal = smartScalperAdvanced ? {
+            type: smartScalperAdvanced.market_condition || 'HOLD',
+            confidence: smartScalperAdvanced.confidence || 0.5,
+            strength: smartScalperAdvanced.confidence > 0.7 ? 'STRONG' : smartScalperAdvanced.confidence > 0.5 ? 'MODERATE' : 'WEAK',
+            conditions: smartScalperAdvanced.conditions_met || [],
+            timestamp: new Date().toISOString(),
+            quality: smartScalperAdvanced.conditions_met?.length >= 2 ? 'HIGH' : 'MODERATE',
+            data_source: 'institutional_backend'
+          } : {
+            // DL-001 + DL-002 COMPLIANT: NO retail algorithm, show unavailable state
+            type: 'INSTITUTIONAL_ANALYSIS_UNAVAILABLE',
+            confidence: null,
+            strength: 'UNAVAILABLE',
+            conditions: [],
+            timestamp: new Date().toISOString(),
+            quality: 'UNAVAILABLE',
+            data_source: 'institutional_backend_unavailable'
+          };
         }
         
         // 🏛️ INSTITUCIONAL: Performance de LKG o unavailable  
@@ -582,44 +599,9 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
     };
   };
 
-  // 🎯 Generar señal Smart Scalper según algoritmo documentado
-  const generateSmartScalperSignal = (rsi, volume) => {
-    let signal = "HOLD";
-    let confidence = 0.5;
-    let conditions = [];
-
-    // Condiciones del algoritmo Smart Scalper
-    const rsiOversold = rsi.current < 30;
-    const rsiOverbought = rsi.current > 70;
-    const volumeConfirmed = volume.spike;
-
-    if (rsiOversold && volumeConfirmed) {
-      signal = "BUY";
-      confidence = 0.85;
-      conditions = ["RSI_OVERSOLD", "VOLUME_SPIKE"];
-    } else if (rsiOverbought && volumeConfirmed) {
-      signal = "SELL";
-      confidence = 0.82;
-      conditions = ["RSI_OVERBOUGHT", "VOLUME_SPIKE"];
-    } else if (rsiOversold) {
-      signal = "WEAK_BUY";
-      confidence = 0.65;
-      conditions = ["RSI_OVERSOLD"];
-    } else if (rsiOverbought) {
-      signal = "WEAK_SELL";
-      confidence = 0.62;
-      conditions = ["RSI_OVERBOUGHT"];
-    }
-
-    return {
-      type: signal,
-      confidence: confidence,
-      strength: confidence > 0.8 ? "STRONG" : confidence > 0.6 ? "MODERATE" : "WEAK",
-      conditions: conditions,
-      timestamp: new Date().toISOString(),
-      quality: conditions.length >= 2 ? "HIGH" : conditions.length === 1 ? "MEDIUM" : "LOW"
-    };
-  };
+  // 🏛️ INSTITUTIONAL ONLY: Removed retail RSI/Volume algorithm - DL-002 COMPLIANCE
+  // All signals now come from backend Smart Scalper institutional analysis
+  // No more generateSmartScalperSignal() retail function
 
   // 🏛️ INSTITUCIONAL CORRECTO: Renderizado seguro de métricas
   const renderMetricValue = (value, decimals = 1, suffix = '%', unavailableText = 'N/A') => {
