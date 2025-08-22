@@ -206,6 +206,8 @@ async def execute_smart_scalper_analysis(
                 "wyckoff_phase": institutional.market_phase.value,
                 "timeframe_alignment": multi_tf.alignment.value,
                 "trend_strength": multi_tf.trend_strength.value,
+                # DL-001 COMPLIANCE: Expose real risk_assessment from algorithm selector
+                "risk_assessment": algorithm_selection.risk_assessment,
                 # 🏛️ ETAPA 1 COMPLETAR: INSTITUCIONAL SignalQualityAssessor results (DL-002)
                 "institutional_quality_score": institutional_quality.overall_score,
                 "institutional_confidence_level": institutional_quality.confidence_level,

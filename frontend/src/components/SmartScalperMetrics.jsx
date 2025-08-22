@@ -111,7 +111,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                     const confNum = parseFloat(confStr.replace('%', ''));
                     return isNaN(confNum) ? null : confNum / 100;
                   })(),
-                  risk_score: 0.25,
+                  // DL-001 COMPLIANCE: Use real risk_assessment from backend instead of hardcode
+                  risk_score: smartScalperData.analysis.risk_assessment?.overall_risk || null,
                   wyckoff_phase: smartScalperData.analysis.wyckoff_phase || 'ACCUMULATION',
                   timeframe_alignment: smartScalperData.analysis.timeframe_alignment || 'ALIGNED',
                   conditions_met: Object.keys(smartScalperData.signals || {}).filter(key => 
