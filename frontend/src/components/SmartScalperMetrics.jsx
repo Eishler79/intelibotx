@@ -979,19 +979,6 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         </div>
       </div>
 
-      {/* Métricas Core Smart Scalper */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Eye className="text-green-400" size={20} />
-          Core Algorithm Indicators
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <InstitutionalAlgorithmGauge algorithmData={metrics.institutionalAlgorithm} />
-          <InstitutionalConfidenceMeter confidenceData={metrics.volume} />
-          <SignalGenerator signal={metrics.signal} />
-          <LatencyMonitor execution={executionMetrics} />
-        </div>
-      </div>
 
       {/* 🏆 1. SMART SCALPER MULTI-ALGORITHM ENGINE (EXPANDIDO) */}
       <div>
@@ -1200,57 +1187,6 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         </div>
       </div>
 
-      {/* Conditions Met */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <AlertCircle className="text-blue-400" size={20} />
-          Entry Conditions Status
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="bg-gray-800/50 border-gray-700/50">
-            <CardContent className="p-4">
-              <h4 className="text-white font-semibold mb-3">Algorithm Checklist</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm">Liquidity Grab Detection</span>
-                  <Badge className={`text-xs ${metrics.institutionalAlgorithm?.current < 30 ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                    {metrics.liquidity_grab_detected ? '✅' : '❌'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm">Order Block Confirmation</span>
-                  <Badge className={`text-xs ${metrics.volume?.spike ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                    {metrics.order_block_confirmed ? '✅' : '❌'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm">Smart Money Flow</span>
-                  <Badge className={`text-xs ${(executionMetrics.avg_latency_ms || 999) < 100 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {metrics.smart_money_flow_detected ? '✅' : '❌'}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gray-800/50 border-gray-700/50">
-            <CardContent className="p-4">
-              <h4 className="text-white font-semibold mb-3">Current Signal</h4>
-              <div className="text-center">
-                <p className={`text-3xl font-bold ${metrics.signal?.current === 'BUY' || metrics.signal?.current === 'STRONG_BUY' ? 'text-green-400' : metrics.signal?.current === 'SELL' || metrics.signal?.current === 'STRONG_SELL' ? 'text-red-400' : 'text-gray-400'}`}>
-                  {metrics.signal?.current || 'HOLD'}
-                </p>
-                <p className="text-gray-400 text-sm mt-2">
-                  Quality: {metrics.signal?.quality} | Strength: {metrics.signal?.strength}
-                </p>
-                <p className="text-gray-500 text-xs mt-1">
-                  {metrics.signal?.conditions?.join(' + ') || 'No conditions met'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
     </div>
   );
 }
