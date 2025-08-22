@@ -131,7 +131,7 @@ async def get_balance_evolution(
         from db.database import get_session
         from services.auth_service import get_current_user_safe
         from models.bot_config import BotConfig
-        from routes.trading_operations import TradingOperation
+        from models.trading_operation import TradingOperation
         from sqlmodel import select
         
         # DL-003 COMPLIANT: Authentication via dependency function
@@ -216,7 +216,7 @@ async def get_bots_performance(
         from db.database import get_session
         from services.auth_service import get_current_user_safe
         from models.bot_config import BotConfig
-        from routes.trading_operations import TradingOperation
+        from models.trading_operation import TradingOperation
         from sqlmodel import select
         
         # DL-003 COMPLIANT: Authentication via dependency function
@@ -294,7 +294,7 @@ async def get_symbols_analysis(
         # Lazy imports
         from db.database import get_session
         from services.auth_service import get_current_user_safe
-        from routes.trading_operations import TradingOperation
+        from models.trading_operation import TradingOperation
         from sqlmodel import select
         
         # DL-003 COMPLIANT: Authentication via dependency function

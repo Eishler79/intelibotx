@@ -16,31 +16,68 @@ class EncryptionService:
     """
     
     def __init__(self):
-        self.master_key = self._get_or_create_master_key()
-        self.fernet = Fernet(self.master_key)
+        """✅ GUARDRAILS P3: Enhanced initialization with error handling"""
+        try:
+            self.master_key = self._get_or_create_master_key()
+            self.fernet = Fernet(self.master_key)
+            logger.debug("🔐 EncryptionService initialized successfully")
+        except Exception as e:
+            logger.error(f"❌ EncryptionService initialization failed: {e}")
+            raise RuntimeError(f"Failed to initialize EncryptionService: {e}")
     
     def _get_or_create_master_key(self) -> bytes:
         """
         Obtiene o crea la clave maestra para encriptación.
-        En producción debería estar en variables de entorno seguras.
+        
+        ✅ GUARDRAILS P3: Enhanced error handling + Railway production compliance
         """
         master_key_b64 = os.getenv("ENCRYPTION_MASTER_KEY")
         
         if not master_key_b64:
-            # Generar nueva clave si no existe
-            logger.warning("No ENCRYPTION_MASTER_KEY found, generating new one")
-            key = Fernet.generate_key()
-            master_key_b64 = base64.urlsafe_b64encode(key).decode()
-            logger.info(f"Generated master key (add to .env): ENCRYPTION_MASTER_KEY={master_key_b64}")
-            return key
+            # 🚨 CRÍTICO: En producción Railway esto debe fallar explícitamente
+            error_msg = "ENCRYPTION_MASTER_KEY environment variable is required but not set"
+            logger.error(f"❌ {error_msg}")
+            
+            # Solo permitir generación automática en desarrollo
+            environment = os.getenv("ENVIRONMENT", "production").lower()
+            if environment == "development":
+                logger.warning("🔧 Development mode: generating temporary encryption key")
+                key = Fernet.generate_key()
+                master_key_b64 = base64.urlsafe_b64encode(key).decode()
+                logger.info(f"Generated temporary key: ENCRYPTION_MASTER_KEY={master_key_b64}")
+                logger.warning("⚠️ CRITICAL: Set ENCRYPTION_MASTER_KEY environment variable for production")
+                return key
+            else:
+                # En producción Railway, fallar inmediatamente
+                raise ValueError(f"❌ {error_msg} - Required for Railway production deployment")
         
         try:
-            return base64.urlsafe_b64decode(master_key_b64.encode())
+            # Validar que la key base64 es válida
+            decoded_key = base64.urlsafe_b64decode(master_key_b64.encode())
+            
+            # Validar que puede crear Fernet cipher válido
+            test_fernet = Fernet(decoded_key)
+            
+            # Test de encriptación/desencriptación rápido
+            test_data = b"validation_test"
+            encrypted = test_fernet.encrypt(test_data)
+            decrypted = test_fernet.decrypt(encrypted)
+            assert decrypted == test_data
+            
+            logger.info("✅ ENCRYPTION_MASTER_KEY loaded and validated successfully")
+            return decoded_key
+            
         except Exception as e:
-            logger.error(f"Error decoding master key: {e}")
-            # Generar nueva si hay error
-            key = Fernet.generate_key()
-            return key
+            logger.error(f"❌ Failed to decode/validate ENCRYPTION_MASTER_KEY: {e}")
+            # En producción Railway, NO generar automáticamente
+            environment = os.getenv("ENVIRONMENT", "production").lower()
+            if environment == "production":
+                raise ValueError(f"❌ Invalid ENCRYPTION_MASTER_KEY format: {e} - Fix Railway environment variable")
+            else:
+                # Solo en desarrollo, generar clave de emergencia
+                logger.warning("🔧 Development fallback: generating emergency key due to invalid ENCRYPTION_MASTER_KEY")
+                key = Fernet.generate_key()
+                return key
     
     def encrypt_api_key(self, api_key: str) -> Optional[str]:
         """

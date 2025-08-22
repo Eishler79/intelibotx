@@ -42,68 +42,8 @@ def get_real_algorithm_for_symbol(symbol: str) -> str:
         # Fallback a algoritmo probado si hay error
         return "rsi_oversold"
 
-# Modelo para operaciones de trading
-from sqlmodel import SQLModel, Field
-from enum import Enum
-
-class TradeSide(str, Enum):
-    BUY = "BUY"
-    SELL = "SELL"
-
-class TradeStatus(str, Enum):
-    EXECUTED = "EXECUTED"
-    PENDING = "PENDING"
-    CANCELLED = "CANCELLED"
-
-class TradingOperation(SQLModel, table=True):
-    """Modelo para operaciones de trading persistentes"""
-    __tablename__ = "trading_operations"
-    
-    # Identificadores
-    id: str = Field(primary_key=True, default_factory=lambda: str(uuid4()))
-    bot_id: int = Field(foreign_key="botconfig.id")
-    user_id: int = Field(foreign_key="user.id")
-    
-    # Datos de la operación
-    symbol: str
-    side: TradeSide
-    quantity: float
-    price: float
-    executed_price: Optional[float] = None
-    
-    # Estrategia y señal
-    strategy: str = "Smart Scalper"
-    signal: str = "Unknown"
-    algorithm_used: str = None  # Se establecerá dinámicamente
-    confidence: float = 0.0
-    
-    # P&L y métricas
-    pnl: float = 0.0
-    commission: float = 0.0
-    realized_pnl: float = 0.0
-    
-    # Estado
-    status: TradeStatus = TradeStatus.EXECUTED
-    
-    # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    executed_at: Optional[datetime] = None
-    
-    # Metadatos
-    trade_metadata: Optional[str] = None  # JSON string para datos adicionales
-
-class CreateTradeRequest(SQLModel):
-    """Request para crear nueva operación"""
-    bot_id: int
-    symbol: str
-    side: TradeSide
-    quantity: float
-    price: float
-    strategy: str = "Smart Scalper"
-    signal: str = "Unknown"
-    algorithm_used: str = None  # Se establecerá dinámicamente
-    confidence: float = 0.0
-    pnl: float = 0.0
+# ✅ GUARDRAILS P6: Import model from models/ instead of defining here
+from models.trading_operation import TradingOperation, TradeSide, TradeStatus, CreateTradeRequest, TradeResponse
 
 @router.post("/api/bots/{bot_id}/trading-operations")
 async def create_trading_operation(

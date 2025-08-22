@@ -52,7 +52,8 @@ class UserTradingService:
             
         except Exception as e:
             logger.error(f"❌ Error obteniendo exchanges usuario {user_id}: {e}")
-            return []
+            # 🚨 Re-raise para manejar adecuadamente en endpoints
+            raise RuntimeError(f"Database error getting user exchanges: {e}")
 
     async def get_user_trading_engine(
         self, 

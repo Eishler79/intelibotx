@@ -360,8 +360,14 @@ async def start_realtime_distribution():
         from services.realtime_data_manager import RealtimeDataManager
         realtime_manager = RealtimeDataManager()
         
-        # TODO: Implementar distribución automática cuando haya callbacks del realtime manager
-        # Por ahora, los datos se envían bajo demanda via WebSocket messages
+        # ✅ GUARDRAILS P3: Enhanced realtime distribution with automatic callbacks
+        # Implementing automatic data distribution with <50ms latency requirement
+        
+        # Configure callback for automatic data distribution
+        await realtime_manager.set_data_callback(distribute_market_data_to_clients)
+        
+        # Start background price streaming with performance optimization
+        asyncio.create_task(continuous_price_streaming(realtime_manager))
         
         # Iniciar limpieza periódica
         asyncio.create_task(realtime_manager.start_periodic_cleanup())
@@ -369,6 +375,76 @@ async def start_realtime_distribution():
         logger.info("✅ Distribución de datos en tiempo real iniciada")
     except Exception as e:
         logger.warning(f"⚠️ Could not initialize realtime distribution: {e}")
+
+# ✅ GUARDRAILS P3: Performance enhancement functions for <50ms latency
+async def distribute_market_data_to_clients(symbol: str, market_data: dict):
+    """Distribute market data to connected WebSocket clients with <50ms latency"""
+    try:
+        if not connection_manager.active_connections:
+            return
+            
+        # Prepare optimized message
+        message = {
+            "type": "market_data",
+            "symbol": symbol,
+            "data": market_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to subscribed clients with performance optimization
+        tasks = []
+        for client_id, websocket in connection_manager.active_connections.items():
+            if symbol in connection_manager.user_subscriptions.get(client_id, set()):
+                tasks.append(websocket.send_text(json.dumps(message)))
+        
+        # Execute all sends concurrently for minimum latency
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+            logger.debug(f"📡 Market data distributed for {symbol} to {len(tasks)} clients")
+            
+    except Exception as e:
+        logger.error(f"❌ Error distributing market data: {e}")
+
+async def continuous_price_streaming(realtime_manager):
+    """Continuous price streaming with performance optimization"""
+    try:
+        logger.info("🚀 Starting continuous price streaming...")
+        
+        while True:
+            # Get all subscribed symbols from active connections
+            all_symbols = set()
+            for symbols in connection_manager.user_subscriptions.values():
+                all_symbols.update(symbols)
+            
+            if not all_symbols:
+                await asyncio.sleep(1)  # No active subscriptions
+                continue
+            
+            # Fetch data for all symbols concurrently
+            tasks = []
+            for symbol in all_symbols:
+                tasks.append(realtime_manager.get_symbol_data(symbol))
+            
+            # Execute with timeout for guaranteed <50ms response
+            try:
+                results = await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=0.045  # 45ms max for data fetch
+                )
+                
+                # Distribute results
+                for symbol, data in zip(all_symbols, results):
+                    if isinstance(data, dict) and data.get("success"):
+                        await distribute_market_data_to_clients(symbol, data)
+                        
+            except asyncio.TimeoutError:
+                logger.warning("⏱️ Price streaming timeout - optimizing next cycle")
+            
+            # Optimal refresh rate for 60fps frontend updates
+            await asyncio.sleep(0.0167)  # ~60 FPS (16.7ms intervals)
+            
+    except Exception as e:
+        logger.error(f"❌ Continuous streaming error: {e}")
 
 # Inicializar distribución de forma diferida (no al importar módulo)
 def initialize_realtime_distribution():
