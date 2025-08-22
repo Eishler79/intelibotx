@@ -15,6 +15,17 @@
 
 ---
 
+## 2025-08-21 — DL-021 · Critical Hardcode Data Elimination (DL-001 Violations)
+**Contexto:** Investigación usuario reveló hardcode crítico en backtest results + trading history + bot preview.  
+**Decisión:** Eliminar ALL hardcode data violations identificadas en ETAPA 0 REFACTORING.  
+**Technical Issues:** bots.py:692-697 (backtest stats), trading_history.py:198 (win_rate), BotsEnhanced.jsx:65-72 (mock preview).  
+**DL-001 Compliance:** Reemplazar con cálculos reales de TradingOperation table + user real data.  
+**Impacto:** ETAPA 0 extendida +4-5 días para DL-001 full compliance + production trading readiness.  
+**Rollback:** Restaurar hardcode values temporalmente si cálculo real falla.  
+**SPEC_REF:** DL-001 + MASTER_PLAN.md ETAPA 0 + GUARDRAILS compliance
+
+---
+
 ## 2025-08-21 — DL-020 · Auto-refresh Price System Professional UX
 **Contexto:** Usuario reporta precio estático vs Binance dinámico - UX no profesional.  
 **Decisión:** Implementar sistema auto-refresh cada 5 segundos con countdown visual.  
@@ -350,3 +361,63 @@ LAYER 6: Graceful null return (Show "N/A" with explanation)
 **Rollback plan:** `git revert [COMMIT_HASH_DL019] --no-edit && git push origin main`  
 **Testing plan:** Backend mod → Frontend update → Eliminate redundant → PRD deployment → E2E validation  
 **SPEC_REF:** backend/routes/real_trading_routes.py:get_market_data + DECISION_LOG.md:DL-019
+
+---
+
+## 2025-08-21 — DL-022 · Strategic Rollback - Dual Price Display Implementation
+**Contexto:** Implementación dual price display (min_entry_price histórico + precio mercado tiempo real) causó ReferenceError crítico y página blank en producción.  
+**Decisión:** Rollback estratégico completo con metodología GUARDRAILS para preservar funcionalidad working y planear debugging futuro.  
+**Implementación fallida:**  
+- ❌ **Frontend:** BotControlPanel.jsx grid 4→5 columnas + dual price fields  
+- ❌ **Backend:** routes/bots.py `min_entry_price` field processing  
+- ❌ **Model:** EnhancedBotCreationModal.jsx capture price during creation  
+**Error crítico:** `ReferenceError: Cannot access uninitialized variable` in `index-CCQ1HWlj.js:1225:307420` - página blank sin render.  
+**Root cause:** JavaScript compilation error en Vite build, no specific to BotControlPanel code.  
+**Rollback ejecutado:**  
+```bash
+git revert cc15e6c --no-edit  # Fix opcional chaining fallido
+git revert 269e5e6 --no-edit  # Implementación original min_entry_price
+```
+**Sistema restored:** 4-column grid layout, 30-second refresh rate, working functionality confirmed.  
+**Plan futuro:** Debugging process identificar población datos panel + implementar dual price sin romper sistema.  
+**Compliance garantizado:**  
+- ✅ **GUARDRAILS:** No romper lo que ya funciona - rollback metodológico preserva working state  
+- ✅ **DL-001:** Datos reales mantenidos - no se perdió funcionalidad existente  
+- ✅ **Professional Standards:** Sistema estable first, features después con debugging apropiado  
+**Archivos afectados:** BotControlPanel.jsx, EnhancedBotCreationModal.jsx, routes/bots.py (all reverted)  
+**Next phase:** Debugging process para identificar como se llenan datos panel + implementar features sin breaking changes.  
+**Rollback plan:** Already executed - commits reverted successfully.  
+**SPEC_REF:** frontend/src/components/BotControlPanel.jsx:319-368 + DECISION_LOG.md:DL-022
+
+---
+
+## 2025-08-22 — DL-026 · Risk Score Hardcode Elimination - DL-001 Compliance Critical Fix
+**Contexto:** Frontend hardcode `risk_score: 0.25` violaba DL-001 no-hardcode policy. Usuario reportó valores estáticos necesitaban datos reales institucionales.  
+**Decisión:** Eliminar hardcode + exponer `risk_assessment` real del backend AdvancedAlgorithmSelector.  
+**Technical Implementation:**  
+- Backend routes/bots.py:210 expose `algorithm_selection.risk_assessment`  
+- Frontend SmartScalperMetrics.jsx:115 consume `smartScalperData.analysis.risk_assessment?.overall_risk`  
+- Dynamic calculation: `base_risk = 1.0 - algorithm.score` adjusted by market regime + institutional risk  
+**GUARDRAILS 9-Point Applied:** P1 Diagnosis → P9 Documentation systematic methodology  
+**DL-001 Compliance:** Hardcode 0.25 → Real backend institutional risk assessment  
+**Impacto:** Users see authentic algorithm risk analysis vs placeholder hardcode values  
+**Rollback:** `git revert 9925db1 --no-edit && git push origin main`  
+**SPEC_REF:** backend/routes/bots.py:210 + frontend/SmartScalperMetrics.jsx:115 + backend/services/advanced_algorithm_selector.py:737-759
+
+---
+
+## 2025-08-22 — DL-027 · SmartScalper UI Architecture Refactoring - 5 Sections + Dynamic Entry Conditions
+**Contexto:** SmartScalperMetrics.jsx requiere reorganización arquitectónica para mostrar algoritmos institucionales correctamente.  
+**Decisión:** Implementar layout 5 secciones + entry conditions dinámicas por algorithm_selected + 8 algorithms matrix.  
+**Arquitectura Nueva:**  
+1. Smart Scalper Multi-Algorithm Engine (EXPANDIDO) - Más información algoritmo ganador  
+2. Entry Conditions Status (NUEVO) - Conditions específicas por algoritmo dinámico  
+3. Core Institutional Algorithms Matrix (NUEVO) - 8 cards algoritmos independientes  
+4. Execution Quality Metrics (MANTENIDO)  
+5. Smart Scalper Performance (MANTENIDO)  
+**Entry Conditions:** Dinámicas por algorithm_selected - NO hardcode retail conditions.  
+**Algorithms Matrix:** 8 algoritmos institucionales con status individual independiente.  
+**UI Components:** ExpandedMultiAlgorithmEngine + DynamicEntryConditions + AlgorithmMatrixCard.  
+**Impacto:** Usuario ve algoritmo ganador + sus conditions + status todos los algoritmos + transparencia total.  
+**Rollback:** git revert commit + restaurar layout anterior SmartScalperMetrics.jsx.  
+**SPEC_REF:** SmartScalperMetrics.jsx:988-1200 + DESIGN_SYSTEM.md + SCALPING_MODE.md entry conditions

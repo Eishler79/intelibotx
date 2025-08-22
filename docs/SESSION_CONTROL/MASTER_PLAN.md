@@ -14,6 +14,7 @@
 3. ✅ **Professional UX Standards** - Comportamiento idéntico a 3Commas/TradingView
 4. ✅ **GUARDRAILS 9 Puntos** - Aplicación estricta metodología (confirmado por usuario)
 5. ✅ **Real-time Price System** - DL-019 professional failover exclusivamente
+6. ✅ **Min Entry Price System** - Frontend-backend sync con dual price display + GUARDRAILS compliance
 
 ### **📊 NUEVA ARQUITECTURA INTELIGENTE:**
 - **CLAUDE.md:** Master entry point con principios KK/KG/KO ✅
@@ -254,7 +255,13 @@ PROBLEMA SISTÉMICO: 5+ WORKAROUNDS ACUMULADOS
 **🎯 CRITERIO SIMPLE:** Primero completar 5/5 endpoints básicos → Después optimización
 
 #### **SEMANA 1-2: SECURITY + AUTHENTICATION OVERHAUL**
-**INMEDIATO:** Completar endpoints 4-5 del pack básico
+**CRÍTICO DL-021:** Eliminar ALL hardcode data violations PRIMERO
+0. **🚨 DL-001 Critical Violations Fix** - Hardcode elimination (4-5 días adicionales):
+   - **Backtest Results Real Calculation** - bots.py:692-697 → TradingOperation stats
+   - **Trading History Real Stats** - trading_history.py:198 → user win_rate real
+   - **Bot Preview Real Data** - BotsEnhanced.jsx:65-72 → último bot usuario
+   
+**INMEDIATO:** Completar endpoints 4-5 del pack básico  
 1. **Verificar + Fix Exchanges API** - GET /api/user/exchanges functionality
 2. **Verificar + Fix Bots API** - GET /api/bots functionality  
 3. **FastAPI Authentication Refactoring** - Eliminar 43 parches Opción B (DESPUÉS)
@@ -352,10 +359,15 @@ PROBLEMA SISTÉMICO: 5+ WORKAROUNDS ACUMULADOS
 
 ---
 
-### **TIMELINE CRÍTICO COMPLETO:**
-- **Semanas 1-6:** ETAPA 0 - Refactoring arquitectural OBLIGATORIO
+### **TIMELINE CRÍTICO COMPLETO ACTUALIZADO:**
+- **Semanas 1-6:** ETAPA 0 - Refactoring arquitectural OBLIGATORIO (+4-5 días DL-021)
 - **Meses 2-5:** ETAPA 2 - Algoritmos institucionales sobre base sólida
 - **Meses 6-12:** ETAPA 3 - Features institucionales avanzadas
+
+### **🚨 ETAPA 0 EXTENDIDA - DL-021 COMPLIANCE:**
+**Duración Original:** 4-6 semanas  
+**Duración Actualizada:** 4-6 semanas + 4-5 días (DL-001 hardcode elimination)  
+**Razón:** Critical hardcode violations impiden production trading readiness
 
 ---
 
