@@ -86,6 +86,9 @@ class WebSocketConnectionManager:
 # Instancia global del manager
 connection_manager = WebSocketConnectionManager()
 
+# Global realtime manager - initialized later with proper error handling
+realtime_manager = None
+
 @router.websocket("/ws/realtime/{client_id}")
 async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str, token: str = None):
     """
@@ -289,7 +292,17 @@ async def get_websocket_status():
     """Obtener estado de conexiones WebSocket"""
     try:
         ws_stats = connection_manager.get_stats()
-        realtime_stats = await realtime_manager.get_subscription_stats()
+        
+        # 🏛️ DL-001 COMPLIANCE: Handle realtime_manager gracefully if not initialized
+        realtime_stats = {}
+        if realtime_manager is not None:
+            try:
+                realtime_stats = await realtime_manager.get_subscription_stats()
+            except Exception as rm_error:
+                logger.warning(f"⚠️ RealtimeManager stats unavailable: {rm_error}")
+                realtime_stats = {"error": "RealtimeManager not fully initialized"}
+        else:
+            realtime_stats = {"status": "RealtimeManager not initialized - ENCRYPTION_MASTER_KEY may be missing"}
         
         return JSONResponse(content={
             "success": True,
@@ -297,7 +310,7 @@ async def get_websocket_status():
                 "websocket_connections": ws_stats,
                 "realtime_subscriptions": realtime_stats,
                 "timestamp": datetime.utcnow().isoformat(),
-                "service_status": "active"
+                "service_status": "active" if realtime_manager else "degraded"
             }
         })
         
@@ -355,7 +368,8 @@ async def start_realtime_distribution():
     """Task en background para distribuir datos en tiempo real"""
     logger.info("🚀 Iniciando distribución de datos en tiempo real...")
     
-    # Lazy import
+    # Lazy import with global variable update
+    global realtime_manager
     try:
         from services.realtime_data_manager import RealtimeDataManager
         realtime_manager = RealtimeDataManager()
