@@ -120,16 +120,20 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                   risk_score: smartScalperData.analysis.risk_assessment?.overall_risk || null,
                   wyckoff_phase: smartScalperData.analysis.wyckoff_phase || 'ACCUMULATION',
                   timeframe_alignment: smartScalperData.analysis.timeframe_alignment || 'ALIGNED',
-                  // 📊 DL-001 COMPLIANCE: Extract real institutional conditions from backend
-                  conditions_met: [
-                    ...(smartScalperData.signals?.liquidity_grab_detected ? ['LIQUIDITY_GRAB'] : []),
-                    ...(smartScalperData.signals?.order_block_confirmed ? ['ORDER_BLOCK'] : []),
-                    ...(smartScalperData.signals?.smart_money_flow_detected ? ['SMART_MONEY_FLOW'] : []),
-                    ...(smartScalperData.analysis?.institutional_confirmations ? 
-                        Object.keys(smartScalperData.analysis.institutional_confirmations) : [])
-                  ],
-                  // 📊 DL-001 COMPLIANCE: Use real expected_performance from backend 
-                  expected_performance: smartScalperData.analysis?.expected_performance || null,
+                  // 📊 DL-001 COMPLIANCE: Extract real institutional confirmations from backend response
+                  conditions_met: Object.keys(smartScalperData.signals?.institutional_confirmations || {}),
+                  // 📊 DL-001 COMPLIANCE: Map institutional quality score to expected performance
+                  expected_performance: {
+                    win_rate: smartScalperData.analysis?.institutional_quality_score || null,
+                    confidence_level: smartScalperData.analysis?.institutional_confidence_level || null,
+                    smart_money_recommendation: smartScalperData.analysis?.smart_money_recommendation || null
+                  },
+                  // 📊 DL-001 COMPLIANCE: Map top algorithms for Algorithm Matrix Cards
+                  all_algorithms_evaluated: smartScalperData.top_algorithms?.map(algo => ({
+                    algorithm: algo.algorithm,
+                    confidence: parseFloat(algo.confidence?.replace('%', '')) || 0,
+                    score: parseFloat(algo.score?.replace('%', '')) || 0
+                  })) || [],
                   data_source: 'smart_scalper_real'
                 };
                 // 🔍 VALIDACIÓN FINAL + ALMACENAR LKG
@@ -1260,9 +1264,9 @@ const ExpandedMultiAlgorithmEngine = ({ advanced, institutionalAlgorithm }) => {
               <div>
                 <p className="text-gray-400">Expected Performance</p>
                 <p className="text-purple-400 font-semibold">
-                  {/* 📊 DL-001 COMPLIANCE: Usar expected_performance real del backend */}
-                  {advanced?.expected_performance?.win_rate ? 
-                    `Win Rate: ${(advanced.expected_performance.win_rate * 100).toFixed(0)}%` : 
+                  {/* 📊 DL-001 COMPLIANCE: Usar institutional_quality_score real del backend */}
+                  {advanced?.expected_performance?.win_rate !== null && advanced?.expected_performance?.win_rate !== undefined ? 
+                    `Win Rate: ${advanced.expected_performance.win_rate}%` : 
                     'Win Rate: N/A'
                   }
                 </p>
