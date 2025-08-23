@@ -115,8 +115,10 @@ async def startup_event():
         # 🏛️ ETAPA 0.2: WebSocket RealtimeDataManager Initialization
         # DL-001 COMPLIANCE: Real services initialization, no hardcode/simulation
         try:
-            from routes.websocket_routes import initialize_realtime_distribution
-            initialize_realtime_distribution()
+            from routes.websocket_routes import start_realtime_distribution
+            import asyncio
+            # Create async task properly in startup event context
+            asyncio.create_task(start_realtime_distribution())
             print("✅ RealtimeDataManager background task iniciado - WebSocket ready")
         except ImportError as import_error:
             print(f"⚠️ WebSocket routes not available: {import_error}")
