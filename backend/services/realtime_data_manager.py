@@ -381,11 +381,14 @@ class RealtimeDataManager:
 
     async def get_subscription_stats(self) -> Dict[str, Any]:
         """Obtener estadísticas de suscripciones activas"""
+        total_user_subscriptions = sum(len(subs) for subs in self.user_subscriptions.values())
+        total_websocket_connections = sum(len(services) for services in self.user_websocket_services.values())
+        
         return {
-            'total_subscriptions': len(self.active_subscriptions),
-            'active_subscriptions': list(self.active_subscriptions.keys()),
-            'websocket_connections': len(self.websocket_service.connections),
-            'buffer_status': self.websocket_service.get_buffer_status(),
+            'total_subscriptions': total_user_subscriptions,
+            'active_users': len(self.user_subscriptions),
+            'connected_users': len(self.connected_users),
+            'websocket_services': total_websocket_connections,
             'cache_type': 'redis' if self.redis_client else 'memory',
             'cache_size': len(self.memory_cache),
             'uptime': datetime.utcnow().isoformat()
