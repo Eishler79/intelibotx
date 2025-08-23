@@ -90,7 +90,7 @@ connection_manager = WebSocketConnectionManager()
 realtime_manager = None
 
 @router.websocket("/ws/realtime/{client_id}")
-async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str, token: str = None):
+async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str, token: Optional[str] = Query(None)):
     """
     WebSocket endpoint para datos en tiempo real autenticado
     
