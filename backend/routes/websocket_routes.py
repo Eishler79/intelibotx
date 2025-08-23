@@ -90,7 +90,7 @@ connection_manager = WebSocketConnectionManager()
 realtime_manager = None
 
 @router.websocket("/ws/realtime/{client_id}")
-async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str, token: Optional[str] = Query(None)):
+async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str):
     """
     WebSocket endpoint para datos en tiempo real autenticado
     
@@ -128,6 +128,12 @@ async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str, toke
         # Obtener sesión de BD
         session_gen = get_session()
         session = next(session_gen)
+        
+        # Obtener token del query string
+        token = None
+        query_string = websocket.query_params.get("token")
+        if query_string:
+            token = query_string
         
         # Verificar token inicial si se proporciona
         if token:
