@@ -79,6 +79,85 @@ app.add_middleware(
     max_age=3600  # Cache preflight for 1 hour
 )
 
+# ✅ CENTRALIZED ERROR HANDLING - DL-001 COMPLIANT
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
+from utils.exceptions import InteliBotXException, AuthenticationError
+from utils.error_responses import create_error_response, create_authentication_error, format_pydantic_error, get_status_code_for_exception
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """
+    Handle FastAPI HTTPException with standardized error response
+    
+    GUARDRAILS COMPLIANCE: Critical file modification with user confirmation
+    DL-001 COMPLIANCE: Dynamic error responses based on real exception context
+    """
+    return create_error_response(
+        status_code=exc.status_code,
+        error_type="HTTPException",
+        message=exc.detail,
+        request=request
+    )
+
+@app.exception_handler(ValidationError)
+async def validation_exception_handler(request: Request, exc: ValidationError):
+    """
+    Handle Pydantic ValidationError with formatted field-specific errors
+    
+    DL-001 COMPLIANCE: Real validation errors from user input, no hardcode
+    """
+    details = format_pydantic_error(exc)
+    return create_error_response(
+        status_code=422,
+        error_type="ValidationError",
+        message="Request validation failed",
+        details=details,
+        request=request,
+        original_exception=exc
+    )
+
+@app.exception_handler(InteliBotXException)
+async def intelibotx_exception_handler(request: Request, exc: InteliBotXException):
+    """
+    Handle custom InteliBotX exceptions with detailed context
+    
+    DL-001 COMPLIANCE: Dynamic exception details from real system context
+    """
+    status_code = get_status_code_for_exception(exc)
+    return create_error_response(
+        status_code=status_code,
+        error_type=exc.__class__.__name__,
+        message=exc.message,
+        details=exc.details,
+        request=request,
+        original_exception=exc.original_exception
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """
+    Catch-all exception handler for unexpected server errors
+    
+    SECURITY: Hide internal error details in production
+    DL-001 COMPLIANCE: Environment-based error exposure control
+    """
+    import os
+    is_development = os.getenv("ENVIRONMENT", "development") != "production"
+    
+    message = str(exc) if is_development else "Internal server error"
+    details = {"exception_type": exc.__class__.__name__} if is_development else None
+    
+    return create_error_response(
+        status_code=500,
+        error_type="InternalServerError", 
+        message=message,
+        details=details,
+        request=request,
+        original_exception=exc
+    )
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database on startup"""
@@ -418,7 +497,7 @@ except Exception as e:
     print(f"⚠️ Could not load WebSocket routes: {e}")
     import traceback
     traceback.print_exc()
-    print("⚠️ WebSocket routes disabled - Core trading fully functional")
+    print("⚠️ WebSocket routes disabled - Implementing SSE fallback for real-time data")
     
     # Fallback endpoints for trading history
     @app.get("/api/bots/{bot_id}/orders")

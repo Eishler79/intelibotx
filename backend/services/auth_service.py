@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from sqlmodel import Session, select
 from fastapi import HTTPException, Depends, status
+from utils.exceptions import AuthenticationError, ValidationError as CustomValidationError, ConfigurationError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import logging
 
@@ -101,9 +102,9 @@ class AuthService:
             email = payload.get("email")
             
             if user_id is None or email is None:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token payload"
+                raise AuthenticationError(
+                    "Invalid token payload",
+                    details={"user_id_present": user_id is not None, "email_present": email is not None}
                 )
             
             return {
@@ -114,14 +115,14 @@ class AuthService:
             }
             
         except jwt.ExpiredSignatureError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has expired"
+            raise AuthenticationError(
+                "Token has expired",
+                details={"error_type": "expired_signature"}
             )
-        except (jwt.InvalidSignatureError, jwt.DecodeError, jwt.InvalidTokenError):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+        except (jwt.InvalidSignatureError, jwt.DecodeError, jwt.InvalidTokenError) as e:
+            raise AuthenticationError(
+                "Invalid token",
+                details={"error_type": "invalid_token", "jwt_error": str(e)}
             )
     
     def generate_verification_token(self) -> str:
@@ -143,9 +144,9 @@ class AuthService:
         ).first()
         
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+            raise CustomValidationError(
+                "Email already registered",
+                details={"email": user_data.email, "conflict_type": "duplicate_email"}
             )
         
         # Crear usuario
@@ -180,22 +181,22 @@ class AuthService:
         ).first()
         
         if not user or not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+            raise AuthenticationError(
+                "Invalid credentials",
+                details={"email_exists": user is not None, "user_active": user.is_active if user else False}
             )
         
         if not self.verify_password(login_data.password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+            raise AuthenticationError(
+                "Invalid credentials", 
+                details={"error_type": "password_mismatch"}
             )
         
         # BLOQUEAR usuarios no verificados
         if not user.is_verified:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Email verification required. Please check your email and verify your account before logging in."
+            raise AuthenticationError(
+                "Email verification required. Please check your email and verify your account before logging in.",
+                details={"error_type": "email_not_verified", "user_email": user.email}
             )
         
         # Skip last_login update to avoid readonly database issues for Railway
@@ -216,9 +217,9 @@ class AuthService:
         """
         user = session.get(User, user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+            raise CustomValidationError(
+                "User not found",
+                details={"user_id": user_id, "error_type": "user_not_found"}
             )
         
         # Encriptar credenciales
@@ -254,9 +255,9 @@ class AuthService:
         Obtener credenciales de Binance desencriptadas para un usuario.
         """
         if not user.api_keys_configured:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User has no API keys configured"
+            raise ConfigurationError(
+                "User has no API keys configured",
+                details={"user_id": user.id, "error_type": "no_api_keys"}
             )
         
         use_mode = mode or user.preferred_mode
@@ -271,9 +272,9 @@ class AuthService:
         credentials = encryption_service.decrypt_user_credentials(user_dict, use_mode)
         
         if not credentials.get('api_key') or not credentials.get('api_secret'):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"User has incomplete {use_mode} credentials"
+            raise ConfigurationError(
+                f"User has incomplete {use_mode} credentials",
+                details={"user_id": user.id, "mode": use_mode, "api_key_present": bool(credentials.get('api_key')), "api_secret_present": bool(credentials.get('api_secret'))}
             )
         
         return credentials
@@ -285,15 +286,15 @@ class AuthService:
         from fastapi import Header, HTTPException, status
         
         if not authorization:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authorization header required"
+            raise AuthenticationError(
+                "Authorization header required",
+                details={"error_type": "missing_authorization_header"}
             )
         
         if not authorization.startswith("Bearer "):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authorization header format"
+            raise AuthenticationError(
+                "Invalid authorization header format",
+                details={"error_type": "invalid_header_format", "received_format": authorization[:20] if authorization else None}
             )
         
         return authorization.split(" ")[1]
@@ -316,9 +317,9 @@ async def get_current_user(
     
     user = auth_service.get_user_by_id(token_data["user_id"], session)
     if not user or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive"
+        raise AuthenticationError(
+            "User not found or inactive",
+            details={"user_exists": user is not None, "user_active": user.is_active if user else False}
         )
     
     return user
@@ -334,9 +335,9 @@ async def get_current_user_safe(authorization: str = None) -> User:
     from db.database import get_session
     
     if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
+        raise AuthenticationError(
+            "Authorization header required",
+            details={"error_type": "missing_authorization_header"}
         )
     
     try:
@@ -348,20 +349,20 @@ async def get_current_user_safe(authorization: str = None) -> User:
         current_user = auth_service.get_user_by_id(token_data["user_id"], session)
         
         if not current_user or not current_user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
+            raise AuthenticationError(
+                "User not found or inactive",
+                details={"user_exists": current_user is not None, "user_active": current_user.is_active if current_user else False}
             )
         
         return current_user
         
-    except HTTPException:
+    except AuthenticationError:
         raise
     except Exception as e:
         logger.error(f"Authentication error in get_current_user_safe: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication"
+        raise AuthenticationError(
+            "Authentication failed",
+            details={"error_type": "authentication_exception", "original_error": str(e)}
         )
 
 # Dependency para obtener credenciales de Binance del usuario actual
@@ -387,9 +388,9 @@ def verify_email_token(self, token: str, session: Session) -> User:
     ).first()
     
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification token"
+        raise CustomValidationError(
+            "Invalid or expired verification token",
+            details={"token": token[:10] + "...", "error_type": "invalid_verification_token"}
         )
     
     # Marcar como verificado
@@ -414,15 +415,15 @@ def resend_verification_token(self, email: str, session: Session) -> User:
     ).first()
     
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+        raise CustomValidationError(
+            "User not found",
+            details={"email": email, "error_type": "user_not_found"}
         )
     
     if user.is_verified:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User is already verified"
+        raise CustomValidationError(
+            "User is already verified",
+            details={"user_id": user.id, "error_type": "already_verified"}
         )
     
     # Generar nuevo token
@@ -448,15 +449,13 @@ def request_password_reset(self, email: str, session: Session) -> User:
     
     if not user:
         # No revelar si el email existe o no por seguridad
-        raise HTTPException(
-            status_code=status.HTTP_200_OK,
-            detail="If the email exists, a password reset link has been sent"
-        )
+        # Return success message regardless (security best practice)
+        return {"message": "If the email exists, a password reset link has been sent"}
     
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Account is not active"
+        raise AuthenticationError(
+            "Account is not active",
+            details={"user_id": user.id, "error_type": "account_inactive"}
         )
     
     # Generar token de reset (1 hora de expiración)
@@ -483,16 +482,16 @@ def reset_password(self, token: str, new_password: str, session: Session) -> Use
     ).first()
     
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired reset token"
+        raise CustomValidationError(
+            "Invalid or expired reset token",
+            details={"token": reset_token[:10] + "...", "error_type": "invalid_reset_token"}
         )
     
     # Validar nueva contraseña
     if len(new_password) < 6:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 6 characters long"
+        raise CustomValidationError(
+            "Password must be at least 6 characters long",
+            details={"password_length": len(new_password), "min_required": 6}
         )
     
     # Actualizar contraseña
