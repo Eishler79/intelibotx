@@ -11,7 +11,7 @@ import json
 import logging
 from typing import Dict, Set, Optional
 from datetime import datetime
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Query, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Query, Depends, Header
 from fastapi.responses import JSONResponse
 
 # Lazy imports to avoid psycopg2 dependency at module level
@@ -294,9 +294,14 @@ async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str):
             session.close()
 
 @router.get("/api/websocket/status")
-async def get_websocket_status():
-    """Obtener estado de conexiones WebSocket"""
+async def get_websocket_status(authorization: str = Header(None)):
+    """DL-008 Authentication: Obtener estado de conexiones WebSocket"""
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         ws_stats = connection_manager.get_stats()
         
         # 🏛️ DL-001 COMPLIANCE: Handle realtime_manager gracefully if not initialized
@@ -328,9 +333,9 @@ async def get_websocket_status():
 # WebSocket REAL disponible en /ws/realtime/{client_id} con JWT auth
 
 @router.post("/api/websocket/broadcast")
-async def broadcast_message(message: dict):
+async def broadcast_message(message: dict, authorization: str = Header(None)):
     """
-    Endpoint para broadcasting manual (solo para testing/admin)
+    DL-008 Authentication: Endpoint para broadcasting manual (solo para testing/admin)
     
     **Body:**
     ```json
@@ -342,6 +347,11 @@ async def broadcast_message(message: dict):
     ```
     """
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         target_symbol = message.get("target_symbol")
         
         broadcast_data = {
