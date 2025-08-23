@@ -395,17 +395,24 @@ except Exception as e:
     print(f"⚠️  Warning: Could not load Dashboard API router: {e}")
 
 # Load WebSocket routes (NEW - Real-time data streaming) - ETAPA 0.2 ENABLED
-# WebSocket routes for real-time institutional algorithm data
+# RAILWAY COMPATIBILITY: WebSocket must be registered directly on main app, not APIRouter
 try:
-    from routes.websocket_routes import router as websocket_router
-    app.include_router(websocket_router)
-    print("✅ WebSocket routes loaded successfully - Real-time data enabled")
+    from routes.websocket_routes import websocket_realtime_endpoint
+    
+    # Register WebSocket endpoint directly on main app for Railway compatibility
+    app.websocket("/ws/realtime/{client_id}")(websocket_realtime_endpoint)
+    print("✅ WebSocket endpoint registered directly on main app - Railway compatible")
     print("🔗 WebSocket endpoint available at: /ws/realtime/{client_id}")
+    
+    # Load HTTP routes from websocket_routes normally
+    from routes.websocket_routes import router as websocket_http_router
+    app.include_router(websocket_http_router)
+    print("✅ WebSocket HTTP routes loaded successfully")
     
     # Log all registered routes for debugging
     for route in app.routes:
-        if hasattr(route, 'path') and 'ws' in route.path:
-            print(f"🎯 WebSocket route registered: {route.path}")
+        if hasattr(route, 'path') and ('ws' in route.path or 'websocket' in route.path.lower()):
+            print(f"🎯 WebSocket route registered: {route.path} - {type(route).__name__}")
             
 except Exception as e:
     print(f"⚠️ Could not load WebSocket routes: {e}")

@@ -89,7 +89,7 @@ connection_manager = WebSocketConnectionManager()
 # Global realtime manager - initialized later with proper error handling
 realtime_manager = None
 
-@router.websocket("/ws/realtime/{client_id}")
+# WebSocket endpoint function (will be registered directly on main app for Railway compatibility)
 async def websocket_realtime_endpoint(websocket: WebSocket, client_id: str):
     """
     WebSocket endpoint para datos en tiempo real autenticado
