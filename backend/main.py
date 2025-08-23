@@ -400,8 +400,17 @@ try:
     from routes.websocket_routes import router as websocket_router
     app.include_router(websocket_router)
     print("✅ WebSocket routes loaded successfully - Real-time data enabled")
+    print("🔗 WebSocket endpoint available at: /ws/realtime/{client_id}")
+    
+    # Log all registered routes for debugging
+    for route in app.routes:
+        if hasattr(route, 'path') and 'ws' in route.path:
+            print(f"🎯 WebSocket route registered: {route.path}")
+            
 except Exception as e:
     print(f"⚠️ Could not load WebSocket routes: {e}")
+    import traceback
+    traceback.print_exc()
     print("⚠️ WebSocket routes disabled - Core trading fully functional")
     
     # Fallback endpoints for trading history
