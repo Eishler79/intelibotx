@@ -112,6 +112,19 @@ async def startup_event():
         db_type = "PostgreSQL" if "postgresql" in DATABASE_URL else "SQLite"
         print(f"✅ Database initialized successfully - {db_type}")
         
+        # 🏛️ ETAPA 0.2: WebSocket RealtimeDataManager Initialization
+        # DL-001 COMPLIANCE: Real services initialization, no hardcode/simulation
+        try:
+            from routes.websocket_routes import initialize_realtime_distribution
+            initialize_realtime_distribution()
+            print("✅ RealtimeDataManager background task iniciado - WebSocket ready")
+        except ImportError as import_error:
+            print(f"⚠️ WebSocket routes not available: {import_error}")
+            print("⚠️ WebSocket functionality disabled - Core trading still functional")
+        except Exception as realtime_error:
+            print(f"⚠️ RealtimeDataManager initialization failed: {realtime_error}")
+            print("⚠️ WebSocket degraded mode - REST API fallback active")
+        
     except Exception as e:
         print(f"⚠️ Database initialization warning: {e}")
 
