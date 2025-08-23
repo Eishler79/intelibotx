@@ -221,26 +221,71 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             };
 
-          // Intentar obtener datos reales usando APIs de usuario
+          // 🏛️ GUARDRAILS P5: PROFESSIONAL RESILIENCE SYSTEM - Multi-layer failover
           let realIndicatorsResponse, executionSummaryResponse;
+          let dataSourceUsed = 'UNKNOWN';
           
+          // LAYER 1: PRIMARY - User authenticated endpoint
           if (token) {
-            // Usar endpoints del usuario autenticado
-            realIndicatorsResponse = await fetch(`${BASE_URL}/api/user/technical-analysis`, {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({
-                symbol: bot.symbol,
-                timeframe: '15m',
-                strategy: 'Smart Scalper'
-              })
-            });
-          } else {
-            // Fallback a endpoints públicos
-            realIndicatorsResponse = await fetch(`${BASE_URL}/api/real-indicators/${bot.symbol}?timeframe=15m`);
+            try {
+              realIndicatorsResponse = await Promise.race([
+                fetch(`${BASE_URL}/api/user/technical-analysis`, {
+                  method: 'POST',
+                  headers,
+                  body: JSON.stringify({
+                    symbol: bot.symbol,
+                    timeframe: '15m',
+                    strategy: 'Smart Scalper'
+                  })
+                }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Primary timeout')), 3000))
+              ]);
+              dataSourceUsed = realIndicatorsResponse.ok ? 'PRIMARY_AUTHENTICATED' : 'PRIMARY_FAILED';
+            } catch (error) {
+              console.warn('🔄 Primary endpoint failed, trying alternative...');
+              dataSourceUsed = 'PRIMARY_TIMEOUT';
+              realIndicatorsResponse = null;
+            }
           }
           
+          // LAYER 2: ALTERNATIVE - Public endpoint
+          if (!realIndicatorsResponse || !realIndicatorsResponse.ok) {
+            try {
+              realIndicatorsResponse = await Promise.race([
+                fetch(`${BASE_URL}/api/real-indicators/${bot.symbol}?timeframe=15m`),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Alternative timeout')), 2000))
+              ]);
+              dataSourceUsed = realIndicatorsResponse.ok ? 'ALTERNATIVE_PUBLIC' : 'ALTERNATIVE_FAILED';
+            } catch (error) {
+              console.warn('🔄 Alternative endpoint failed, trying external...');
+              dataSourceUsed = 'ALTERNATIVE_TIMEOUT';
+              realIndicatorsResponse = null;
+            }
+          }
+          
+          // LAYER 3: EXTERNAL - Binance direct (if available)
+          if (!realIndicatorsResponse || !realIndicatorsResponse.ok) {
+            try {
+              realIndicatorsResponse = await Promise.race([
+                fetch(`${BASE_URL}/api/market-data/${bot.symbol}`),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('External timeout')), 1500))
+              ]);
+              dataSourceUsed = realIndicatorsResponse.ok ? 'EXTERNAL_BINANCE' : 'EXTERNAL_FAILED';
+            } catch (error) {
+              console.warn('🔄 External endpoint failed, using cache...');
+              dataSourceUsed = 'EXTERNAL_TIMEOUT';
+              realIndicatorsResponse = null;
+            }
+          }
+
           executionSummaryResponse = await fetch(`${BASE_URL}/api/bots/${bot.id}/execution-summary`);
+          
+          // LAYER 4: CACHE - Last Known Good fallback handled in apiError catch
+          // LAYER 5: EMERGENCY - Smart Scalper analysis as final fallback  
+          // LAYER 6: GRACEFUL FAIL - Transparent error state (implemented below)
+          
+          // 🏛️ UX TRANSPARENCY: Display data source status
+          console.log(`📊 Data Source Used: ${dataSourceUsed}`);
           
           // Procesar respuesta de indicadores reales con manejo de errores
           try {
@@ -931,6 +976,54 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         </div>
       )}
       
+      {/* 🏛️ GUARDRAILS P5: UX TRANSPARENCY - Data source status indicators */}
+      {metrics.advanced?.data_source && (
+        <div className={`border rounded-lg p-4 flex items-center gap-3 ${
+          metrics.advanced.data_source === 'websocket_realtime' ? 'bg-green-900/20 border-green-700/50' :
+          metrics.advanced.data_source.includes('PRIMARY') ? 'bg-blue-900/20 border-blue-700/50' :
+          metrics.advanced.data_source.includes('ALTERNATIVE') ? 'bg-yellow-900/20 border-yellow-700/50' :
+          metrics.advanced.data_source.includes('EXTERNAL') ? 'bg-orange-900/20 border-orange-700/50' :
+          metrics.advanced.data_source === 'last_known_good' ? 'bg-purple-900/20 border-purple-700/50' :
+          'bg-red-900/20 border-red-700/50'
+        }`}>
+          <div className={
+            metrics.advanced.data_source === 'websocket_realtime' ? 'text-green-400' :
+            metrics.advanced.data_source.includes('PRIMARY') ? 'text-blue-400' :
+            metrics.advanced.data_source.includes('ALTERNATIVE') ? 'text-yellow-400' :
+            metrics.advanced.data_source.includes('EXTERNAL') ? 'text-orange-400' :
+            metrics.advanced.data_source === 'last_known_good' ? 'text-purple-400' :
+            'text-red-400'
+          }>
+            {metrics.advanced.data_source === 'websocket_realtime' ? '🔥' :
+             metrics.advanced.data_source.includes('PRIMARY') ? '🎯' :
+             metrics.advanced.data_source.includes('ALTERNATIVE') ? '🔄' :
+             metrics.advanced.data_source.includes('EXTERNAL') ? '🌐' :
+             metrics.advanced.data_source === 'last_known_good' ? '💾' :
+             '⚠️'}
+          </div>
+          <div>
+            <p className={`font-semibold ${
+              metrics.advanced.data_source === 'websocket_realtime' ? 'text-green-400' :
+              metrics.advanced.data_source.includes('PRIMARY') ? 'text-blue-400' :
+              metrics.advanced.data_source.includes('ALTERNATIVE') ? 'text-yellow-400' :
+              metrics.advanced.data_source.includes('EXTERNAL') ? 'text-orange-400' :
+              metrics.advanced.data_source === 'last_known_good' ? 'text-purple-400' :
+              'text-red-400'
+            }`}>
+              Data Source: {metrics.advanced.data_source.replace('_', ' ').toUpperCase()}
+            </p>
+            <p className="text-gray-300 text-sm">
+              {metrics.advanced.data_source === 'websocket_realtime' ? 'Real-time WebSocket data - optimal latency' :
+               metrics.advanced.data_source.includes('PRIMARY') ? 'Authenticated API - high reliability' :
+               metrics.advanced.data_source.includes('ALTERNATIVE') ? 'Public API fallback - good reliability' :
+               metrics.advanced.data_source.includes('EXTERNAL') ? 'External data source - basic reliability' :
+               metrics.advanced.data_source === 'last_known_good' ? 'Cached data - may be outdated' :
+               'System degraded - limited functionality'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Alert de error WebSocket */}
       {connectionError && !isConnected && (
         <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4 flex items-center gap-3">
