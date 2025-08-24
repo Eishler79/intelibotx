@@ -1,4 +1,5 @@
 // ✅ VERCEL SYNC FIX - File updated to resolve deployment syntax error
+// 🔐 DL-008 COMPLIANCE: Authentication Pattern Implementation
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import LiveTradingFeed from "@/components/LiveTradingFeed";
 import { createTradingOperation, getBotTradingOperations, runSmartTrade, fetchBots, deleteBot, updateBot } from "../services/api";
 import TradingHistory from "../components/TradingHistory";
 import EnhancedBotCreationModal from "../components/EnhancedBotCreationModal";
+import { useAuthDL008 } from "../hooks/useAuthDL008";
 import BotTemplates from "../components/BotTemplates";
 import { 
   TrendingUp, 
@@ -28,6 +30,9 @@ import {
 } from "lucide-react";
 
 export default function BotsAdvanced() {
+  // ✅ DL-008: Authentication Pattern Hook
+  const { authenticatedFetch, getAuthHeaders } = useAuthDL008();
+  
   const [bots, setBots] = useState([]);
   const [selectedBot, setSelectedBot] = useState(null);
   const [controlPanelBot, setControlPanelBot] = useState(null);
@@ -545,12 +550,8 @@ export default function BotsAdvanced() {
     setLoadingSignals(prev => ({ ...prev, [strategy]: true }));
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app'}/api/algorithms/${encodeURIComponent(strategy)}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`
-        }
-      });
+      // ✅ DL-008: Using centralized authentication pattern instead of manual Bearer token
+      const response = await authenticatedFetch(`${import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app'}/api/algorithms/${encodeURIComponent(strategy)}`);
       
       if (response.ok) {
         const data = await response.json();

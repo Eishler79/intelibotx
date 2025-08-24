@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useAuthDL008 } from '../hooks/useAuthDL008';
 import { motion } from 'framer-motion';
 import { 
   Settings, 
@@ -13,6 +14,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTemplate }) => {
+  // ✅ DL-008: Authentication Pattern Hook
+  const { authenticatedFetch } = useAuthDL008();
   const { userExchanges, isAuthenticated, loadUserExchanges } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -446,12 +449,9 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
         formDataCompleto: formData
       });
       
-      const response = await fetch(`${BASE_URL}/api/create-bot`, {
+      // ✅ DL-008: Using centralized authentication pattern
+      const response = await authenticatedFetch(`${BASE_URL}/api/create-bot`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`
-        },
         body: JSON.stringify(formData)
       });
 
