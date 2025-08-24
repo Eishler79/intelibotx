@@ -4,6 +4,34 @@
 
 ---
 
+## 2025-08-24 — DL-030 · PostgreSQL Connection Pooling Professional Implementation
+
+**Contexto:** Sistema requerían arquitectura database profesional con connection pooling para PostgreSQL production.  
+**Decisión:** Implementar connection pooling completo en backend/db/database.py con configuración optimizada Railway.  
+**Technical Implementation:**
+- **PostgreSQL Pooling:** pool_size=10, max_overflow=20, pool_timeout=30, pool_recycle=3600, pool_pre_ping=True
+- **Connection Management:** Professional timeout handling + application_name identification
+- **Development Fallback:** SQLite configuration maintained for local development
+- **Wide Adoption:** 43+ endpoints using get_session() with pooling architecture
+
+**Database Configuration:**
+```python
+pool_size=10,           # Base connections
+max_overflow=20,        # Additional connections during peak
+pool_timeout=30,        # Wait time for connection
+pool_recycle=3600,      # Recycle connections every hour
+pool_pre_ping=True,     # Validate connections before use
+```
+
+**GUARDRAILS P3 Compliance:** Professional database architecture implementation with backup/migration documentation.  
+**DL-001 Compliance:** No hardcode DATABASE_URL, environment variable configuration.  
+**Impacto:** Improved database performance, connection management, and Railway production stability.  
+**Usage Status:** IMPLEMENTED and ACTIVE across all routes (auth, bots, trading_operations, dashboard).  
+**Rollback:** Revert to simple create_engine() without pooling parameters.  
+**SPEC_REF:** backend/db/database.py + GUARDRAILS.md P3 + Railway PostgreSQL production
+
+---
+
 ## 2025-08-12 — DL-002 · Política algoritmos institucionales únicamente
 **Contexto:** InteliBotX debe ser solución profesional e institucional, no básica.  
 **Decisión:** Solo algoritmos de nivel institucional/Smart Money. Eliminar indicadores retail.  
