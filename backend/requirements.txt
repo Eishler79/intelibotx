@@ -51,3 +51,6 @@ typing_extensions==4.14.1
 
 # Crypto
 pycryptodome==3.23.0
+
+# Rate Limiting & Security
+slowapi==0.1.9

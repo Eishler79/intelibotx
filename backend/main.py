@@ -4,6 +4,12 @@ from dotenv import load_dotenv
 import os
 import logging
 
+# Rate Limiting & Security Middleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from utils.security_middleware import SecurityHeadersMiddleware
+
 logger = logging.getLogger(__name__)
 
 # Cargar variables de entorno
@@ -15,6 +21,14 @@ app = FastAPI(
     description="Sistema de trading inteligente con FastAPI",
     version="1.0.0"
 )
+
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Add security middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # ✅ DL-001 COMPLIANCE: CORS Security Configuration
 import os
