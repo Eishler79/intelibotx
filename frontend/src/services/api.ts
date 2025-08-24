@@ -1,14 +1,19 @@
 // src/services/api.ts
-// 🔒 Enhanced with HTTP Interceptor for Token Expiration & Security
+// 🔒 Enhanced with DL-008 Authentication Pattern + HTTP Interceptor
+
+import { useAuthDL008 } from '../hooks/useAuthDL008';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://intelibotx-production.up.railway.app";
 
-// Helper function para obtener token JWT (mejorada con HTTP Interceptor)
+// ✅ DL-008 COMPLIANCE: Centralized auth pattern (replacing manual implementations)
+// Note: Functions now use useAuthDL008 hook for consistent authentication
+// HTTP Interceptor handles: Token expiration, Rate limiting, Security headers
+
+// Legacy function for backward compatibility (DEPRECATED)
 function getAuthHeaders() {
   const token = localStorage.getItem('intelibotx_token');
   if (!token) {
-    console.error('No authentication token found - user needs to login');
-    // HTTP Interceptor will handle this automatically now
+    console.error('⚠️ DEPRECATED: Use useAuthDL008 hook instead');
     throw new Error('Authentication required - please login first');
   }
   return {
@@ -16,13 +21,6 @@ function getAuthHeaders() {
     'Authorization': `Bearer ${token}`
   };
 }
-
-// Note: HTTP Interceptor now handles:
-// - Token expiration detection and auto-logout
-// - Rate limiting (429) responses with retry logic 
-// - Backend custom error parsing (AuthenticationError, ValidationError)
-// - Security header validation
-// - User notifications for all error types
 
 // Helper function para manejar respuestas JSON de forma segura
 async function safeJsonParse(response: Response) {

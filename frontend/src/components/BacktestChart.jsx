@@ -4,7 +4,9 @@ export default function BacktestChart({ symbol }) {
   const [chartHTML, setChartHTML] = useState("");
 
   useEffect(() => {
-    fetch(`https://<TU_BACKEND>.railway.app/api/backtest-chart/${symbol}`)
+    // ✅ DL-001 COMPLIANCE: No hardcode URL - usar environment variable
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
+    fetch(`${BASE_URL}/api/backtest-chart/${symbol}`)
       .then((res) => res.text())
       .then((html) => setChartHTML(html));
   }, [symbol]);

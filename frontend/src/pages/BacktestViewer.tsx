@@ -1,7 +1,8 @@
 import React from "react";
 
 const BacktestViewer = ({ symbol = "BTCUSDT" }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://intelibotx-api.up.railway.app";
+  // ✅ GUARDRAILS P7: URL oficial Railway Production
+  const backendUrl = import.meta.env.VITE_API_BASE_URL || "https://intelibotx-production.up.railway.app";
   console.log("BACKEND_URL:", import.meta.env.VITE_BACKEND_URL);
 
   return (
