@@ -371,11 +371,22 @@ export default function BotsAdvanced() {
       const endpoint = newStatus === 'RUNNING' ? 'start' : 'pause';
       const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
       
+      // SPEC_REF: DESIGN_SYSTEM_INTELIBOTX.md#authentication
+      // Import getAuthHeaders for proper authentication
+      const getAuthHeaders = () => {
+        const token = localStorage.getItem('intelibotx_token');
+        if (!token) {
+          throw new Error('Authentication required - please login first');
+        }
+        return {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        };
+      };
+
       const response = await fetch(`${BASE_URL}/api/bots/${botId}/${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       });
 
       if (response.ok) {
