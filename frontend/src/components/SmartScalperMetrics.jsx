@@ -138,7 +138,7 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
                     confidence: parseFloat(algo.confidence?.replace('%', '')) || 0,
                     score: parseFloat(algo.score?.replace('%', '')) || 0
                   })) || [],
-                  data_source: 'smart_scalper_real'
+                  data_source: 'backend_api_primary'
                 };
                 // 🔍 VALIDACIÓN FINAL + ALMACENAR LKG
                 if (!smartScalperAnalysis.algorithm_used) {
