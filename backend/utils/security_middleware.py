@@ -272,9 +272,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             if config.get("referrer_policy"):
                 response.headers["Referrer-Policy"] = config["referrer_policy"]
             
-            # Remove server information
+            # Remove server information  
             if config.get("remove_server_header"):
-                response.headers.pop("server", None)
+                if "server" in response.headers:
+                    del response.headers["server"]
             
             # Add custom security headers
             response.headers["X-Robots-Tag"] = "noindex, nofollow"
