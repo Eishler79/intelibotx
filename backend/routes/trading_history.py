@@ -2,7 +2,7 @@
 Rutas API para historial de trading y órdenes
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Header
 from typing import Optional, List
 from pydantic import BaseModel
 from enum import Enum
@@ -28,10 +28,16 @@ class CreateOrderRequest(BaseModel):
 async def get_bot_orders(
     bot_id: int,
     limit: int = Query(50, le=200),
-    status: Optional[OrderStatus] = None
+    status: Optional[OrderStatus] = None,
+    authorization: str = Header(None)
 ):
     """Obtener historial de órdenes de un bot"""
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         orders = trading_history_service.get_bot_orders(
             bot_id=bot_id,
             limit=limit,
@@ -51,10 +57,16 @@ async def get_bot_orders(
 async def get_bot_trades(
     bot_id: int,
     limit: int = Query(50, le=200),
-    status: Optional[TradeStatus] = None
+    status: Optional[TradeStatus] = None,
+    authorization: str = Header(None)
 ):
     """Obtener historial de trades de un bot"""
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         trades = trading_history_service.get_bot_trades(
             bot_id=bot_id,
             limit=limit,
@@ -73,10 +85,16 @@ async def get_bot_trades(
 @router.get("/api/bots/{bot_id}/trading-summary")
 async def get_trading_summary(
     bot_id: int,
-    days: int = Query(30, le=365)
+    days: int = Query(30, le=365),
+    authorization: str = Header(None)
 ):
     """Obtener resumen de trading de un bot"""
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         summary = trading_history_service.get_trading_summary(
             bot_id=bot_id,
             days=days
@@ -91,9 +109,18 @@ async def get_trading_summary(
         raise HTTPException(status_code=500, detail=f"Error obteniendo resumen: {str(e)}")
 
 @router.post("/api/bots/{bot_id}/orders")
-async def create_order(bot_id: int, order_request: CreateOrderRequest):
+async def create_order(
+    bot_id: int, 
+    order_request: CreateOrderRequest,
+    authorization: str = Header(None)
+):
     """Crear una nueva orden"""
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         # Validar que bot_id coincida
         if order_request.bot_id != bot_id:
             raise HTTPException(status_code=400, detail="Bot ID no coincide")
@@ -120,9 +147,17 @@ async def create_order(bot_id: int, order_request: CreateOrderRequest):
         raise HTTPException(status_code=500, detail=f"Error creando orden: {str(e)}")
 
 @router.post("/api/bots/{bot_id}/create-sample-data")
-async def create_sample_data(bot_id: int):
+async def create_sample_data(
+    bot_id: int,
+    authorization: str = Header(None)
+):
     """Crear datos de ejemplo para demostración"""
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         success = create_sample_trading_data(bot_id)
         
         if success:
@@ -141,10 +176,16 @@ async def create_sample_data(bot_id: int):
 @router.get("/api/bots/{bot_id}/performance-metrics")
 async def get_performance_metrics(
     bot_id: int,
-    days: int = Query(30, le=365)
+    days: int = Query(30, le=365),
+    authorization: str = Header(None)
 ):
     """Obtener métricas de rendimiento detalladas"""
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         summary = trading_history_service.get_trading_summary(bot_id, days)
         
         # Calcular métricas adicionales
@@ -185,9 +226,14 @@ async def get_performance_metrics(
         raise HTTPException(status_code=500, detail=f"Error obteniendo métricas: {str(e)}")
 
 @router.get("/api/trading-history/stats")
-async def get_global_stats():
+async def get_global_stats(authorization: str = Header(None)):
     """Obtener estadísticas globales del sistema"""
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         # Esta sería una implementación más completa en producción
         return {
             "system_stats": {

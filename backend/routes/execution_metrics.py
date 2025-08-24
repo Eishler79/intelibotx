@@ -6,7 +6,7 @@ Endpoints para acceder a slippage, comisiones y latencias
 Eduard Guzmán - InteliBotX
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Header
 from fastapi.responses import JSONResponse
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
@@ -28,7 +28,8 @@ metrics_tracker = ExecutionMetricsTracker()
 @router.get("/api/bots/{bot_id}/execution-summary")
 async def get_bot_execution_summary(
     bot_id: int,
-    timeframe_hours: int = Query(24, description="Ventana de tiempo en horas", ge=1, le=168)
+    timeframe_hours: int = Query(24, description="Ventana de tiempo en horas", ge=1, le=168),
+    authorization: str = Header(None)
 ):
     """
     Obtener resumen de métricas de ejecución para un bot
@@ -41,6 +42,11 @@ async def get_bot_execution_summary(
     - Métricas de latencia, slippage, comisiones y eficiencia
     """
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         logger.info(f"📊 Obteniendo resumen de ejecución para bot {bot_id} - {timeframe_hours}h")
         
         summary = await metrics_tracker.get_bot_execution_summary(bot_id, timeframe_hours)
@@ -66,7 +72,8 @@ async def get_bot_execution_metrics(
     bot_id: int,
     limit: int = Query(50, description="Número máximo de ejecuciones", ge=1, le=200),
     strategy: Optional[str] = Query(None, description="Filtrar por estrategia"),
-    symbol: Optional[str] = Query(None, description="Filtrar por símbolo")
+    symbol: Optional[str] = Query(None, description="Filtrar por símbolo"),
+    authorization: str = Header(None)
 ):
     """
     Obtener métricas detalladas de ejecuciones recientes para un bot
@@ -81,6 +88,11 @@ async def get_bot_execution_metrics(
     - Lista detallada de ejecuciones con todas las métricas
     """
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         logger.info(f"📋 Obteniendo métricas detalladas para bot {bot_id}, limit={limit}")
         
         # Obtener ejecuciones recientes
@@ -131,7 +143,8 @@ async def get_bot_execution_metrics(
 
 @router.get("/api/execution-metrics/system-stats")
 async def get_system_execution_stats(
-    timeframe_hours: int = Query(24, description="Ventana de tiempo en horas", ge=1, le=168)
+    timeframe_hours: int = Query(24, description="Ventana de tiempo en horas", ge=1, le=168),
+    authorization: str = Header(None)
 ):
     """
     Obtener estadísticas globales del sistema de ejecución
@@ -143,6 +156,11 @@ async def get_system_execution_stats(
     - Estadísticas agregadas de todos los bots del sistema
     """
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         import sqlite3
         
         logger.info(f"🌍 Obteniendo estadísticas globales del sistema - {timeframe_hours}h")
@@ -282,7 +300,8 @@ async def simulate_bot_execution(
     strategy: str = "Smart Scalper",
     market_type: str = "spot",
     vip_level: int = 0,
-    use_bnb_discount: bool = False
+    use_bnb_discount: bool = False,
+    authorization: str = Header(None)
 ):
     """
     Simular una ejecución de orden con métricas completas
@@ -304,6 +323,11 @@ async def simulate_bot_execution(
     - use_bnb_discount: Usar descuento BNB (default: false)
     """
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         logger.info(f"🧪 Simulando ejecución para bot {bot_id}: {side} {quantity} {symbol} @ {expected_price}")
         
         # Validar parámetros
@@ -393,9 +417,14 @@ async def simulate_bot_execution(
 
 # 🏥 Health check endpoint
 @router.get("/api/execution-metrics/health")
-async def health_check():
+async def health_check(authorization: str = Header(None)):
     """Health check para el sistema de métricas de ejecución"""
     try:
+        # DL-003: Lazy imports to avoid psycopg2 dependency at module level
+        from services.auth_service import get_current_user_safe
+        
+        # DL-008: Authentication pattern
+        current_user = await get_current_user_safe(authorization)
         # Verificar base de datos
         import sqlite3
         import os
