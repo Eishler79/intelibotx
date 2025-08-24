@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import useWebSocketRealtime from '../hooks/useWebSocketRealtime';
+import { useAuthDL008 } from '../hooks/useAuthDL008';
 import { DynamicEntryConditions, CurrentSignalStrength, AlgorithmMatrixCard } from './SmartScalperMetricsComponents';
 import { 
   TrendingUp, 
@@ -42,6 +43,9 @@ import {
  * Eduard Guzmán - InteliBotX
  */
 export default function SmartScalperMetrics({ bot, realTimeData }) {
+  // ✅ DL-008: Authentication Pattern Hook
+  const { authenticatedFetch } = useAuthDL008();
+  
   const [metrics, setMetrics] = useState({});
   const [loading, setLoading] = useState(true);
   const [executionMetrics, setExecutionMetrics] = useState({});
@@ -278,7 +282,8 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             }
           }
 
-          executionSummaryResponse = await fetch(`${BASE_URL}/api/bots/${bot.id}/execution-summary`);
+          // ✅ DL-008: Using centralized authentication pattern instead of manual fetch
+          executionSummaryResponse = await authenticatedFetch(`${BASE_URL}/api/bots/${bot.id}/execution-summary`);
           
           // LAYER 4: CACHE - Last Known Good fallback handled in apiError catch
           // LAYER 5: EMERGENCY - Smart Scalper analysis as final fallback  

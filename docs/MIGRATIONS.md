@@ -14,6 +14,22 @@
 
 ---
 
+## 2025-08-24 — M-002 · Critical Error Resolution Migration
+
+**Contexto:** Corrección errores críticos authentication + security middleware  
+**Schema Changes:** Ninguno - Solo cambios de lógica de aplicación  
+**API Changes:** 
+- `/api/bots/{id}/execution-summary` ahora recibe Authentication headers correctamente
+- Security middleware headers handling mejorado (del vs pop)
+**Impacto:** Resolución 500 errors en execution-summary endpoint  
+**Rollback:** git revert 7bc9933 + redeploy  
+**SPEC_REF:** GUARDRAILS.md P1-P3 + DL-008 Authentication Pattern  
+**Files Modified:**
+- frontend/src/components/SmartScalperMetrics.jsx
+- backend/utils/security_middleware.py
+
+---
+
 ## Estado Actual del Schema
 
 ### **Tablas Existentes:**
