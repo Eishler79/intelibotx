@@ -24,6 +24,12 @@
 
 ### **Core Trading Engine**
 - backend/routes/bots.py *(solo por secciones confirmadas)*
+- backend/routes/real_trading_routes.py *(TRADING REAL - ejecuta trades reales)*
+- backend/routes/trading_operations.py *(persistencia trading en vivo)*
+- backend/routes/trading_history.py *(historial órdenes financieras)*
+- backend/routes/execution_metrics.py *(métricas trading críticas)*
+- backend/routes/websocket_routes.py *(streaming tiempo real)*
+- backend/routes/dashboard_data.py *(balance + PnL datos financieros)*
 - backend/services/advanced_algorithm_selector.py
 - frontend/src/services/api.ts
 

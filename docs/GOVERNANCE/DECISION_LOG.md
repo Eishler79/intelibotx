@@ -26,6 +26,31 @@
 
 ---
 
+## 2025-08-23 — DL-029 · WebSocket RealtimeManager Startup Event Fix
+**Contexto:** WebSocket functionality disabled due to realtime_manager initialization never triggered.  
+**Analysis:** initialize_realtime_distribution() function existed but never called, causing WebSocket degraded mode.  
+**Decisión:** Add RealtimeDataManager initialization to FastAPI startup_event() for guaranteed execution.  
+**Technical Implementation:** main.py startup_event() + graceful error handling + degradation messaging.  
+**DL-001 Compliance:** Real services initialization, no hardcode, proper environment variable usage.  
+**GUARDRAILS Compliance:** COMPLETE 9/9 points applied - P1 diagnosis, P2 local validation, P3 PRD deployment, P4 redundancy validation, P5 resilience, P6 DL-001 compliance check, P7 Railway URL validation, P8 rigorous methodology, P9 SPEC_REF.  
+**CLAUDE_BASE Compliance:** User validation, detailed plan, confirmation received, rollback documented.  
+**Error Handling:** ImportError + Exception handling for graceful degradation.  
+**Rollback:** `git revert [COMMIT_HASH] --no-edit && git push origin main`  
+**SPEC_REF:** main.py:115-126 + websocket_routes.py:464 + MASTER_PLAN.md ETAPA 0.2
+
+---
+
+## 2025-08-23 — DL-028 · API Redundancy Justified - Trading Execution Endpoints
+**Contexto:** GUARDRAILS P4 validation identified potential API redundancy in trading execution endpoints.  
+**Analysis:** `/api/execute-trade` (simulation/testing) vs `/api/user/execute-trade` (real user credentials).  
+**Decisión:** JUSTIFIED REDUNDANCY - Different business logic purposes and security models.  
+**Technical Justification:** Simulation endpoint for testing without real money vs authenticated endpoint with user's exchange credentials.  
+**DL-001 Compliance:** Both endpoints serve different user scenarios and data flows.  
+**Rollback:** N/A - Architectural design decision.  
+**SPEC_REF:** GUARDRAILS.md P4 + real_trading_routes.py:360,554
+
+---
+
 ## 2025-08-21 — DL-020 · Auto-refresh Price System Professional UX
 **Contexto:** Usuario reporta precio estático vs Binance dinámico - UX no profesional.  
 **Decisión:** Implementar sistema auto-refresh cada 5 segundos con countdown visual.  

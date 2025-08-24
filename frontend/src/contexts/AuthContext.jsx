@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import httpInterceptor from '../services/httpInterceptor';
+import { useNotifications } from '../components/notifications/NotificationSystem';
 
 const AuthContext = createContext();
 
@@ -17,6 +19,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authProvider, setAuthProvider] = useState(null); // 'email', 'google', 'binance', etc.
   const [userExchanges, setUserExchanges] = useState([]); // User's configured exchanges
+  const [sessionExpired, setSessionExpired] = useState(false); // Track session expiration
+  
+  // Try to get notifications system if available
+  let notifications = null;
+  try {
+    notifications = useNotifications();
+  } catch (error) {
+    console.warn('Notifications not available in AuthProvider');
+  }
 
   // API base URL - Fix temporal para producción
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
@@ -24,10 +35,11 @@ export const AuthProvider = ({ children }) => {
       'http://localhost:8000' : 
       'https://intelibotx-production.up.railway.app');
 
-  // Función para hacer llamadas API autenticadas
+  // Función para hacer llamadas API autenticadas (mejorada con HTTP Interceptor)
   const authenticatedFetch = async (url, options = {}) => {
     try {
       if (!token) {
+        setSessionExpired(true);
         throw new Error('No authentication token available');
       }
       
@@ -44,15 +56,23 @@ export const AuthProvider = ({ children }) => {
         },
       });
 
-      // Si recibimos 401/403, el token expiró
+      // HTTP Interceptor ya maneja 401/403, pero mantenemos compatibilidad
       if (response.status === 401 || response.status === 403) {
-        logout();
+        setSessionExpired(true);
+        await logout();
         throw new Error('Session expired. Please login again.');
       }
 
       return response;
     } catch (error) {
       console.error('Authenticated fetch error:', error);
+      
+      // Check if it's a token expiration error
+      if (error.message.includes('expired') || error.message.includes('TOKEN_EXPIRED')) {
+        setSessionExpired(true);
+        await logout();
+      }
+      
       throw error;
     }
   };
@@ -73,7 +93,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Cargar token del localStorage al inicializar
+  // Cargar token del localStorage al inicializar e inicializar HTTP Interceptor
   useEffect(() => {
     const savedToken = localStorage.getItem('intelibotx_token');
     const savedUser = localStorage.getItem('intelibotx_user');
@@ -89,6 +109,21 @@ export const AuthProvider = ({ children }) => {
     }
     setLoading(false);
   }, []);
+
+  // Initialize HTTP Interceptor when context is ready
+  useEffect(() => {
+    if (!loading) {
+      // Initialize HTTP Interceptor with this AuthContext
+      httpInterceptor.init({
+        token,
+        logout,
+        user,
+        sessionExpired
+      }, notifications);
+      
+      console.log('🔒 HTTP Interceptor initialized with AuthContext and notifications');
+    }
+  }, [loading, token, user, sessionExpired, notifications]);
 
   // Login function
   const login = async (email, password) => {
@@ -115,6 +150,7 @@ export const AuthProvider = ({ children }) => {
       setToken(accessToken);
       setUser(userData);
       setAuthProvider('email');
+      setSessionExpired(false); // Reset session expiration flag
       
       // Persistir en localStorage
       localStorage.setItem('intelibotx_token', accessToken);
@@ -192,7 +228,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function (mejorada con HTTP Interceptor integration)
   const logout = async () => {
     try {
       // Llamar endpoint de logout si está disponible
@@ -214,9 +250,12 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setAuthProvider(null);
     setUserExchanges([]);
+    setSessionExpired(false); // Reset session expiration flag
     localStorage.removeItem('intelibotx_token');
     localStorage.removeItem('intelibotx_user');
     localStorage.removeItem('intelibotx_auth_provider');
+    
+    console.log('🔑 Logout completed - user state cleared');
   };
 
   // Función para obtener headers autenticados (compatibility)
@@ -316,7 +355,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     authProvider,
     userExchanges,
-    isAuthenticated: !!token && !!user,
+    sessionExpired, // Add session expiration state
+    isAuthenticated: !!token && !!user && !sessionExpired,
     login,
     register,
     logout,
