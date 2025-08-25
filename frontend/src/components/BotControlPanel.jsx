@@ -29,10 +29,10 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
         // Parámetros básicos del bot creado (DATOS REALES)
         name: bot.name || `Bot ${bot.symbol}` || 'Bot',
         symbol: bot.symbol || 'BTCUSDT',
-        strategy: bot.strategy || 'Smart Scalper',
-        interval: bot.interval || '15m',
+        strategy: bot.strategy || '', // DL-001: No hardcode fallback
+        interval: bot.interval || '', // DL-001: No hardcode fallback
         stake: Number(bot.stake) || 100,
-        base_currency: bot.base_currency || 'USDT',
+        base_currency: bot.base_currency || '', // DL-001: No hardcode fallback
         market_type: bot.market_type || bot.marketType || 'SPOT',
         leverage: Number(bot.leverage) || 1,
         
@@ -203,11 +203,9 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   onChange={(e) => handleParameterChange('strategy', e.target.value)}
                   className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                 >
-                  <option value="Smart Scalper">Smart Scalper - IA Multi-timeframe</option>
-                  <option value="Trend Hunter">Trend Hunter - Detección de Tendencias IA</option>
-                  <option value="Manipulation Detector">Manipulation Detector - Anti-Whales IA</option>
-                  <option value="News Sentiment">News Sentiment - IA + Análisis de Noticias</option>
-                  <option value="Volatility Master">Volatility Master - IA Adaptativa</option>
+                  <option value="Smart Scalper">Smart Scalper - Wyckoff + Order Blocks</option>
+                  <option value="Trend Hunter">Trend Hunter - SMC + Market Profile</option>
+                  <option value="Manipulation Detector">Manipulation Detector - Anti-Whales</option>
                 </select>
               </div>
               
@@ -261,7 +259,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 >
                   <option value="1m">1 minuto</option>
                   <option value="5m">5 minutos</option>
-                  <option value="15m">15 minutos</option>
+                  <option value="15m">15 minutos ⭐</option>
                   <option value="30m">30 minutos</option>
                   <option value="1h">1 hora</option>
                   <option value="4h">4 horas</option>

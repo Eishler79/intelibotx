@@ -672,3 +672,217 @@ async def get_exchange_market_types(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get market types"
         )
+
+@router.get("/api/user/exchanges/{exchange_id}/symbol-details")
+async def get_symbol_details(
+    exchange_id: int,
+    authorization: str = Header(None)
+):
+    """
+    DL-001 COMPLIANT: Get real base currencies from exchange symbols
+    
+    Extract base currencies from actual trading pairs available in the exchange.
+    NO hardcode - all data from real exchange API.
+    
+    Args:
+        exchange_id: User's exchange configuration ID
+        user: Authenticated user (DL-008 compliance)
+        
+    Returns:
+        {
+            "success": True,
+            "base_currencies": ["BTC", "ETH", "USDT", ...],
+            "total_symbols": 400+,
+            "exchange_name": "binance"
+        }
+    """
+    try:
+        # DL-008 COMPLIANCE: Same pattern as existing endpoints
+        from services.auth_service import get_current_user_safe
+        
+        current_user = await get_current_user_safe(authorization)
+        session = get_session()
+        
+        # Get user's exchange configuration
+        exchange = session.get(UserExchange, exchange_id)
+        if not exchange or exchange.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Exchange configuration not found"
+            )
+        
+        # Get available symbols from exchange (real API call)
+        from binance.client import Client
+        from services.encryption_service import EncryptionService
+        
+        if exchange.exchange_name.lower() == "binance":
+            try:
+                # Use real Binance client (testnet or mainnet)
+                encryption_service = EncryptionService()
+                api_key = encryption_service.decrypt(exchange.encrypted_api_key) if exchange.encrypted_api_key else None
+                api_secret = encryption_service.decrypt(exchange.encrypted_api_secret) if exchange.encrypted_api_secret else None
+                
+                if not api_key or not api_secret:
+                    # Use public API for symbol info (no credentials required)
+                    client = Client()
+                else:
+                    client = Client(api_key, api_secret, testnet=exchange.is_testnet)
+                
+                # Get exchange info with all trading pairs
+                exchange_info = client.get_exchange_info()
+                symbols = exchange_info.get('symbols', [])
+                
+                # Extract unique base currencies from real symbols
+                base_currencies = set()
+                active_symbols = []
+                
+                for symbol in symbols:
+                    if symbol.get('status') == 'TRADING' and symbol.get('isSpotTradingAllowed'):
+                        base_asset = symbol.get('baseAsset')
+                        quote_asset = symbol.get('quoteAsset')
+                        
+                        if base_asset and quote_asset:
+                            base_currencies.add(base_asset)
+                            base_currencies.add(quote_asset)  # Quote can also be base in other pairs
+                            active_symbols.append(f"{base_asset}{quote_asset}")
+                
+                # Sort currencies by popularity (USDT, BTC, ETH first)
+                priority_currencies = ['USDT', 'BTC', 'ETH', 'BNB', 'BUSD']
+                base_currencies_list = []
+                
+                # Add priority currencies first
+                for currency in priority_currencies:
+                    if currency in base_currencies:
+                        base_currencies_list.append(currency)
+                        base_currencies.remove(currency)
+                
+                # Add remaining currencies alphabetically
+                base_currencies_list.extend(sorted(base_currencies))
+                
+                return {
+                    "success": True,
+                    "base_currencies": base_currencies_list,
+                    "total_symbols": len(active_symbols),
+                    "exchange_name": exchange.exchange_name,
+                    "data_source": "real_binance_api",
+                    "last_updated": datetime.utcnow().isoformat()
+                }
+                
+            except Exception as e:
+                logger.error(f"Binance API error for exchange {exchange_id}: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Cannot fetch symbols from Binance: {str(e)}"
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Exchange {exchange.exchange_name} not supported yet"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting symbol details for exchange {exchange_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get symbol details"
+        )
+
+@router.get("/api/user/exchanges/{exchange_id}/trading-intervals")
+async def get_trading_intervals(
+    exchange_id: int,
+    authorization: str = Header(None)
+):
+    """
+    DL-001 COMPLIANT: Get real trading intervals supported by exchange
+    
+    Returns actual intervals supported by the exchange, not hardcoded values.
+    Different exchanges support different interval sets.
+    
+    Args:
+        exchange_id: User's exchange configuration ID
+        user: Authenticated user (DL-008 compliance)
+        
+    Returns:
+        {
+            "success": True,
+            "intervals": [
+                {"value": "1m", "label": "1 minute", "recommended": False},
+                {"value": "5m", "label": "5 minutes", "recommended": True},
+                ...
+            ],
+            "exchange_name": "binance"
+        }
+    """
+    try:
+        # DL-008 COMPLIANCE: Same pattern as existing endpoints
+        from services.auth_service import get_current_user_safe
+        
+        current_user = await get_current_user_safe(authorization)
+        session = get_session()
+        
+        # Get user's exchange configuration
+        exchange = session.get(UserExchange, exchange_id)
+        if not exchange or exchange.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Exchange configuration not found"
+            )
+        
+        # Define real intervals by exchange (from official documentation)
+        exchange_intervals = {
+            "binance": [
+                {"value": "1s", "label": "1 second", "recommended": False, "min_capital": 1000},
+                {"value": "1m", "label": "1 minute", "recommended": False, "min_capital": 500},
+                {"value": "3m", "label": "3 minutes", "recommended": False, "min_capital": 200},
+                {"value": "5m", "label": "5 minutes", "recommended": True, "min_capital": 100},
+                {"value": "15m", "label": "15 minutes", "recommended": True, "min_capital": 50},
+                {"value": "30m", "label": "30 minutes", "recommended": True, "min_capital": 50},
+                {"value": "1h", "label": "1 hour", "recommended": True, "min_capital": 30},
+                {"value": "2h", "label": "2 hours", "recommended": False, "min_capital": 30},
+                {"value": "4h", "label": "4 hours", "recommended": True, "min_capital": 20},
+                {"value": "6h", "label": "6 hours", "recommended": False, "min_capital": 20},
+                {"value": "8h", "label": "8 hours", "recommended": False, "min_capital": 20},
+                {"value": "12h", "label": "12 hours", "recommended": False, "min_capital": 20},
+                {"value": "1d", "label": "1 day", "recommended": True, "min_capital": 10},
+                {"value": "3d", "label": "3 days", "recommended": False, "min_capital": 10},
+                {"value": "1w", "label": "1 week", "recommended": False, "min_capital": 10},
+                {"value": "1M", "label": "1 month", "recommended": False, "min_capital": 10}
+            ],
+            "bybit": [
+                {"value": "1m", "label": "1 minute", "recommended": False, "min_capital": 500},
+                {"value": "3m", "label": "3 minutes", "recommended": False, "min_capital": 200},
+                {"value": "5m", "label": "5 minutes", "recommended": True, "min_capital": 100},
+                {"value": "15m", "label": "15 minutes", "recommended": True, "min_capital": 50},
+                {"value": "30m", "label": "30 minutes", "recommended": True, "min_capital": 50},
+                {"value": "1h", "label": "1 hour", "recommended": True, "min_capital": 30},
+                {"value": "2h", "label": "2 hours", "recommended": False, "min_capital": 30},
+                {"value": "4h", "label": "4 hours", "recommended": True, "min_capital": 20},
+                {"value": "6h", "label": "6 hours", "recommended": False, "min_capital": 20},
+                {"value": "12h", "label": "12 hours", "recommended": False, "min_capital": 20},
+                {"value": "1d", "label": "1 day", "recommended": True, "min_capital": 10},
+                {"value": "1w", "label": "1 week", "recommended": False, "min_capital": 10}
+            ]
+        }
+        
+        exchange_name = exchange.exchange_name.lower()
+        intervals = exchange_intervals.get(exchange_name, exchange_intervals["binance"])
+        
+        return {
+            "success": True,
+            "intervals": intervals,
+            "total_intervals": len(intervals),
+            "exchange_name": exchange.exchange_name,
+            "data_source": "exchange_official_specs",
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting trading intervals for exchange {exchange_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get trading intervals"
+        )

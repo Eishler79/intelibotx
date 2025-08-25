@@ -4,6 +4,75 @@
 
 ---
 
+## 2025-08-25 — DL-036 · BOTSADVANCED AUTHENTICATION SYNC - Trading History API Authorization Fix
+
+**Contexto:** BotsAdvanced dashboard mostraba HTTP 500 errors al cargar trading history y métricas de performance de bots.  
+**Root Cause Identificado:** Frontend /api/bots/{id}/trades y /api/bots/{id}/trading-summary llamadas sin Authorization header después de DL-008 authentication requirement.  
+**Análisis:** Backend requiere authentication en trading_history.py línea 61, pero frontend BotsAdvanced.jsx líneas 183-184 no sincronizaron enviando token.
+
+**Technical Analysis:**
+- **Authentication Gap:** Backend endpoints protegidos, frontend continuaba sin headers
+- **Dashboard Impact:** Bot performance metrics completamente inaccesibles (HTTP 500)
+- **Pattern Availability:** Línea 383 mismo archivo YA tenía patrón correcto Authentication
+- **User Impact:** Dashboard trading history broken, no monitoring bot performance
+
+**DECISION:** Sincronización authentication pattern - replicar estructura línea 383 existente para ambos endpoints.  
+**Implementation:** Agregar authHeaders con Authorization Bearer token a ambas llamadas API.  
+**Impact:** Dashboard trading metrics completamente restaurado + bot monitoring functional.
+
+**GUARDRAILS P1-P9 Compliance:** ✅ COMPLETED - Diagnóstico endpoint purpose sin asunciones, pattern inconsistency confirmado, rollback plan documentado, validación local HMR exitosa, análisis impacto dashboard restoration, UX transparency sobre métricas trading, deployment sincronizado, monitoreo dashboard activo, documentación completa.  
+**Fix Deployed:** Commit eba24cd - "fix: DL-036 BotsAdvanced Authentication Sync - Trading History API Authorization"  
+**Status:** ✅ RESOLVED - Trading history loading, dashboard metrics visible, bot monitoring restored.  
+**Success Criteria:** BotsAdvanced dashboard functional, HTTP 200 responses, complete trading performance data.
+
+---
+
+## 2025-08-25 — DL-035 · FRONTEND AUTHENTICATION SYNC - Available Symbols Authorization Fix
+
+**Contexto:** Bot creation modal mostraba solo 7 símbolos hardcoded vs 400+ símbolos reales de Binance API.  
+**Root Cause Identificado:** Frontend /api/available-symbols llamada sin Authorization header después de DL-008 authentication requirement.  
+**Análisis:** Backend (commit 484db3e) requiere authentication, pero frontend no se sincronizó enviando token.
+
+**Technical Analysis:**
+- **Authentication Gap:** Backend DL-008 agregó auth requirement, frontend continuaba sin header
+- **Hardcode Fallback:** Línea 150 tenía fallback a 7 símbolos hardcoded violando DL-001
+- **Pattern Inconsistency:** Otros endpoints (líneas 160-165) sí usaban Authorization header correctamente
+- **User Impact:** Solo 7 trading pairs disponibles vs catálogo completo Binance
+
+**DECISION:** Sincronización completa frontend/backend - agregar Authorization header + eliminar hardcode fallback.  
+**Implementation:** Replicar patrón authentication existente + DL-001 compliance restoration.  
+**Impact:** 400+ símbolos reales disponibles + eliminación completa hardcode violations.
+
+**GUARDRAILS P1-P9 Compliance:** ✅ COMPLETED - Diagnóstico pattern inconsistency sin asunciones, rollback plan documentado, validación local HMR exitosa, análisis impacto positivo, UX transparency sobre 400+ símbolos, deployment sincronizado, monitoreo authentication activo, documentación completa.  
+**Fix Deployed:** Commit e57b064 - "fix: DL-035 Frontend Authentication Sync - Available Symbols API Authorization"  
+**Status:** ✅ RESOLVED - 400+ real symbols loading, hardcode eliminated, authentication consistent.  
+**Success Criteria:** Bot creation dropdown with complete Binance catalog, no fallback symbols, DL-001 + DL-008 compliance restored.
+
+---
+
+## 2025-08-25 — DL-034 · CRITICAL EXCHANGE ENDPOINTS FIX - Missing Session Variable Resolved
+
+**Contexto:** POST /api/user/exchanges fallaba con HTTP 500 "Internal server error" impidiendo creación de exchanges y bot setup.  
+**Root Cause Identificado:** NameError: 'session' is not defined en exchanges.py líneas 96, 130-132 en función add_user_exchange().  
+**Análisis:** Error independiente de DL-033 manipulation_risk fix - variable 'session' nunca se declaró en esta función específica.
+
+**Technical Analysis:**
+- **Error Pattern:** función add_user_exchange() usaba session.exec(), session.add(), session.commit() sin declarar session = get_session()
+- **Code Comparison:** Todas las demás funciones en exchanges.py declaran session correctamente
+- **Git Evidence:** Commit DL-033 60745b8 SOLO modificó institutional_detector.py, no exchanges.py  
+- **Timeline:** Bug pre-existente, no causado por manipulation_risk changes
+
+**DECISION:** Fix quirúrgico - agregar session = get_session() línea 82 en add_user_exchange().  
+**Impact:** Exchange creation restaurado + Smart Scalper algorithms preservados.  
+**Implementation:** 1 línea código agregada siguiendo patrón existente en codebase.
+
+**GUARDRAILS P1-P9 Compliance:** ✅ COMPLETED - Diagnóstico sin asunciones confirmó root cause, rollback plan documentado, validación local exitosa, análisis impacto bajo riesgo, UX transparency mantenida, deployment con monitoreo activo, documentación completa.  
+**Fix Deployed:** Commit 12d40c3 - "fix: DL-034 Add missing session variable in exchanges.py"  
+**Status:** ✅ RESOLVED - Exchange endpoints functional, Smart Scalper preserved, bot creation restored.  
+**Success Criteria:** HTTP 201 responses for exchange creation, end-to-end bot setup working.
+
+---
+
 ## 2025-08-25 — DL-033 · InstitutionalAnalysis manipulation_risk Attribute Fix - Critical AttributeError Resolution
 
 **Contexto:** API /run-smart-trade/* fallaba con AttributeError: 'InstitutionalAnalysis' object has no attribute 'manipulation_risk' causando crashes completos del AdvancedAlgorithmSelector.  

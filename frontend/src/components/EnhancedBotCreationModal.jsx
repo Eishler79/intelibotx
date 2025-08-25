@@ -383,6 +383,32 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
+    // FASE 1: Dynamic base_currency extraction from symbol (DL-001 Compliance)
+    if (name === 'symbol') {
+      const extractCurrencies = (symbol) => {
+        // Common quote currencies in order of preference
+        const quotes = ['USDT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB'];
+        for (const quote of quotes) {
+          if (symbol.endsWith(quote)) {
+            const base = symbol.slice(0, -quote.length);
+            return { base, quote };
+          }
+        }
+        // Fallback if no match
+        return { base: 'BTC', quote: 'USDT' };
+      };
+
+      const { base, quote } = extractCurrencies(value);
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        base_currency: quote, // Base currency is the quote asset (USDT, BTC, etc.)
+        quote_currency: base  // Quote currency is the trading asset (BTC, ETH, etc.)
+      }));
+      return;
+    }
+    
     // Manejar cambio de market_type para ajustar leverage dinámicamente
     if (name === 'market_type') {
       const selectedType = marketTypes.find(mt => mt.value === value);
