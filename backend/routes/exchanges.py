@@ -79,6 +79,7 @@ async def add_user_exchange(
     # Initialize services
     encryption_service = EncryptionService()
     exchange_factory = ExchangeFactory(encryption_service)
+    session = get_session()
     
     try:
         # Validate exchange is supported
