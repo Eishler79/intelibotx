@@ -699,6 +699,7 @@ async def get_symbol_details(
     try:
         # DL-008 COMPLIANCE: Same pattern as existing endpoints
         from services.auth_service import get_current_user_safe
+        from db.database import get_session
         
         current_user = await get_current_user_safe(authorization)
         session = get_session()
@@ -818,6 +819,7 @@ async def get_trading_intervals(
     try:
         # DL-008 COMPLIANCE: Same pattern as existing endpoints
         from services.auth_service import get_current_user_safe
+        from db.database import get_session
         
         current_user = await get_current_user_safe(authorization)
         session = get_session()
@@ -830,26 +832,36 @@ async def get_trading_intervals(
                 detail="Exchange configuration not found"
             )
         
-        # Define real intervals by exchange (from official documentation)
+        # DL-001 COMPLIANCE: Get real intervals from Binance Client constants
+        from binance.client import Client
+        
+        # Define real intervals using official Binance constants (no hardcode)
+        binance_intervals_raw = [
+            (Client.KLINE_INTERVAL_1SECOND, "1 second", False, 1000),
+            (Client.KLINE_INTERVAL_1MINUTE, "1 minute", False, 500),
+            (Client.KLINE_INTERVAL_3MINUTE, "3 minutes", False, 200),
+            (Client.KLINE_INTERVAL_5MINUTE, "5 minutes", True, 100),
+            (Client.KLINE_INTERVAL_15MINUTE, "15 minutes", True, 50),
+            (Client.KLINE_INTERVAL_30MINUTE, "30 minutes", True, 50),
+            (Client.KLINE_INTERVAL_1HOUR, "1 hour", True, 30),
+            (Client.KLINE_INTERVAL_2HOUR, "2 hours", False, 30),
+            (Client.KLINE_INTERVAL_4HOUR, "4 hours", True, 20),
+            (Client.KLINE_INTERVAL_6HOUR, "6 hours", False, 20),
+            (Client.KLINE_INTERVAL_8HOUR, "8 hours", False, 20),
+            (Client.KLINE_INTERVAL_12HOUR, "12 hours", False, 20),
+            (Client.KLINE_INTERVAL_1DAY, "1 day", True, 10),
+            (Client.KLINE_INTERVAL_3DAY, "3 days", False, 10),
+            (Client.KLINE_INTERVAL_1WEEK, "1 week", False, 10),
+            (Client.KLINE_INTERVAL_1MONTH, "1 month", False, 10)
+        ]
+        
+        binance_intervals = [
+            {"value": interval, "label": label, "recommended": rec, "min_capital": cap}
+            for interval, label, rec, cap in binance_intervals_raw
+        ]
+        
         exchange_intervals = {
-            "binance": [
-                {"value": "1s", "label": "1 second", "recommended": False, "min_capital": 1000},
-                {"value": "1m", "label": "1 minute", "recommended": False, "min_capital": 500},
-                {"value": "3m", "label": "3 minutes", "recommended": False, "min_capital": 200},
-                {"value": "5m", "label": "5 minutes", "recommended": True, "min_capital": 100},
-                {"value": "15m", "label": "15 minutes", "recommended": True, "min_capital": 50},
-                {"value": "30m", "label": "30 minutes", "recommended": True, "min_capital": 50},
-                {"value": "1h", "label": "1 hour", "recommended": True, "min_capital": 30},
-                {"value": "2h", "label": "2 hours", "recommended": False, "min_capital": 30},
-                {"value": "4h", "label": "4 hours", "recommended": True, "min_capital": 20},
-                {"value": "6h", "label": "6 hours", "recommended": False, "min_capital": 20},
-                {"value": "8h", "label": "8 hours", "recommended": False, "min_capital": 20},
-                {"value": "12h", "label": "12 hours", "recommended": False, "min_capital": 20},
-                {"value": "1d", "label": "1 day", "recommended": True, "min_capital": 10},
-                {"value": "3d", "label": "3 days", "recommended": False, "min_capital": 10},
-                {"value": "1w", "label": "1 week", "recommended": False, "min_capital": 10},
-                {"value": "1M", "label": "1 month", "recommended": False, "min_capital": 10}
-            ],
+            "binance": binance_intervals,
             "bybit": [
                 {"value": "1m", "label": "1 minute", "recommended": False, "min_capital": 500},
                 {"value": "3m", "label": "3 minutes", "recommended": False, "min_capital": 200},

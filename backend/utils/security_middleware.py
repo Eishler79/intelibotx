@@ -56,10 +56,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "csp_enabled": self.is_production,
             "csp_directives": {
                 "default-src": "'self'",
-                "script-src": "'self' 'unsafe-inline'",  # Needed for FastAPI docs
-                "style-src": "'self' 'unsafe-inline'",
+                "script-src": "'self' 'unsafe-inline' https://cdn.jsdelivr.net",  # CDN for FastAPI docs
+                "style-src": "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
                 "img-src": "'self' data: https:",
-                "font-src": "'self' data:",
+                "font-src": "'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
                 "connect-src": "'self' https://api.binance.com wss://stream.binance.com",
                 "frame-ancestors": "'none'",
                 "base-uri": "'self'",

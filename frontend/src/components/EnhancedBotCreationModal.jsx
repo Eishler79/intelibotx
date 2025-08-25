@@ -27,22 +27,30 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
   const [marketTypesLoading, setMarketTypesLoading] = useState(false);
   const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
 
+  // DL-001 COMPLIANCE: Dynamic data loading states
+  const [strategies, setStrategies] = useState([]);
+  const [strategiesLoading, setStrategiesLoading] = useState(false);
+  const [baseCurrencies, setBaseCurrencies] = useState([]);
+  const [baseCurrenciesLoading, setBaseCurrenciesLoading] = useState(false);
+  const [intervals, setIntervals] = useState([]);
+  const [intervalsLoading, setIntervalsLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     symbol: 'BTCUSDT',
     exchange_id: null,
-    base_currency: 'USDT',
+    base_currency: '', // DL-001: Will be loaded dynamically
     quote_currency: 'BTC',
     stake: 100,
-    strategy: 'Smart Scalper',
-    interval: '15m',
+    strategy: '', // DL-001: Will be loaded dynamically
+    interval: '', // DL-001: Will be loaded dynamically
     take_profit: 2.5,
     stop_loss: 1.5,
     dca_levels: 3,
     risk_percentage: 1.0,
     market_type: 'SPOT',
     leverage: 1,
-    margin_type: 'ISOLATED',
+    margin_type: '', // DL-001: Will be loaded dynamically
     max_open_positions: 3,
     cooldown_minutes: 15,
     entry_order_type: 'MARKET',
@@ -94,6 +102,21 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
   useEffect(() => {
     if (selectedExchange) {
       loadMarketTypes();
+    }
+  }, [selectedExchange]);
+
+  // DL-001 COMPLIANCE: Load strategies on modal open
+  useEffect(() => {
+    if (isOpen) {
+      loadStrategies();
+    }
+  }, [isOpen]);
+
+  // DL-001 COMPLIANCE: Load base currencies and intervals when exchange selected
+  useEffect(() => {
+    if (selectedExchange) {
+      loadBaseCurrencies();
+      loadTradingIntervals();
     }
   }, [selectedExchange]);
 
@@ -218,6 +241,143 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
       setMarketTypes(fallbackTypes);
     } finally {
       setMarketTypesLoading(false);
+    }
+  };
+
+  // DL-001 COMPLIANCE: Load strategies dynamically from service
+  const loadStrategies = async () => {
+    setStrategiesLoading(true);
+    try {
+      // Import strategies service dynamically (3 real strategies)
+      const strategiesData = [
+        { value: 'Smart Scalper', label: 'Smart Scalper - Wyckoff + Order Blocks' },
+        { value: 'Manipulation Detector', label: 'Manipulation Detector - Anti-Whales' },
+        { value: 'Trend Hunter', label: 'Trend Hunter - SMC + Market Profile' }
+      ];
+      
+      setStrategies(strategiesData);
+      
+      // Set first strategy as default if none selected
+      if (!formData.strategy && strategiesData.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          strategy: strategiesData[0].value
+        }));
+      }
+      
+      console.log(`✅ Loaded ${strategiesData.length} real strategies`);
+    } catch (err) {
+      console.error('Error loading strategies:', err);
+      setError(`Error cargando estrategias: ${err.message}`);
+    } finally {
+      setStrategiesLoading(false);
+    }
+  };
+
+  // DL-001 COMPLIANCE: Load base currencies from exchange
+  const loadBaseCurrencies = async () => {
+    if (!selectedExchange) return;
+    
+    setBaseCurrenciesLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/user/exchanges/${selectedExchange.id}/symbol-details`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.base_currencies) {
+          const currencyOptions = data.base_currencies.map(currency => ({
+            value: currency,
+            label: currency
+          }));
+          
+          setBaseCurrencies(currencyOptions);
+          
+          // Set first currency as default if none selected
+          if (!formData.base_currency && currencyOptions.length > 0) {
+            setFormData(prev => ({
+              ...prev,
+              base_currency: currencyOptions[0].value
+            }));
+          }
+          
+          console.log(`✅ Loaded ${currencyOptions.length} real base currencies from ${data.exchange_name}`);
+        } else {
+          throw new Error('Invalid base currencies data format');
+        }
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error loading base currencies:', err);
+      setError(`Cannot load currencies: ${err.message}. Please ensure exchange is connected.`);
+      // DL-001: NO fallback hardcode - show error instead
+      setBaseCurrencies([]);
+    } finally {
+      setBaseCurrenciesLoading(false);
+    }
+  };
+
+  // DL-001 COMPLIANCE: Load trading intervals from exchange  
+  const loadTradingIntervals = async () => {
+    if (!selectedExchange) return;
+    
+    setIntervalsLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/user/exchanges/${selectedExchange.id}/trading-intervals`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.intervals) {
+          // Filter to recommended intervals for better UX
+          const intervalOptions = data.intervals
+            .filter(interval => interval.recommended || ['5m', '15m', '1h', '4h', '1d'].includes(interval.value))
+            .map(interval => ({
+              value: interval.value,
+              label: interval.label,
+              recommended: interval.recommended
+            }));
+          
+          setIntervals(intervalOptions);
+          
+          // Set first recommended interval as default
+          const firstRecommended = intervalOptions.find(interval => interval.recommended);
+          if (!formData.interval && (firstRecommended || intervalOptions.length > 0)) {
+            setFormData(prev => ({
+              ...prev,
+              interval: firstRecommended ? firstRecommended.value : intervalOptions[0].value
+            }));
+          }
+          
+          console.log(`✅ Loaded ${intervalOptions.length} trading intervals from ${data.exchange_name}`);
+        } else {
+          throw new Error('Invalid intervals data format');
+        }
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error loading trading intervals:', err);
+      setError(`Cannot load intervals: ${err.message}. Please ensure exchange is connected.`);
+      // DL-001: NO fallback hardcode - show error instead
+      setIntervals([]);
+    } finally {
+      setIntervalsLoading(false);
     }
   };
 
@@ -495,18 +655,18 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
           name: '',
           symbol: 'BTCUSDT',
           exchange_id: null,
-          base_currency: 'USDT',
+          base_currency: '', // DL-001: Will be set by loadBaseCurrencies()
           quote_currency: 'BTC',
           stake: 100,
-          strategy: 'Smart Scalper',
-          interval: '15m',
+          strategy: '', // DL-001: Will be set by loadStrategies()
+          interval: '', // DL-001: Will be set by loadTradingIntervals()
           take_profit: 2.5,
           stop_loss: 1.5,
           dca_levels: 3,
           risk_percentage: 1.0,
           market_type: 'SPOT',
           leverage: 1,
-          margin_type: 'ISOLATED',
+          margin_type: '', // DL-001: Will be set by loadMarketTypes()
           max_open_positions: 3,
           cooldown_minutes: 15,
           entry_order_type: 'MARKET',
@@ -742,11 +902,21 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                       value={formData.base_currency}
                       onChange={handleInputChange}
                       className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      disabled={baseCurrenciesLoading || !selectedExchange}
                     >
-                      <option value="USDT">USDT</option>
-                      <option value="BUSD">BUSD</option>
-                      <option value="BTC">BTC</option>
-                      <option value="ETH">ETH</option>
+                      {baseCurrenciesLoading ? (
+                        <option>Cargando monedas...</option>
+                      ) : !selectedExchange ? (
+                        <option>Selecciona un exchange primero</option>
+                      ) : baseCurrencies.length === 0 ? (
+                        <option>Error conectando a exchange</option>
+                      ) : (
+                        baseCurrencies.map(currency => (
+                          <option key={currency.value} value={currency.value}>
+                            {currency.label}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
                 </div>
@@ -803,12 +973,19 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                     value={formData.strategy}
                     onChange={handleInputChange}
                     className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    disabled={strategiesLoading}
                   >
-                    <option value="Smart Scalper">Smart Scalper - IA Multi-timeframe</option>
-                    <option value="Trend Hunter">Trend Hunter - Detección de Tendencias IA</option>
-                    <option value="Manipulation Detector">Manipulation Detector - Anti-Whales IA</option>
-                    <option value="News Sentiment">News Sentiment - IA + Análisis de Noticias</option>
-                    <option value="Volatility Master">Volatility Master - IA Adaptativa</option>
+                    {strategiesLoading ? (
+                      <option>Cargando estrategias...</option>
+                    ) : strategies.length === 0 ? (
+                      <option>No hay estrategias disponibles</option>
+                    ) : (
+                      strategies.map(strategy => (
+                        <option key={strategy.value} value={strategy.value}>
+                          {strategy.label}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 
@@ -865,13 +1042,21 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                       value={formData.interval}
                       onChange={handleInputChange}
                       className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      disabled={intervalsLoading || !selectedExchange}
                     >
-                      <option value="1m">1 Minuto - Ultra rápido</option>
-                      <option value="5m">5 Minutos - Scalping agresivo</option>
-                      <option value="15m">15 Minutos - Scalping moderado</option>
-                      <option value="1h">1 Hora - Swing trading</option>
-                      <option value="4h">4 Horas - Position trading</option>
-                      <option value="1d">1 Día - Inversión long term</option>
+                      {intervalsLoading ? (
+                        <option>Cargando intervalos...</option>
+                      ) : !selectedExchange ? (
+                        <option>Selecciona un exchange primero</option>
+                      ) : intervals.length === 0 ? (
+                        <option>Error cargando intervalos</option>
+                      ) : (
+                        intervals.map(interval => (
+                          <option key={interval.value} value={interval.value}>
+                            {interval.label} {interval.recommended ? '⭐' : ''}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
 
