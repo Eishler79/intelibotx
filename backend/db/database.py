@@ -17,10 +17,10 @@ def create_database_engine():
             engine = create_engine(
                 DATABASE_URL,
                 echo=False,
-                # Connection pool settings for PostgreSQL
-                pool_size=10,           # Base connections
-                max_overflow=20,        # Additional connections during peak
-                pool_timeout=30,        # Wait time for connection
+                # Connection pool settings for PostgreSQL - 10s intervals optimized
+                pool_size=20,           # Base connections (doubled for 10s frequency)
+                max_overflow=40,        # Additional connections during peak (doubled)
+                pool_timeout=45,        # Wait time for connection (increased)
                 pool_recycle=3600,      # Recycle connections every hour
                 pool_pre_ping=True,     # Validate connections before use
                 # Additional PostgreSQL optimizations
