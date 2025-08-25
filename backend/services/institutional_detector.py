@@ -26,6 +26,7 @@ class InstitutionalAnalysis:
     order_blocks: List[Dict]
     manipulation_events: List[Dict]
     active_manipulations: List[Dict]
+    manipulation_risk: float
 
 class InstitutionalDetector:
     def analyze_institutional_activity(self, symbol: str, timeframe: str,
@@ -46,12 +47,16 @@ class InstitutionalDetector:
         # Manipulation events
         events = self._detect_events(highs, lows, volumes)
         
+        # Calculate manipulation risk based on events and active manipulations
+        calculated_risk = self._calculate_manipulation_risk(events, [])
+        
         return InstitutionalAnalysis(
             manipulation_type=manipulation,
             market_phase=phase,
             order_blocks=order_blocks,
             manipulation_events=events,
-            active_manipulations=[]
+            active_manipulations=[],
+            manipulation_risk=calculated_risk
         )
     
     def _detect_manipulation(self, highs: List[float], lows: List[float], 
@@ -124,3 +129,46 @@ class InstitutionalDetector:
                     })
                     
         return events[-5:]  # Last 5 events
+    
+    def _calculate_manipulation_risk(self, manipulation_events: List[Dict], 
+                                   active_manipulations: List[Dict]) -> float:
+        """
+        Calculate manipulation risk score from 0.0 to 1.0
+        
+        Args:
+            manipulation_events: List of detected manipulation events
+            active_manipulations: List of currently active manipulations
+            
+        Returns:
+            float: Risk score between 0.0 (low risk) and 1.0 (high risk)
+        """
+        try:
+            # Validate input parameters
+            if manipulation_events is None:
+                manipulation_events = []
+            if active_manipulations is None:
+                active_manipulations = []
+                
+            # Ensure inputs are lists
+            if not isinstance(manipulation_events, list):
+                manipulation_events = []
+            if not isinstance(active_manipulations, list):
+                active_manipulations = []
+            
+            # Base risk from active manipulations
+            base_risk = len(active_manipulations) * 0.3
+            
+            # Risk from recent manipulation events  
+            event_risk = len(manipulation_events) * 0.1
+            
+            # Cap at 1.0 maximum risk
+            total_risk = min(1.0, max(0.0, base_risk + event_risk))
+            
+            return total_risk
+            
+        except Exception as e:
+            # Fallback to safe default if calculation fails
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"⚠️ manipulation_risk calculation failed: {e}, using default 0.0")
+            return 0.0
