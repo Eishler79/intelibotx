@@ -114,7 +114,13 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
   const loadAvailableSymbols = async () => {
     setSymbolsLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/available-symbols`);
+      const token = localStorage.getItem('intelibotx_token');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/available-symbols`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (response.ok) {
         const data = await response.json();
@@ -146,9 +152,8 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
       console.error('Error loading symbols:', err);
       setError(`Error cargando pares de trading: ${err.message}`);
       
-      // Fallback a lista básica si falla la API
-      const fallbackSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT', 'XRPUSDT', 'DOTUSDT'];
-      setAvailableSymbols(fallbackSymbols);
+      // DL-001 COMPLIANCE: No hardcode fallback, show real error to user
+      setAvailableSymbols([]);
     } finally {
       setSymbolsLoading(false);
     }
