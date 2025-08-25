@@ -34,6 +34,8 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
   const [baseCurrenciesLoading, setBaseCurrenciesLoading] = useState(false);
   const [intervals, setIntervals] = useState([]);
   const [intervalsLoading, setIntervalsLoading] = useState(false);
+  const [marginTypes, setMarginTypes] = useState([]);
+  const [marginTypesLoading, setMarginTypesLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -117,6 +119,7 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     if (selectedExchange) {
       loadBaseCurrencies();
       loadTradingIntervals();
+      loadMarginTypes();
     }
   }, [selectedExchange]);
 
@@ -378,6 +381,61 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
       setIntervals([]);
     } finally {
       setIntervalsLoading(false);
+    }
+  };
+
+  // DL-001 COMPLIANCE: Load margin types from exchange  
+  const loadMarginTypes = async () => {
+    if (!selectedExchange) return;
+    
+    setMarginTypesLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/user/exchanges/${selectedExchange.id}/margin-types`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.margin_types) {
+          const marginOptions = data.margin_types.map(type => ({
+            value: type.value,
+            label: type.label,
+            description: type.description,
+            recommended: type.recommended,
+            risk_level: type.risk_level
+          }));
+          
+          setMarginTypes(marginOptions);
+          
+          // Set first recommended type as default
+          const firstRecommended = marginOptions.find(type => type.recommended);
+          if (!formData.margin_type && (firstRecommended || marginOptions.length > 0)) {
+            setFormData(prev => ({
+              ...prev,
+              margin_type: firstRecommended ? firstRecommended.value : marginOptions[0].value
+            }));
+          }
+          
+          console.log(`✅ Loaded ${marginOptions.length} margin types from ${data.exchange_name}`);
+        } else {
+          throw new Error('Invalid margin types data format');
+        }
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error loading margin types:', err);
+      setError(`Cannot load margin types: ${err.message}. Please ensure exchange is connected.`);
+      // DL-001: NO fallback hardcode - show error instead
+      setMarginTypes([]);
+    } finally {
+      setMarginTypesLoading(false);
     }
   };
 
@@ -1117,10 +1175,21 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                       value={formData.margin_type}
                       onChange={handleInputChange}
                       className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                      disabled={formData.market_type === 'SPOT'}
+                      disabled={formData.market_type === 'SPOT' || marginTypesLoading || !selectedExchange}
                     >
-                      <option value="CROSS">CROSS - Margen compartido</option>
-                      <option value="ISOLATED">ISOLATED - Margen aislado</option>
+                      {marginTypesLoading ? (
+                        <option>Cargando tipos de margen...</option>
+                      ) : !selectedExchange ? (
+                        <option>Selecciona un exchange primero</option>
+                      ) : marginTypes.length === 0 ? (
+                        <option>Error cargando tipos de margen</option>
+                      ) : (
+                        marginTypes.map(type => (
+                          <option key={type.value} value={type.value} title={type.description}>
+                            {type.label} {type.recommended ? '⭐' : ''} - {type.description}
+                          </option>
+                        ))
+                      )}
                     </select>
                     <p className="text-xs text-gray-400 mt-2">
                       Solo para Futures | Cross = riesgo total | Isolated = riesgo limitado

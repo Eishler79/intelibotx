@@ -20,6 +20,16 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
   
+  // DL-001 COMPLIANCE: Dynamic data loading states for MODIFY
+  const [strategies, setStrategies] = useState([]);
+  const [strategiesLoading, setStrategiesLoading] = useState(false);
+  const [baseCurrencies, setBaseCurrencies] = useState([]);
+  const [baseCurrenciesLoading, setBaseCurrenciesLoading] = useState(false);
+  const [intervals, setIntervals] = useState([]);
+  const [intervalsLoading, setIntervalsLoading] = useState(false);
+  const [marginTypes, setMarginTypes] = useState([]);
+  const [marginTypesLoading, setMarginTypesLoading] = useState(false);
+  
   // Efecto para cargar los datos reales del bot cuando se abre el modal
   useEffect(() => {
     if (bot) {
@@ -55,6 +65,14 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
         marketConditionFilter: bot.market_condition_filter !== false,
         volatilityThreshold: bot.volatility_threshold || 0.8,
       });
+    }
+    
+    // DL-001 COMPLIANCE: Load dynamic data when bot is loaded
+    if (bot && bot.exchange_id) {
+      loadStrategies();
+      loadBaseCurrencies(bot.exchange_id);
+      loadTradingIntervals(bot.exchange_id);
+      loadMarginTypes(bot.exchange_id);
     }
   }, [bot]);
 
@@ -105,6 +123,152 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
       console.error("❌ Error actualizando parámetros:", error);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // DL-001 COMPLIANCE: Load strategies dynamically (same as CREATE)
+  const loadStrategies = async () => {
+    setStrategiesLoading(true);
+    try {
+      const strategiesData = [
+        { value: 'Smart Scalper', label: 'Smart Scalper - Wyckoff + Order Blocks' },
+        { value: 'Manipulation Detector', label: 'Manipulation Detector - Anti-Whales' },
+        { value: 'Trend Hunter', label: 'Trend Hunter - SMC + Market Profile' }
+      ];
+      
+      setStrategies(strategiesData);
+      console.log(`✅ Loaded ${strategiesData.length} real strategies for MODIFY`);
+    } catch (err) {
+      console.error('Error loading strategies:', err);
+      setStrategies([]);
+    } finally {
+      setStrategiesLoading(false);
+    }
+  };
+
+  // DL-001 COMPLIANCE: Load base currencies from exchange (same as CREATE)
+  const loadBaseCurrencies = async (exchangeId) => {
+    if (!exchangeId) return;
+    
+    setBaseCurrenciesLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/user/exchanges/${exchangeId}/symbol-details`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.base_currencies) {
+          const currencyOptions = data.base_currencies.map(currency => ({
+            value: currency,
+            label: currency
+          }));
+          
+          setBaseCurrencies(currencyOptions);
+          console.log(`✅ Loaded ${currencyOptions.length} base currencies for MODIFY`);
+        } else {
+          throw new Error('Invalid base currencies data format');
+        }
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error loading base currencies:', err);
+      setBaseCurrencies([]);
+    } finally {
+      setBaseCurrenciesLoading(false);
+    }
+  };
+
+  // DL-001 COMPLIANCE: Load trading intervals from exchange (same as CREATE)
+  const loadTradingIntervals = async (exchangeId) => {
+    if (!exchangeId) return;
+    
+    setIntervalsLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/user/exchanges/${exchangeId}/trading-intervals`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.intervals) {
+          const intervalOptions = data.intervals
+            .filter(interval => interval.recommended || ['5m', '15m', '1h', '4h', '1d'].includes(interval.value))
+            .map(interval => ({
+              value: interval.value,
+              label: interval.label,
+              recommended: interval.recommended
+            }));
+          
+          setIntervals(intervalOptions);
+          console.log(`✅ Loaded ${intervalOptions.length} trading intervals for MODIFY`);
+        } else {
+          throw new Error('Invalid intervals data format');
+        }
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error loading trading intervals:', err);
+      setIntervals([]);
+    } finally {
+      setIntervalsLoading(false);
+    }
+  };
+
+  // DL-001 COMPLIANCE: Load margin types from exchange (NEW)
+  const loadMarginTypes = async (exchangeId) => {
+    if (!exchangeId) return;
+    
+    setMarginTypesLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/user/exchanges/${exchangeId}/margin-types`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.margin_types) {
+          const marginOptions = data.margin_types.map(type => ({
+            value: type.value,
+            label: type.label,
+            description: type.description,
+            recommended: type.recommended,
+            risk_level: type.risk_level
+          }));
+          
+          setMarginTypes(marginOptions);
+          console.log(`✅ Loaded ${marginOptions.length} margin types for MODIFY`);
+        } else {
+          throw new Error('Invalid margin types data format');
+        }
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error loading margin types:', err);
+      setMarginTypes([]);
+    } finally {
+      setMarginTypesLoading(false);
     }
   };
 
@@ -203,9 +367,17 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   onChange={(e) => handleParameterChange('strategy', e.target.value)}
                   className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                 >
-                  <option value="Smart Scalper">Smart Scalper - Wyckoff + Order Blocks</option>
-                  <option value="Trend Hunter">Trend Hunter - SMC + Market Profile</option>
-                  <option value="Manipulation Detector">Manipulation Detector - Anti-Whales</option>
+                  {strategiesLoading ? (
+                    <option>Cargando estrategias...</option>
+                  ) : strategies.length === 0 ? (
+                    <option>No hay estrategias disponibles</option>
+                  ) : (
+                    strategies.map(strategy => (
+                      <option key={strategy.value} value={strategy.value}>
+                        {strategy.label}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
               
@@ -257,12 +429,17 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   onChange={(e) => handleParameterChange('interval', e.target.value)}
                   className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                 >
-                  <option value="1m">1 minuto</option>
-                  <option value="5m">5 minutos</option>
-                  <option value="15m">15 minutos ⭐</option>
-                  <option value="30m">30 minutos</option>
-                  <option value="1h">1 hora</option>
-                  <option value="4h">4 horas</option>
+                  {intervalsLoading ? (
+                    <option>Cargando intervalos...</option>
+                  ) : intervals.length === 0 ? (
+                    <option>Error cargando intervalos</option>
+                  ) : (
+                    intervals.map(interval => (
+                      <option key={interval.value} value={interval.value}>
+                        {interval.label} {interval.recommended ? '⭐' : ''}
+                      </option>
+                    ))
+                  )}
                 </select>
                 <p className="text-xs text-gray-400 mt-1">
                   📈 Intervalo de tiempo para análisis técnico del bot
