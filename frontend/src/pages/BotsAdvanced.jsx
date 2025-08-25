@@ -179,9 +179,15 @@ export default function BotsAdvanced() {
       const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
       
       // Cargar datos reales del bot desde el backend
+      const token = localStorage.getItem('intelibotx_token');
+      const authHeaders = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
       const [tradesResponse, summaryResponse] = await Promise.all([
-        fetch(`${BASE_URL}/api/bots/${bot.id}/trades`),
-        fetch(`${BASE_URL}/api/bots/${bot.id}/trading-summary`)
+        fetch(`${BASE_URL}/api/bots/${bot.id}/trades`, { headers: authHeaders }),
+        fetch(`${BASE_URL}/api/bots/${bot.id}/trading-summary`, { headers: authHeaders })
       ]);
       
       if (tradesResponse.ok && summaryResponse.ok) {
