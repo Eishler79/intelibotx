@@ -232,8 +232,8 @@ export const useRealTimeData = (exchangeId, symbol) => {
       // Fetch inicial
       fetchRealTimeData();
 
-      // Actualizar cada 30 segundos
-      const interval = setInterval(fetchRealTimeData, 30000);
+      // 🔥 REAL-TIME: Actualizar cada 10 segundos para trading precision
+      const interval = setInterval(fetchRealTimeData, 10000);
       setUpdateInterval(interval);
 
       return () => {
@@ -323,7 +323,7 @@ export const useRealTimeData = (exchangeId, symbol) => {
 /**
  * Hook simplificado para obtener solo el precio de un símbolo
  */
-export const useSymbolPrice = (exchangeId, symbol, updateInterval = 30000) => {
+export const useSymbolPrice = (exchangeId, symbol, updateInterval = 10000) => {
   const [price, setPrice] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

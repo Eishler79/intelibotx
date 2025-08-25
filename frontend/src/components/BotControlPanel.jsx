@@ -81,8 +81,8 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
 
     fetchCurrentPrice();
     
-    // ✅ Auto-refresh precio cada 30 segundos en modification modal
-    const priceInterval = setInterval(fetchCurrentPrice, 30000);
+    // 🔥 REAL-TIME: Auto-refresh precio cada 10 segundos para decisiones precisas
+    const priceInterval = setInterval(fetchCurrentPrice, 10000);
     
     return () => clearInterval(priceInterval);
   }, [bot?.symbol]);

@@ -239,8 +239,8 @@ const useWebSocketRealtime = () => {
       connect();
     }
 
-    // Ping periódico para mantener conexión
-    const pingInterval = setInterval(ping, 30000); // Cada 30 segundos
+    // 🔥 REAL-TIME: Ping periódico optimizado para mantener conexión activa
+    const pingInterval = setInterval(ping, 10000); // Cada 10 segundos
 
     // Cleanup
     return () => {

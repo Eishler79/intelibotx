@@ -81,6 +81,9 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
       if (!bot) return;
 
       try {
+        // 🔥 REAL-TIME LOG: Transparencia usuario sobre frecuencia 10s
+        console.log(`🔥 Smart Scalper REAL-TIME refresh [${new Date().toISOString()}] - 10s interval active`);
+        
         // 📊 Configuración base
         const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
         const token = localStorage.getItem('intelibotx_token');
@@ -177,7 +180,15 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
             }
           }
         } catch (networkError) {
-          console.warn('⚠️ Smart Scalper endpoint no disponible:', networkError);
+          console.error('🚨 CRITICAL: Smart Scalper API failed with 10s frequency - Network Error:', networkError);
+          console.error('🔍 Error Details:', {
+            endpoint: `/api/run-smart-trade/${bot.symbol}`,
+            frequency: '10s intervals',
+            timestamp: new Date().toISOString(),
+            message: networkError.message
+          });
+          // Enhanced error for 10s frequency - more critical due to higher frequency
+          setLatencyAlert(true);
         }
 
         // 🔥 PRIORIDAD 1: Datos WebSocket en tiempo real
@@ -574,19 +585,46 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
         setLoading(false);
 
       } catch (error) {
-        console.error('Error calculando métricas Smart Scalper:', error);
+        console.error('🚨 CRITICAL ERROR: Smart Scalper metrics calculation failed (10s frequency):', error);
+        console.error('🔍 10s Interval Error Context:', {
+          bot_symbol: bot?.symbol,
+          frequency: '10 seconds',
+          timestamp: new Date().toISOString(),
+          error_message: error.message,
+          stack: error.stack
+        });
         setLoading(false);
+        setLatencyAlert(true); // Alert user of calculation failure
       }
     };
 
     calculateSmartScalperMetrics();
     
-    // CRISIS FIX: Reduced refresh rate to prevent backend hammering
-    // Institutional algorithms don't need high-frequency updates like scalping retail
-    const updateInterval = wsData && wsData.type === 'smart_scalper' ? 30000 : 60000; // 30s para WebSocket, 60s para REST
-    const interval = setInterval(calculateSmartScalperMetrics, updateInterval);
+    // 🔥 REAL-TIME OPTIMIZATION: Smart Scalper requires fresh data every 10s for accurate decisions
+    // Institutional algorithms DO need high-frequency updates for scalping precision
+    const updateInterval = wsData && wsData.type === 'smart_scalper' ? 10000 : 10000; // 10s for all data sources
     
-    return () => clearInterval(interval);
+    // 🛡️ ERROR PROTECTION: Enhanced interval error handling for 10s frequency
+    const interval = setInterval(() => {
+      try {
+        calculateSmartScalperMetrics();
+      } catch (intervalError) {
+        console.error('🚨 INTERVAL ERROR: 10s setInterval execution failed:', intervalError);
+        console.error('🔍 Interval Error Context:', {
+          frequency: '10 seconds',
+          timestamp: new Date().toISOString(),
+          bot_id: bot?.id,
+          symbol: bot?.symbol
+        });
+      }
+    }, updateInterval);
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+        console.log('🔥 10s Smart Scalper interval cleaned up successfully');
+      }
+    };
   }, [bot, realTimeData, realtimeData]);
 
   // 🏛️ INSTITUCIONAL CORRECTO: Last Known Good Value System
@@ -1018,12 +1056,15 @@ export default function SmartScalperMetrics({ bot, realTimeData }) {
               Data Source: {metrics.advanced.data_source.replace('_', ' ').toUpperCase()}
             </p>
             <p className="text-gray-300 text-sm">
-              {metrics.advanced.data_source === 'websocket_realtime' ? 'Real-time WebSocket data - optimal latency' :
-               metrics.advanced.data_source.includes('PRIMARY') ? 'Authenticated API - high reliability' :
-               metrics.advanced.data_source.includes('ALTERNATIVE') ? 'Public API fallback - good reliability' :
-               metrics.advanced.data_source.includes('EXTERNAL') ? 'External data source - basic reliability' :
-               metrics.advanced.data_source === 'last_known_good' ? 'Cached data - may be outdated' :
-               'System degraded - limited functionality'}
+              {metrics.advanced.data_source === 'websocket_realtime' ? '🔥 Real-time WebSocket data - 10s updates' :
+               metrics.advanced.data_source.includes('PRIMARY') ? '⚡ Authenticated API - 10s real-time refresh' :
+               metrics.advanced.data_source.includes('ALTERNATIVE') ? '🔄 Public API fallback - 10s intervals' :
+               metrics.advanced.data_source.includes('EXTERNAL') ? '🌐 External data source - 10s updates' :
+               metrics.advanced.data_source === 'last_known_good' ? '💾 Cached data - may be outdated' :
+               '🚨 API FAILED - No real-time data available'}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              🕐 Update Frequency: Every 10 seconds • Real-time institutional precision
             </p>
           </div>
         </div>

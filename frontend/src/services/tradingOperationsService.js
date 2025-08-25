@@ -250,8 +250,8 @@ export const useLiveTradingFeed = (options = {}) => {
   React.useEffect(() => {
     fetchFeed();
     
-    // Auto-refresh cada 30 segundos solo si no estamos paginando
-    const interval = setInterval(fetchFeed, 30000);
+    // 🔥 REAL-TIME: Auto-refresh cada 10 segundos para trading feed actualizado  
+    const interval = setInterval(fetchFeed, 10000);
     
     return () => clearInterval(interval);
   }, [fetchFeed]);
