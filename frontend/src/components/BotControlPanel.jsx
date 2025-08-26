@@ -67,12 +67,22 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
       });
     }
     
+    // GUARDRAILS P6 DIAGNOSTIC: Log bot data structure
+    console.log('🔍 DIAGNÓSTICO BOT CONTROL:', {
+      bot_exists: !!bot,
+      bot_exchange_id: bot?.exchange_id,
+      bot_full_data: bot
+    });
+    
     // DL-001 COMPLIANCE: Load dynamic data when bot is loaded
     if (bot && bot.exchange_id) {
+      console.log('✅ Loading APIs with exchange_id:', bot.exchange_id);
       loadStrategies();
       loadBaseCurrencies(bot.exchange_id);
       loadTradingIntervals(bot.exchange_id);
       loadMarginTypes(bot.exchange_id);
+    } else {
+      console.warn('⚠️ No bot or exchange_id:', { bot: !!bot, exchange_id: bot?.exchange_id });
     }
   }, [bot]);
 
