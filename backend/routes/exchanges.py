@@ -721,8 +721,8 @@ async def get_symbol_details(
             try:
                 # Use real Binance client (testnet or mainnet)
                 encryption_service = EncryptionService()
-                api_key = encryption_service.decrypt(exchange.encrypted_api_key) if exchange.encrypted_api_key else None
-                api_secret = encryption_service.decrypt(exchange.encrypted_api_secret) if exchange.encrypted_api_secret else None
+                api_key = encryption_service.decrypt_api_key(exchange.encrypted_api_key) if exchange.encrypted_api_key else None
+                api_secret = encryption_service.decrypt_api_secret(exchange.encrypted_api_secret) if exchange.encrypted_api_secret else None
                 
                 if not api_key or not api_secret:
                     # Use public API for symbol info (no credentials required)
