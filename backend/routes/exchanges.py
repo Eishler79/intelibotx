@@ -700,6 +700,7 @@ async def get_symbol_details(
         # DL-008 COMPLIANCE: Same pattern as existing endpoints
         from services.auth_service import get_current_user_safe
         from db.database import get_session
+        from models.user_exchange import UserExchange
         
         current_user = await get_current_user_safe(authorization)
         session = get_session()
