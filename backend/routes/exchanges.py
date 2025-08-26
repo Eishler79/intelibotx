@@ -673,7 +673,7 @@ async def get_exchange_market_types(
             detail="Failed to get market types"
         )
 
-@router.get("/api/user/exchanges/{exchange_id}/symbol-details")
+@router.get("/exchanges/{exchange_id}/symbol-details")
 async def get_symbol_details(
     exchange_id: int,
     authorization: str = Header(None)
@@ -790,7 +790,7 @@ async def get_symbol_details(
             detail="Failed to get symbol details"
         )
 
-@router.get("/api/user/exchanges/{exchange_id}/trading-intervals")
+@router.get("/exchanges/{exchange_id}/trading-intervals")
 async def get_trading_intervals(
     exchange_id: int,
     authorization: str = Header(None)
@@ -900,7 +900,7 @@ async def get_trading_intervals(
         )
 
 
-@router.get("/api/user/exchanges/{exchange_id}/margin-types")
+@router.get("/exchanges/{exchange_id}/margin-types")
 async def get_margin_types(
     exchange_id: int,
     authorization: str = Header(None)
