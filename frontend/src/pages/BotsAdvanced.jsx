@@ -720,6 +720,18 @@ export default function BotsAdvanced() {
             market_type: bot.market_type,
             leverage: bot.leverage || 1,
             margin_type: bot.margin_type || 'ISOLATED',
+            // 🚨 CRITICAL FIX: Include ALL fields from backend for complete bot data
+            interval: bot.interval,
+            base_currency: bot.base_currency,
+            quote_currency: bot.quote_currency,
+            dca_levels: bot.dca_levels,
+            cooldown_minutes: bot.cooldown_minutes,
+            max_open_positions: bot.max_open_positions,
+            entry_order_type: bot.entry_order_type,
+            exit_order_type: bot.exit_order_type,
+            tp_order_type: bot.tp_order_type,
+            sl_order_type: bot.sl_order_type,
+            trailing_stop: bot.trailing_stop,
             status: getBotStatus(bot),
             // ✅ ENHANCED: Include performance metrics from backend
             enhanced_metrics: hasEnhancedMetrics ? {
