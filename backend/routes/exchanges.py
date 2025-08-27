@@ -673,7 +673,6 @@ async def get_exchange_market_types(
             detail="Failed to get market types"
         )
 
-<<<<<<< Updated upstream
 @router.get("/exchanges/{exchange_id}/symbol-details")
 async def get_symbol_details(
     exchange_id: int,
@@ -1007,5 +1006,3 @@ async def get_margin_types(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get margin types"
         )
-=======
->>>>>>> Stashed changes
