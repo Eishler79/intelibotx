@@ -896,9 +896,10 @@ async def get_trading_intervals(
         raise
     except Exception as e:
         logger.error(f"Error getting trading intervals for exchange {exchange_id}: {e}")
+        # TEMPORARY DEBUG: Show actual error for diagnosis
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get trading intervals"
+            detail=f"Failed to get trading intervals: {str(e)} | Type: {type(e).__name__}"
         )
 
 
