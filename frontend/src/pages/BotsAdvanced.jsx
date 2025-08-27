@@ -714,6 +714,7 @@ export default function BotsAdvanced() {
             takeProfit: bot.take_profit,  // Keep both for compatibility
             stopLoss: bot.stop_loss,
             riskPercentage: bot.risk_percentage,
+            exchange_id: bot.exchange_id,  // 🚨 CRITICAL FIX: Include exchange_id for BotControlPanel
             risk_percentage: bot.risk_percentage,
             marketType: bot.market_type,
             market_type: bot.market_type,
