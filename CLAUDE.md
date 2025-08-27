@@ -144,7 +144,8 @@ Usuario Capital → Bot Único → Análisis Institucional → Modo Óptimo → 
 - `REFACTORING_TASKS_DETAILED.md` - 12 tareas refactoring arquitectural OBLIGATORIO
 
 ### **🚀 DEPLOYMENT + TECHNICAL_SPECS:**
-- Infraestructura, endpoints, exchange management (sin cambios)
+- `ENDPOINTS_ANALYSIS.md` - Análisis completo 89 APIs: Railway vs Frontend vs Criticidad
+- Infraestructura, endpoints, exchange management
 
 ---
 

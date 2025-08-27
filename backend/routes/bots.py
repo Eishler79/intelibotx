@@ -450,8 +450,10 @@ async def get_bots(authorization: str = Header(None)):
         # ✅ Personalización: Incluir métricas por bot específico basadas en configuración real
         enhanced_bots = []
         for bot in bots:
+            # GUARDRAILS P17 FIX: Ensure exchange_id is included for BotControlPanel APIs
             enhanced_bot = {
                 **bot.dict(),
+                "exchange_id": bot.exchange_id,  # Explicit inclusion for modification panel
                 "performance_metrics": {
                     "user_configured_strategy": bot.strategy,
                     "user_stake_amount": bot.stake,

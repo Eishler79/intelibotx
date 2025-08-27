@@ -4,6 +4,29 @@
 
 ---
 
+## 2025-08-26 — DL-037 · API HARDCODE ELIMINATION FIX - 3 Error 500 APIs DL-001 Compliance
+
+**Contexto:** 3 nuevas APIs (symbol-details, trading-intervals, margin-types) fallaban con ERROR 500 tras eliminar hardcode en bot creation/modification processes.  
+**Root Cause Identificado:** Missing imports + DL-008 authentication pattern incorrectamente aplicado en nuevas APIs creadas.  
+**Análisis:** APIs requerían import get_session + lazy import pattern consistency según existing file architecture.
+
+**Technical Analysis:**
+- **Import Error:** APIs usaban get_session() sin import from db.database línea 702, 823
+- **DL-008 Compliance:** Authentication pattern aplicado correctamente usando lazy imports
+- **Route Prefix:** Duplicate prefixes corregidos /api/user/api/user/ → /api/user/
+- **Real Data Integration:** 3 APIs funcionando con datos reales Binance vs hardcode eliminado
+
+**DECISION:** Fix quirúrgico imports + maintain lazy pattern consistency + validation production funcionamiento.  
+**Implementation:** Agregar missing imports get_session + verificar DL-008 pattern + production validation.  
+**Impact:** 3 APIs symbol-details, trading-intervals, margin-types funcionando HTTP 200 + bot creation/modification con datos reales.
+
+**GUARDRAILS P1-P9 Compliance:** ✅ COMPLETED - Diagnóstico error 500 específico, pattern consistency analysis, rollback plan, validation local testing, análisis impacto real data integration, UX transparency datos reales, deployment validation, monitoreo production APIs, documentación completa.  
+**Fix Deployed:** Railway production validated - 3 APIs HTTP 200 responses funcional  
+**Status:** ✅ RESOLVED - Error 500 eliminado, hardcode elimination completado, bot processes DL-001 compliant.  
+**Success Criteria:** CREATE bot + MODIFY bot using real API data, no hardcode fallbacks, 3 APIs functional production.
+
+---
+
 ## 2025-08-25 — DL-036 · BOTSADVANCED AUTHENTICATION SYNC - Trading History API Authorization Fix
 
 **Contexto:** BotsAdvanced dashboard mostraba HTTP 500 errors al cargar trading history y métricas de performance de bots.  

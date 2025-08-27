@@ -41,19 +41,24 @@ POST   /api/user/technical-analysis         # Análisis usuario autenticado ✅
 GET    /api/technical-analysis/{symbol}     # Análisis técnico público ✅
 ```
 
-### **⚡ Execution Metrics**
+### **⚡ Execution Metrics & Performance**
 ```bash
 GET    /api/bots/{bot_id}/execution-summary   # Resumen ejecuciones ✅
 GET    /api/bots/{bot_id}/execution-metrics   # Métricas detalladas ✅
 POST   /api/bots/{bot_id}/simulate-execution  # Simulación ejecución ✅
+GET    /api/execution-metrics/system-stats    # ✅ Estadísticas sistema completo
+GET    /api/execution-metrics/health          # ✅ Health check ejecución
 ```
 
-### **📈 Trading History (BÁSICO)**
+### **📈 Trading History & Stats**
 ```bash
 GET    /api/bots/{bot_id}/orders              # Órdenes básicas ✅
 GET    /api/bots/{bot_id}/trades              # Trades básicos ✅
 POST   /api/bots/{bot_id}/orders              # Crear orden ✅
 GET    /api/bots/{bot_id}/trading-summary     # Resumen trading ✅
+GET    /api/bots/{bot_id}/performance-metrics # ✅ Métricas performance detalladas
+POST   /api/bots/{bot_id}/create-sample-data  # ✅ Crear datos muestra testing
+GET    /api/trading-history/stats             # ✅ Estadísticas históricas globales
 ```
 
 ### **🔗 Binance Integration** 
@@ -72,7 +77,10 @@ PUT    /api/user/exchanges/{exchange_id}         # Actualizar exchange ✅
 DELETE /api/user/exchanges/{exchange_id}         # Eliminar exchange ✅
 POST   /api/user/exchanges/{exchange_id}/test    # Probar conexión ✅
 GET    /api/user/exchanges/{exchange_id}/balance # Balance exchange ✅
-GET    /api/user/exchanges/{exchange_id}/market-types  # Tipos mercado por exchange ✅ NUEVO
+GET    /api/user/exchanges/{exchange_id}/market-types    # Tipos mercado por exchange ✅
+GET    /api/user/exchanges/{exchange_id}/symbol-details  # ✅ DL-037 NEW - Símbolos reales Binance
+GET    /api/user/exchanges/{exchange_id}/trading-intervals # ✅ DL-037 NEW - Intervalos trading reales  
+GET    /api/user/exchanges/{exchange_id}/margin-types     # ✅ DL-037 NEW - Tipos margin reales
 ```
 
 ### **🔄 Real Trading Operations** 
@@ -84,14 +92,102 @@ DELETE /api/trading-operations/{trade_id}        # Eliminar operación ✅
 GET    /api/trading-feed/live                    # Feed trading en vivo ✅
 ```
 
-### **📊 Market Data**
+### **📊 Market Data & Smart Scalper Engine**
 ```bash
 GET    /api/available-symbols                    # Pares trading reales Binance ✅
+POST   /api/run-smart-trade/{symbol}             # ✅ Smart Scalper institucional - Motor algoritmos
+GET    /api/technical-analysis/{symbol}          # ✅ Análisis técnico público 
+POST   /api/user/technical-analysis              # ✅ Análisis técnico autenticado
+GET    /api/real-indicators/{symbol}             # ✅ Indicadores tiempo real
+GET    /api/market-data/{symbol}                 # ✅ Datos mercado tiempo real
+GET    /api/real-market/{symbol}                 # ✅ Market data alternativo
+```
+
+### **🌐 WebSocket & Real-Time**
+```bash
+GET    /api/websocket/status                  # ✅ Estado conexión WebSocket
+POST   /api/websocket/broadcast               # ✅ Broadcast mensajes tiempo real
+```
+
+### **🧪 Testnet Environment**  
+```bash
+POST   /testnet/spot/order                    # ✅ Crear orden testnet
+GET    /testnet/spot/orders                   # ✅ Listar órdenes testnet
+GET    /testnet/spot/open-orders              # ✅ Órdenes abiertas testnet
+GET    /testnet/spot/account                  # ✅ Balance cuenta testnet
+GET    /testnet/config                        # ✅ Configuración testnet
+POST   /testnet/order                         # ✅ Crear orden genérica
+GET    /testnet/order/status                  # ✅ Estado orden testnet
+DELETE /testnet/order/cancel                  # ✅ Cancelar orden testnet
+```
+
+### **🏥 Health & System**
+```bash
+GET    /api/health                            # ✅ Health check sistema
+POST   /api/init-db                           # ✅ Inicializar base datos
+POST   /api/init-auth-only                    # ✅ Inicializar solo auth
+GET    /                                      # ✅ Root endpoint
+```
+
+### **📊 Dashboard Extended**  
+```bash
+GET    /api/dashboard/summary                 # ✅ Resumen dashboard principal
+GET    /api/dashboard/balance-evolution       # ✅ Evolución balance tiempo
+GET    /api/dashboard/bots-performance        # ✅ Performance todos los bots
+GET    /api/dashboard/symbols-analysis        # ✅ Análisis símbolos trading
+```
+
+### **🔐 Authentication Extended**
+```bash
+POST   /api/auth/register                     # ✅ Registro usuario
+POST   /api/auth/login                        # ✅ Login usuario
+GET    /api/auth/me                           # ✅ Info usuario actual
+POST   /api/auth/logout                       # ✅ Logout usuario
+PUT    /api/auth/api-keys                     # ✅ Actualizar API keys
+GET    /api/auth/binance-status               # ✅ Estado conexión Binance
+POST   /api/auth/test-binance-connection      # ✅ Test conexión Binance
+POST   /api/auth/verify-email                 # ✅ Verificar email
+POST   /api/auth/resend-verification          # ✅ Reenviar verificación
+POST   /api/auth/request-password-reset       # ✅ Solicitar reset password
+POST   /api/auth/reset-password               # ✅ Reset password
+POST   /api/auth/test-email-connection        # ✅ Test conexión email
+```
+
+### **⚙️ Additional APIs**
+```bash
+GET    /api/backtest-chart/{symbol}           # ✅ Gráfico backtest
+GET    /api/backtest-results/{bot_id}         # ✅ Resultados backtest
+POST   /api/execute-trade                     # ✅ Ejecutar trade público
+POST   /api/user/execute-trade                # ✅ Ejecutar trade usuario
+GET    /api/user/trading-status               # ✅ Estado trading usuario
+GET    /api/strategies                        # ✅ Lista estrategias disponibles
+POST   /api/trading-signals                   # ✅ Generar señales trading
+GET    /api/real-trading/health               # ✅ Health check trading real
 ```
 
 ---
 
-## ❌ **ENDPOINTS FALTANTES (Críticos)**
+## 🎯 **RESUMEN COMPLETO APIs RAILWAY**
+
+### **📊 TOTAL APIs DOCUMENTADAS:**
+- **Authentication:** 15 APIs ✅
+- **Exchange Management:** 10 APIs ✅ (3 DL-037 nuevas)
+- **Bot Management:** 14 APIs ✅
+- **Smart Scalper & Market Data:** 7 APIs ✅
+- **Execution Metrics:** 5 APIs ✅
+- **Trading History:** 7 APIs ✅
+- **Trading Operations:** 5 APIs ✅
+- **WebSocket:** 2 APIs ✅
+- **Testnet:** 8 APIs ✅
+- **Dashboard:** 4 APIs ✅
+- **Health/System:** 4 APIs ✅
+- **Additional/Utilities:** 8 APIs ✅
+
+**TOTAL: 89 APIs DOCUMENTADAS** (vs 76 en Railway - incluye aliases y variants)
+
+---
+
+## ❌ **ENDPOINTS REALMENTE FALTANTES (Críticos para UX)**
 
 ### **🔍 1. Order Tracking Individual**
 ```bash
@@ -321,6 +417,49 @@ Para resolver las **5 consultas críticas del usuario**:
 
 ---
 
+## 📊 **AUDIT COMPLETO APIs RAILWAY vs FRONTEND**
+
+### **📈 REALIDAD SYSTEM:**
+- **RAILWAY PRODUCTION:** **76 APIs** funcionando
+- **DOCUMENTACIÓN:** **89 APIs** catalogadas (incluye aliases)  
+- **FRONTEND INTEGRATION:** **23 APIs** (25.8%) integradas
+
+### **🎯 CRITICIDAD APIs:**
+- **🚨 CRÍTICAS:** 8 APIs (9%) - Core system functionality
+- **🔥 ALTAS:** 32 APIs (36%) - Important business features  
+- **⚡ MEDIAS:** 35 APIs (39%) - Supporting features
+- **📝 BAJAS:** 14 APIs (16%) - Utilities y development
+
+### **📊 GAPS PRINCIPALES IDENTIFICADOS:**
+- **Exchange Management:** 7/10 APIs no usadas en frontend
+- **Execution Metrics:** 5/5 APIs sin integrar UI  
+- **Authentication Extended:** 10/15 APIs parcialmente integradas
+- **Testnet Environment:** 8/8 APIs no usadas
+
+### **🆕 DL-037 APIs (IMPLEMENTADAS 2025-08-26):**
+1. **GET /api/user/exchanges/{id}/symbol-details** - 🚨 CRÍTICA - Símbolos reales Binance (400+ vs 7 hardcoded)
+2. **GET /api/user/exchanges/{id}/trading-intervals** - 🔥 ALTA - Timeframes con Smart Scalper recommendations  
+3. **GET /api/user/exchanges/{id}/margin-types** - ⚡ MEDIA - Margin types con risk levels
+
+**STATUS DL-037:** ✅ **FUNCTIONAL** - Resolvieron ERROR 500 en bot creation/modification processes
+
+---
+
+## 🎯 **RECOMENDACIONES INMEDIATAS:**
+
+### **PRIORIDAD MÁXIMA (Semana 1):**
+1. **Execution Metrics Integration** - 0% uso frontend, crítico para performance visibility
+2. **Exchange Management UI** - Completar 7 APIs faltantes en frontend
+3. **Authentication Flow Complete** - Password reset + email verification
+
+### **PRIORIDAD ALTA (Mes 1):**
+4. **Testnet Integration** - UI para testing seguro 
+5. **Bot Management Advanced** - Update APIs y métricas detalladas
+6. **Performance Dashboard** - Execution metrics en dashboard
+
+---
+
 > **Documento creado**: 11 Agosto 2025  
+> **Actualizado**: 26 Agosto 2025 - DL-037 APIs + Railway Audit  
 > **Para**: Eduard Guzmán - InteliBotX Endpoints Analysis  
 > **Objetivo**: Identificar gaps y roadmap para tracking completo de operaciones
