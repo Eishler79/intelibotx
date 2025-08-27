@@ -45,6 +45,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
         base_currency: bot.base_currency || '', // DL-001: No hardcode fallback
         market_type: bot.market_type || bot.marketType || 'SPOT',
         leverage: Number(bot.leverage) || 1,
+        margin_type: bot.margin_type || 'CROSS',
         
         // Parámetros de riesgo (DATOS REALES)
         takeProfit: Number(bot.take_profit || bot.takeProfit) || 2.5,
@@ -391,6 +392,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 </select>
               </div>
               
+              
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Capital (Stake)</Label>
                 <input
@@ -455,6 +457,33 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   📈 Intervalo de tiempo para análisis técnico del bot
                 </p>
               </div>
+              
+              {/* Margin Type - Solo para FUTURES */}
+              {(parameters.market_type === 'FUTURES_USDT' || parameters.market_type === 'FUTURES_COIN' || parameters.market_type?.includes('FUTURES')) && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Tipo de Margen</Label>
+                  <select
+                    value={parameters.margin_type || 'CROSS'}
+                    onChange={(e) => handleParameterChange('margin_type', e.target.value)}
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  >
+                    {marginTypesLoading ? (
+                      <option>Cargando tipos de margen...</option>
+                    ) : marginTypes.length === 0 ? (
+                      <option>Error cargando tipos de margen</option>
+                    ) : (
+                      marginTypes.map(type => (
+                        <option key={type.value} value={type.value} title={type.description}>
+                          {type.label} {type.recommended ? '⭐' : ''} - {type.description}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <p className="text-xs text-gray-400">
+                    Cross = riesgo total | Isolated = riesgo limitado
+                  </p>
+                </div>
+              )}
             </div>
             
             {/* Información del Exchange y Market Type */}
