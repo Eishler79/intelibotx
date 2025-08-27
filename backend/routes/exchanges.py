@@ -698,11 +698,10 @@ async def get_symbol_details(
     """
     try:
         # DL-008 COMPLIANCE: Same pattern as existing endpoints
-        from services.auth_service import get_current_user_safe
         from db.database import get_session
         from models.user_exchange import UserExchange
         
-        current_user = await get_current_user_safe(authorization)
+        current_user = user
         session = get_session()
         
         # Get user's exchange configuration
@@ -794,7 +793,7 @@ async def get_symbol_details(
 @router.get("/exchanges/{exchange_id}/trading-intervals")
 async def get_trading_intervals(
     exchange_id: int,
-    authorization: str = Header(None)
+    user: User = Depends(get_current_user_safe)
 ):
     """
     DL-001 COMPLIANT: Get real trading intervals supported by exchange
@@ -819,11 +818,10 @@ async def get_trading_intervals(
     """
     try:
         # DL-008 COMPLIANCE: Same pattern as existing endpoints
-        from services.auth_service import get_current_user_safe
         from db.database import get_session
         from models.user_exchange import UserExchange
         
-        current_user = await get_current_user_safe(authorization)
+        current_user = user
         session = get_session()
         
         # Get user's exchange configuration
@@ -906,7 +904,7 @@ async def get_trading_intervals(
 @router.get("/exchanges/{exchange_id}/margin-types")
 async def get_margin_types(
     exchange_id: int,
-    authorization: str = Header(None)
+    user: User = Depends(get_current_user_safe)
 ):
     """
     DL-001 COMPLIANT: Get real margin types supported by exchange
@@ -930,11 +928,10 @@ async def get_margin_types(
     """
     try:
         # DL-008 COMPLIANCE: Same authentication pattern as other endpoints
-        from services.auth_service import get_current_user_safe
         from db.database import get_session
         from models.user_exchange import UserExchange
         
-        current_user = await get_current_user_safe(authorization)
+        current_user = user
         session = get_session()
         
         # Get user's exchange configuration
