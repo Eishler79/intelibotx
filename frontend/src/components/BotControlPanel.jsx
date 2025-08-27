@@ -68,47 +68,12 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
       });
     }
     
-    // GUARDRAILS P6 DIAGNOSTIC: Log bot data structure + parameters mapping
+    // GUARDRAILS P6 DIAGNOSTIC: Log bot data structure
     console.log('🔍 DIAGNÓSTICO BOT CONTROL:', {
       bot_exists: !!bot,
       bot_exchange_id: bot?.exchange_id,
       bot_full_data: bot
     });
-    
-    // 🔍 DIAGNÓSTICO DETALLADO: Mapeo bot → parameters
-    if (bot) {
-      console.log('🔍 === MAPEO DETALLADO BOT → PARAMETERS ===');
-      const mappingDiagnostic = {
-        'name': { bot_value: bot.name, parameter_value: bot.name || `Bot ${bot.symbol}` || 'Bot' },
-        'strategy': { bot_value: bot.strategy, parameter_value: bot.strategy || '' },
-        'interval': { bot_value: bot.interval, parameter_value: bot.interval || '' },
-        'base_currency': { bot_value: bot.base_currency, parameter_value: bot.base_currency || '' },
-        'leverage': { bot_value: bot.leverage, parameter_value: Number(bot.leverage) || 1 },
-        'margin_type': { bot_value: bot.margin_type, parameter_value: bot.margin_type || 'CROSS' },
-        'stake': { bot_value: bot.stake, parameter_value: Number(bot.stake) || 100 },
-        'take_profit': { bot_value: bot.take_profit, parameter_value: Number(bot.take_profit || bot.takeProfit) || 2.5 },
-        'stop_loss': { bot_value: bot.stop_loss, parameter_value: Number(bot.stop_loss || bot.stopLoss) || 1.5 },
-        'dca_levels': { bot_value: bot.dca_levels, parameter_value: Number(bot.dca_levels) || 3 },
-        'entry_order_type': { bot_value: bot.entry_order_type, parameter_value: bot.entry_order_type || 'MARKET' },
-        'exit_order_type': { bot_value: bot.exit_order_type, parameter_value: bot.exit_order_type || 'MARKET' },
-        'tp_order_type': { bot_value: bot.tp_order_type, parameter_value: bot.tp_order_type || 'LIMIT' },
-        'sl_order_type': { bot_value: bot.sl_order_type, parameter_value: bot.sl_order_type || 'STOP_MARKET' },
-        'trailing_stop': { bot_value: bot.trailing_stop, parameter_value: bot.trailing_stop || false },
-        'max_open_positions': { bot_value: bot.max_open_positions, parameter_value: bot.max_open_positions || 3 },
-        'cooldown_minutes': { bot_value: bot.cooldown_minutes, parameter_value: bot.cooldown_minutes || 30 }
-      };
-      
-      Object.entries(mappingDiagnostic).forEach(([field, values]) => {
-        const isNull = values.bot_value === null || values.bot_value === undefined;
-        const isEmpty = values.bot_value === '';
-        const isDefaultFallback = values.bot_value !== values.parameter_value;
-        
-        console.log(`${field}:`, {
-          ...values,
-          status: isNull ? '❌ NULL' : isEmpty ? '⚠️ EMPTY' : isDefaultFallback ? '🔄 FALLBACK' : '✅ OK'
-        });
-      });
-    }
     
     // DL-001 COMPLIANCE: Load dynamic data when bot is loaded
     if (bot && bot.exchange_id) {

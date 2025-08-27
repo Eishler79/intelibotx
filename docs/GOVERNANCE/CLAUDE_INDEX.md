@@ -23,14 +23,28 @@
 - pages/BotsAdvanced.jsx — controller principal de bots {#bots-advanced}
 
 ## Sesión (vivo) {#sesion}
-- PLAN_SESION.md — objetivos y tareas del día {#plan-sesion}
+- CLAUDE.md — master entry point, premisas KK/KG/KO {#claude-master}
+- MASTER_PLAN.md — roadmap + estado actual sistema {#master-plan}
+- BACKLOG.md — prioridades pendientes organizadas {#backlog}
+- DECISION_LOG.md — registro decisiones críticas {#decision-log}
+- SESSION_CLOSURE_YYYY-MM-DD.md — cierre sesión detallado {#session-closure}
 
 ---
 
 ### Ejemplos de referencias (copiar/pegar) {#ejemplos}
+- `// SPEC_REF: CLAUDE.md#claude-master` 
+- `// SPEC_REF: MASTER_PLAN.md#master-plan`
+- `// SPEC_REF: DECISION_LOG.md#decision-log (DL-038)`
+- `// SPEC_REF: BACKLOG.md#backlog`
 - `// SPEC_REF: ENDPOINTS_ANALYSIS.md#endpoints`
 - `# SPEC_REF: DOCUMENTACION_ESTRATEGIAS_BOTS.md#estrategias-bots`
 - `// SPEC_REF: SMART_SCALPER_STRATEGY.md#smart-scalper-strategy`
 - `# SPEC_REF: DESIGN_SYSTEM_INTELIBOTX.md#design-system`
 - `// SPEC_REF: src/services/api.ts#api-ts`
 - `// SPEC_REF: pages/BotsAdvanced.jsx#bots-advanced`
+
+### Actualización DL-038 Session 2025-08-27 {#dl038-update}
+- **Nueva Prioridad:** Bot modification data persistence fix
+- **Status:** Root cause process identificado via diagnostic
+- **SPEC_REF:** DECISION_LOG.md#decision-log (DL-038) + BotControlPanel data flow
+- **Next Action:** Implement targeted fix for identified problematic process

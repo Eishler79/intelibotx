@@ -30,6 +30,8 @@
   *(SPEC_REF: GUARDRAILS.md + spec_guard.py + dependency analysis)*
 
 ### **🔥 PRÓXIMAS PRIORIDADES CRÍTICAS - ETAPA 0 REFACTORING**
+- [ ] {DL038_BOT_DATA_PERSISTENCE_FIX} **Bot Modification Data Persistence Fix** — Implementar corrección proceso específico identificado
+  *(SPEC_REF: DL-038 + BotControlPanel data flow + processedBots mapping issue)*
 - [ ] {AUTHENTICATION_DEPENDENCY_FIX_REMAINING} **Fix endpoints dependency injection restantes** — Continuar aplicando Opción B metodología exitosa
   *(SPEC_REF: Auth module 8/11 endpoints + otros módulos pendientes)*
 - [ ] {EXCHANGE_TESTING_REAL} **Exchange testing con credenciales reales** — API connection validation post-fix

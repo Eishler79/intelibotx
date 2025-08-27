@@ -26,18 +26,26 @@
 
 ## 4. Reglas dinámicas de sesión (plan vivo)
 - Cargar en memoria:  
+  - `CLAUDE.md` (master entry point)
   - `CLAUDE_BASE.md`
   - `GUARDRAILS.md`
-  - `PLAN_SESION.md`
+  - `MASTER_PLAN.md`
 - Priorizar leyendo `BACKLOG.md` y las últimas 3 entradas de `DECISION_LOG.md` cuando se solicite.
 - Cuando surja un nuevo ítem:
   - Primero a `TODO_INBOX.md` (no ejecutar aún).
   - Solo se promueve a "Tareas activas" tras mi confirmación.
 - Al cerrar una tarea:
-  - Mover a “Hecho hoy”.
+  - Mover a "Hecho hoy".
   - Si cambió el criterio, agregar entrada a `DECISION_LOG.md`.
   - Usar `SPEC_REF` en código y en el commit.
 - Cierre del día:
   - Pendientes → `BACKLOG.md`.
-  - Clasificar “Descubrimientos” para futura referencia.
+  - Clasificar "Descubrimientos" para futura referencia.
+  - Actualizar `SESSION_CLOSURE_YYYY-MM-DD.md`
   - Para commitear, usa spec_commit.py
+
+## 5. Actualizado 2025-08-27 - DL-038 Session
+- **Proceso:** Diagnostic session bot data persistence completado
+- **Status:** Root cause process identificado, ready for targeted fix
+- **Next Priority:** Implement DL-038 specific fix for data corruption process
+- **Documentation:** SESSION_CLOSURE_2025-08-27.md created, BACKLOG.md updated
