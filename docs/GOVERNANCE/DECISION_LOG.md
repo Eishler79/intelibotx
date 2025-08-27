@@ -4,6 +4,31 @@
 
 ---
 
+## 2025-08-27 — DL-038 · BOT MODIFICATION DATA PERSISTENCE DIAGNOSTIC - Empty Fields Root Cause Analysis
+
+**Contexto:** Bot modification interface mostraba campos vacíos en lugar de datos guardados durante bot creation. Backend API /api/bots retorna datos correctos, pero frontend no los muestra en modification form.  
+**Root Cause Investigado:** Frontend data processing entre BotsAdvanced.jsx → BotControlPanel.jsx mapping issue identificado. Backend completo, problema frontend data flow.  
+**Análisis:** Sistema diagnóstico implementado para comparar bot data backend vs frontend parameter mapping con status tracking detallado.
+
+**Technical Analysis:**
+- **Backend Status:** ✅ /api/bots API retorna todos los campos bot correctamente  
+- **Frontend Issue:** ❌ BotControlPanel recibe bot data pero campos aparecen vacíos en form
+- **Data Flow:** BotsAdvanced processedBots mapping → BotControlPanel useEffect parameters mapping
+- **Diagnostic Implementation:** Logging detallado bot.field vs parameter mapping con status ❌NULL ⚠️EMPTY 🔄FALLBACK ✅OK
+
+**DECISION:** Implementar diagnóstico completo bot data persistence + identificar proceso específico que corrompe datos.  
+**Implementation:** Enhanced diagnostic logging en BotControlPanel para tracking exact mapping bot → parameters.  
+**Impact:** Root cause identification ready - usuario identificó proceso específico que causa data loss.
+
+**GUARDRAILS P1-P9 Compliance:** ✅ COMPLETED - Diagnóstico sistemático sin asunciones, comparación backend vs frontend evidence-based, rollback plan diagnostic removal, validación local + production deployed, análisis impacto user experience, transparency diagnostic logging, deployment verificado, monitoreo data flow, documentación detallada proceso.  
+**Diagnostic Deployed:** Commit 1425e03 - Enhanced bot data persistence debugging  
+**Status:** 🔄 IN PROGRESS - Root cause process identificado por usuario, ready for specific fix implementation.  
+**Success Criteria:** Bot modification fields show saved data correctly, no empty/default values, complete data persistence.
+
+**Next Action:** Implement specific fix for identified problematic process in bot data flow.
+
+---
+
 ## 2025-08-26 — DL-037 · API HARDCODE ELIMINATION FIX - 3 Error 500 APIs DL-001 Compliance
 
 **Contexto:** 3 nuevas APIs (symbol-details, trading-intervals, margin-types) fallaban con ERROR 500 tras eliminar hardcode en bot creation/modification processes.  
