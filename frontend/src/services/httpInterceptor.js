@@ -17,6 +17,7 @@ class HttpInterceptor {
     this.notificationSystem = null;
     this.isRefreshing = false;
     this.failedQueue = [];
+    this.isLoggingOut = false; // Prevent multiple simultaneous logouts
     
     // Backend error codes mapping
     this.ERROR_CODES = {
@@ -304,6 +305,14 @@ class HttpInterceptor {
    * Handle token expiration with auto-logout
    */
   async handleTokenExpiration() {
+    // Prevent multiple simultaneous logouts
+    if (this.isLoggingOut) {
+      console.log('🔑 Logout already in progress, skipping...');
+      return;
+    }
+    
+    this.isLoggingOut = true;
+    
     if (this.authContext && typeof this.authContext.logout === 'function') {
       console.log('🔑 Auto-logout triggered due to token expiration');
       
@@ -412,14 +421,19 @@ class HttpInterceptor {
    * Redirect to login page
    */
   redirectToLogin() {
-    // Clear any existing navigation state
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState(null, '', '/login');
-    }
-    
-    // Force navigation to login
-    if (window.location.pathname !== '/login') {
-      window.location.href = '/login';
+    try {
+      // Single navigation method to prevent double redirect
+      if (window.location.pathname !== '/login') {
+        console.log('🔄 Redirecting to login page');
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Redirect error:', error);
+      // Fallback navigation
+      window.location.replace('/login');
+    } finally {
+      // Reset logout flag after redirect
+      this.isLoggingOut = false;
     }
   }
 
