@@ -30,6 +30,8 @@
   *(SPEC_REF: GUARDRAILS.md + spec_guard.py + dependency analysis)*
 
 ### **🔥 PRÓXIMAS PRIORIDADES CRÍTICAS - ETAPA 0 REFACTORING**
+- [ ] {DL040_FRONTEND_ARCHITECTURE_REFACTORING} **Frontend Architecture Refactoring** — Feature-based structure migration 6 phases
+  *(SPEC_REF: DL-040 + TECHNICAL_SPECS/FRONTEND_ARCHITECTURE.md + Strangler Fig Pattern)*
 - [ ] {DL038_BOT_DATA_PERSISTENCE_FIX} **Bot Modification Data Persistence Fix** — Implementar corrección proceso específico identificado
   *(SPEC_REF: DL-038 + BotControlPanel data flow + processedBots mapping issue)*
 - [ ] {AUTHENTICATION_DEPENDENCY_FIX_REMAINING} **Fix endpoints dependency injection restantes** — Continuar aplicando Opción B metodología exitosa

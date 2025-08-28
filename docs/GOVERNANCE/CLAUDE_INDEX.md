@@ -16,6 +16,11 @@
 - DEPLOYMENT_GUIDE.md {#deployment-guide}
 - README.md (comandos backend) {#backend-readme}
 
+## Technical Specifications {#technical-specs}
+- TECHNICAL_SPECS/FRONTEND_ARCHITECTURE.md {#frontend-architecture}
+- TECHNICAL_SPECS/BOT_ARCHITECTURE_SPEC.md {#bot-architecture}
+- TECHNICAL_SPECS/ENDPOINTS_ANALYSIS.md {#endpoints-analysis}
+
 ## Frontend {#frontend}
 - SMART_SCALPER_STRATEGY.md {#smart-scalper-strategy}
 - SMART_SCALPER_ANALYTICS_DETAILED.md {#smart-scalper-analytics}

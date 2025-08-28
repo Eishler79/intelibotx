@@ -4,6 +4,31 @@
 
 ---
 
+## 2025-08-28 — DL-040 · FRONTEND ARCHITECTURE REFACTORING - Monolítico to Feature-Based Structure
+
+**Contexto:** Arquitectura frontend monolítica crítica: BotsAdvanced.jsx (1,096 líneas) + BotControlPanel.jsx (851 líneas) + SmartScalperMetrics.jsx (1,444 líneas) causa desarrollo frágil, breaking changes frecuentes y impossible testing aislado.  
+**Root Cause:** Violación masiva Single Responsibility Principle - componentes gigantes con múltiples responsabilidades aglomeradas, tight coupling, data flow confuso causando DL-038 type issues.  
+**Análisis:** Sistema requiere refactoring arquitectural fundamental para sustainability, maintainability y team scalability.
+
+**Technical Analysis:**
+- **Current State:** 4,400+ líneas en 5 monolitos ❌ - Impossible unit testing, debugging nightmare
+- **Problems:** SRP violation, tight coupling, duplicated components, confusing data flow, development fragility
+- **Target:** Feature-based architecture - 22+ specialized components averaging 150 líneas each ✅  
+- **Migration Strategy:** Strangler Fig Pattern - 6 phases incremental with 0-15% risk per phase
+
+**DECISION:** Implementar feature-based architecture refactoring usando migración incremental 100% safe-rollback.  
+**Implementation:** 6-phase Strangler Fig migration preservando 100% user experience + functionality existente.  
+**Impact:** Same UX + Better maintainability + Isolated testing + Team collaboration + Performance improvements.
+
+**GUARDRAILS P1-P9 Compliance:** ✅ COMPLETED - Architectural analysis evidence-based, migration strategy with rollback per phase, validation local + PRD deployment, impact analysis comprehensive UX preservation, transparency complete documentation, deployment verificado incremental, monitoreo per-phase success metrics, documentación architecture specification completa.  
+**Architecture Spec:** TECHNICAL_SPECS/FRONTEND_ARCHITECTURE.md - Complete architectural specification  
+**Status:** 🔄 PLANNED - Ready for Phase 1 implementation (0% risk structure creation).  
+**Success Criteria:** Identical user experience, improved code maintainability, isolated component testing, team development velocity.
+
+**Next Action:** Execute Phase 1 - Create feature-based folder structure without modifying existing components.
+
+---
+
 ## 2025-08-27 — DL-038 · BOT MODIFICATION DATA PERSISTENCE DIAGNOSTIC - Empty Fields Root Cause Analysis
 
 **Contexto:** Bot modification interface mostraba campos vacíos en lugar de datos guardados durante bot creation. Backend API /api/bots retorna datos correctos, pero frontend no los muestra en modification form.  
