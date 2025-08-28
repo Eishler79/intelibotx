@@ -11,6 +11,8 @@ import SmartScalperMetrics from "@/components/SmartScalperMetrics";
 import LatencyMonitor from "@/components/LatencyMonitor";
 import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
 import LiveTradingFeed from "@/components/LiveTradingFeed";
+import DashboardMetrics from "../features/dashboard/components/DashboardMetrics";
+import BotsTableSection from "../features/bots/components/BotsTableSection";
 import { createTradingOperation, getBotTradingOperations, runSmartTrade, fetchBots, deleteBot, updateBot } from "../services/api";
 import TradingHistory from "../components/TradingHistory";
 import EnhancedBotCreationModal from "../components/EnhancedBotCreationModal";
@@ -843,61 +845,11 @@ export default function BotsAdvanced() {
         {/* Contenido según tab activo */}
         {activeTab === 'dashboard' && (
           <>
-            {/* Métricas Globales DINÁMICAS */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-intelibot-text-muted text-sm">Total PnL</p>
-                      <p className={`text-2xl font-bold ${parseFloat(dynamicMetrics.totalPnL) >= 0 ? 'text-intelibot-success-green' : 'text-intelibot-error-red'}`}>
-                        {parseFloat(dynamicMetrics.totalPnL) >= 0 ? '+' : ''}${dynamicMetrics.totalPnL}
-                      </p>
-                    </div>
-                    <TrendingUp className={parseFloat(dynamicMetrics.totalPnL) >= 0 ? 'text-intelibot-success-green' : 'text-intelibot-error-red'} size={24} />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-intelibot-text-muted text-sm">Bots Activos</p>
-                      <p className="text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.activeBots}</p>
-                    </div>
-                    <Activity className="text-intelibot-accent-gold" size={24} />
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Métricas Globales DINÁMICAS - Extracted to DashboardMetrics Component */}
+            <DashboardMetrics dynamicMetrics={dynamicMetrics} />
 
-              <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-intelibot-text-muted text-sm">Sharpe Promedio</p>
-                      <p className="text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.avgSharpe}</p>
-                    </div>
-                    <BarChart3 className="text-intelibot-accent-gold" size={24} />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-intelibot-text-muted text-sm">Win Rate</p>
-                      <p className="text-2xl font-bold text-intelibot-success-green">{dynamicMetrics.avgWinRate}%</p>
-                    </div>
-                    <TrendingUp className="text-intelibot-success-green" size={24} />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Tabla Profesional de Bots DINÁMICA */}
-            <ProfessionalBotsTable 
+            {/* Bots Management Section - Extracted to BotsTableSection Component */}
+            <BotsTableSection 
               bots={bots}
               onSelectBot={handleBotSelect}
               onViewDetails={handleViewBotDetails}
@@ -905,11 +857,6 @@ export default function BotsAdvanced() {
               onControlBot={setControlPanelBot}
               onToggleBotStatus={handleToggleBotStatus}
             />
-
-            {/* Sección de Trading en Vivo */}
-            <div className="mt-8">
-              <LiveTradingFeed bots={bots} />
-            </div>
           </>
         )}
 
