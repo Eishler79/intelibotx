@@ -618,10 +618,23 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
         session.commit()
         session.refresh(bot)
         
+        # ✅ DL-038 FIX: Generate performance_metrics immediately after creation
+        enhanced_bot = {
+            **bot.dict(),
+            "exchange_id": bot.exchange_id,  # Ensure exchange_id is included
+            "performance_metrics": {
+                "user_configured_strategy": bot.strategy,
+                "user_stake_amount": bot.stake,
+                "user_risk_percentage": bot.risk_percentage,
+                "estimated_trades_per_day": calculate_estimated_trades(bot),
+                "risk_adjusted_return": calculate_risk_return(bot),
+            }
+        }
+        
         return {
             "message": f"✅ Bot {bot.strategy} creado para {bot.symbol} ({bot.market_type.upper()})",
             "bot_id": bot.id,
-            "bot": bot
+            "bot": enhanced_bot  # ✅ Return enhanced bot with performance_metrics
         }
     except Exception as e:
         raise HTTPException(
