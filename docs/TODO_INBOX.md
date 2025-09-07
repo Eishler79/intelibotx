@@ -5,5 +5,18 @@
 
 ---
 
-- **ENCRYPTION_MASTER_KEY Railway config** - Configurar variable environment persistente *(origen: Usuario testing E2E 2025-08-16 - logs descifrado API keys falla)*
-- **Frontend exchange loading UX** - Exchange requiere reload manual para reconocimiento *(origen: Usuario testing E2E 2025-08-16 - workflow roto)*
+## ✅ **REFACTORING PHASE CONCLUIDA - INBOX MIGRADO**
+
+**📋 ITEMS MIGRADOS A BACKLOG.md:**
+- **ENCRYPTION_MASTER_KEY Railway config** → Trasladado a BACKLOG.md como ETAPA 1
+- **Frontend exchange loading UX** → Trasladado a BACKLOG.md como ETAPA 1  
+- **MASTER_PLAN.md redundancy cleanup** → ✅ RESUELTO (actualizado como concluido)
+
+## 🔄 **POST-REFACTORING ITEMS:**
+
+- **Naming collision cleanup** - 4 archivos useTradingOperations duplicados sin importaciones activas *(origen: Análisis DL-040 Phase 1 - código muerto sin impacto)*
+- **Funcionalidad validation local** - 199+ archivos sin commit requieren testing *(origen: Usuario 2025-09-07 - build OK pero sin pruebas funcionales)*
+
+---
+
+**📝 NOTA:** TODO_INBOX.md ahora focalizado en post-refactoring + próximas fases algoritmos institucionales.

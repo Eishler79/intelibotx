@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { UserCircle, LogOut, Settings } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../features/auth/contexts/AuthContext";
 
 const Header = () => {
   const { user, logout } = useAuth();

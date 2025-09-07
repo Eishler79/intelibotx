@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+// DL-076 COMPLIANCE: Direct hooks, no wrapper context
+import useLogin from '../../features/auth/hooks/useLogin';
 
 const AuthProviders = ({ onSuccess }) => {
   const [loadingProvider, setLoadingProvider] = useState(null);
-  const { login } = useAuth();
+  // ✅ Direct hook composition - no wrapper context
+  const login = useLogin();
 
   const handleProviderAuth = async (provider) => {
     setLoadingProvider(provider);

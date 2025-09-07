@@ -3,29 +3,57 @@
 > Usa este índice para ubicar la **fuente de verdad** antes de tocar código.
 > Cuando cites en commits o comentarios en código, usa `SPEC_REF: archivo.md#seccion`.
 
-## Diseño / Visión {#diseno-vision}
-- docs/CONTEXTO_PLAN_3_FRENTES.md {#ctx-plan-3-frentes}
-- DESIGN_SYSTEM_INTELIBOTX.md {#design-system}
-- docs/BOT_TEMPLATES_STRATEGIES.md {#bot-templates}
-- docs/ESPECIFICACIONES_BOTS_USUARIO.md {#specs-bots-usuario}
-- docs/ESPECIFICACIONES_EXCHANGE_MANAGEMENT.md {#specs-exchange-mgmt}
+## Intelligent Trading (Core Sistema) {#intelligent-trading}
+- docs/INTELLIGENT_TRADING/CORE_PHILOSOPHY.md {#core-philosophy}
+- docs/INTELLIGENT_TRADING/BOT_CONCEPT.md {#bot-concept}
+- docs/INTELLIGENT_TRADING/ALGORITHMS_OVERVIEW.md {#algorithms-overview}
+- docs/INTELLIGENT_TRADING/MODES_OVERVIEW.md {#modes-overview}
 
-## Backend {#backend}
-- ENDPOINTS_ANALYSIS.md {#endpoints}
-- DOCUMENTACION_ESTRATEGIAS_BOTS.md {#estrategias-bots}
-- DEPLOYMENT_GUIDE.md {#deployment-guide}
-- README.md (comandos backend) {#backend-readme}
+### Institutional Algorithms {#institutional-algorithms}
+- docs/INTELLIGENT_TRADING/INSTITUTIONAL_ALGORITHMS/01_WYCKOFF_METHOD.md {#wyckoff}
+- docs/INTELLIGENT_TRADING/INSTITUTIONAL_ALGORITHMS/02_ORDER_BLOCKS.md {#order-blocks}
+- docs/INTELLIGENT_TRADING/INSTITUTIONAL_ALGORITHMS/03_LIQUIDITY_GRABS.md {#liquidity-grabs}
+- docs/INTELLIGENT_TRADING/INSTITUTIONAL_ALGORITHMS/04_STOP_HUNTING.md {#stop-hunting}
+- docs/INTELLIGENT_TRADING/INSTITUTIONAL_ALGORITHMS/05_FAIR_VALUE_GAPS.md {#fair-value-gaps}
+- docs/INTELLIGENT_TRADING/INSTITUTIONAL_ALGORITHMS/06_MARKET_MICROSTRUCTURE.md {#market-microstructure}
+
+### Operational Modes {#operational-modes}
+- docs/INTELLIGENT_TRADING/OPERATIONAL_MODES/SCALPING_MODE.md {#scalping-mode}
+- docs/INTELLIGENT_TRADING/OPERATIONAL_MODES/TREND_FOLLOWING_MODE.md {#trend-following}
+- docs/INTELLIGENT_TRADING/OPERATIONAL_MODES/ANTI_MANIPULATION_MODE.md {#anti-manipulation}
+- docs/INTELLIGENT_TRADING/OPERATIONAL_MODES/NEWS_SENTIMENT_MODE.md {#news-sentiment}
+- docs/INTELLIGENT_TRADING/OPERATIONAL_MODES/VOLATILITY_ADAPTIVE_MODE.md {#volatility-adaptive}
+
+## Governance {#governance}
+- docs/GOVERNANCE/CLAUDE_BASE.md {#claude-base}
+- docs/GOVERNANCE/GUARDRAILS.md {#guardrails}
+- docs/GOVERNANCE/DECISION_LOG.md {#decision-log}
+
+## Deployment & Infrastructure {#deployment}
+- docs/DEPLOYMENT/DEPLOYMENT_GUIDE.md {#deployment-guide}
+- docs/DEPLOYMENT/POSTGRESQL_MIGRATION.md {#postgresql-migration}
+- docs/DEPLOYMENT/CPANEL_EMAIL_CONFIG.md {#cpanel-email}
+
+## Design System {#design}
+- docs/DESIGN/DESIGN_SYSTEM.md {#design-system}
 
 ## Technical Specifications {#technical-specs}
-- TECHNICAL_SPECS/FRONTEND_ARCHITECTURE.md {#frontend-architecture}
-- TECHNICAL_SPECS/BOT_ARCHITECTURE_SPEC.md {#bot-architecture}
-- TECHNICAL_SPECS/ENDPOINTS_ANALYSIS.md {#endpoints-analysis}
+- docs/TECHNICAL_SPECS/FRONTEND_ARCHITECTURE.md {#frontend-architecture}
+- docs/TECHNICAL_SPECS/BOT_ARCHITECTURE_SPEC.md {#bot-architecture}
+- docs/TECHNICAL_SPECS/ENDPOINTS_ANALYSIS.md {#endpoints-analysis}
+- docs/TECHNICAL_SPECS/BOTS_USUARIO_SPEC.md {#bots-usuario-spec}
+- docs/TECHNICAL_SPECS/EXCHANGE_MANAGEMENT.md {#exchange-management}
+- docs/TECHNICAL_SPECS/ALGORITMOS_SPEC.md {#algoritmos-spec}
+- docs/TECHNICAL_SPECS/ESTRATEGIAS_BOTS.md {#estrategias-bots}
+- docs/TECHNICAL_SPECS/EXECUTION_ENGINE_SPEC.md {#execution-engine}
+- docs/TECHNICAL_SPECS/ML_LEARNING_SPEC.md {#ml-learning}
+- docs/TECHNICAL_SPECS/MODE_SELECTION_SPEC.md {#mode-selection}
+- docs/TECHNICAL_SPECS/APIS_COMPLETE_DETAILED_MATRIX.md {#apis-matrix}
 
 ## Frontend {#frontend}
-- SMART_SCALPER_STRATEGY.md {#smart-scalper-strategy}
-- SMART_SCALPER_ANALYTICS_DETAILED.md {#smart-scalper-analytics}
-- src/services/api.ts — fuente de verdad de llamadas {#api-ts}
-- pages/BotsAdvanced.jsx — controller principal de bots {#bots-advanced}
+- frontend/src/services/api.ts — fuente de verdad de llamadas {#api-ts}
+- frontend/src/routes/App.jsx — routing principal {#app-routes}
+- frontend/src/pages/BotsAdvanced.jsx — controller principal de bots {#bots-advanced}
 
 ## Sesión (vivo) {#sesion}
 - CLAUDE.md — master entry point, premisas KK/KG/KO {#claude-master}
@@ -48,8 +76,19 @@
 - `// SPEC_REF: src/services/api.ts#api-ts`
 - `// SPEC_REF: pages/BotsAdvanced.jsx#bots-advanced`
 
-### Actualización DL-038 Session 2025-08-27 {#dl038-update}
-- **Nueva Prioridad:** Bot modification data persistence fix
-- **Status:** Root cause process identificado via diagnostic
-- **SPEC_REF:** DECISION_LOG.md#decision-log (DL-038) + BotControlPanel data flow
-- **Next Action:** Implement targeted fix for identified problematic process
+---
+
+### Ejemplos de referencias SPEC_REF (copiar/pegar) {#ejemplos}
+- `// SPEC_REF: docs/INTELLIGENT_TRADING/CORE_PHILOSOPHY.md#core-philosophy`
+- `// SPEC_REF: docs/GOVERNANCE/CLAUDE_BASE.md#claude-base` 
+- `// SPEC_REF: docs/SESSION_CONTROL/MASTER_PLAN.md#master-plan`
+- `// SPEC_REF: docs/GOVERNANCE/DECISION_LOG.md#decision-log (DL-XXX)`
+- `// SPEC_REF: docs/TECHNICAL_SPECS/ENDPOINTS_ANALYSIS.md#endpoints-analysis`
+- `// SPEC_REF: docs/DESIGN/DESIGN_SYSTEM.md#design-system`
+- `// SPEC_REF: frontend/src/services/api.ts#api-ts`
+- `// SPEC_REF: frontend/src/pages/BotsAdvanced.jsx#bots-advanced`
+
+---
+
+*Actualizado: 2025-09-06 - Sincronizado con estructura real del proyecto*  
+*Todos los documentos referenciados existen y están verificados*
