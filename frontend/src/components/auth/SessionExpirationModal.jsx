@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../features/auth/contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../notifications/NotificationSystem';
 
 const SessionExpirationModal = ({ 

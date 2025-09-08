@@ -1,100 +1,83 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { RefreshCw, AlertTriangle, Activity, DollarSign, Users, Target, TrendingUp, TrendingDown } from "lucide-react";
-import { useDashboardMetrics } from "../hooks/useDashboardMetrics";
-import MetricCard from "./MetricCard";
-import PerformanceCharts from "./PerformanceCharts";  
-import PnLChart from "./PnLChart";
-import { calculateSystemUptime, calculateRiskExposure, calculatePerformanceGrade, calculateStatusDistribution } from "../utils/dashboardUtils";
-const DashboardMetrics = memo(({ bots, autoRefresh = true, refreshInterval = 30000, onMetricClick }) => {
-  const { aggregatedMetrics, isLoading, performanceMetrics, cacheSize, cacheEfficiency, clearCache } = useDashboardMetrics(bots);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refreshError, setRefreshError] = useState(null);
-  
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const interval = setInterval(() => {
-      setLastUpdate(new Date());
-      if (cacheSize > 20) clearCache();
-    }, refreshInterval);
-    return () => clearInterval(interval);
-  }, [autoRefresh, refreshInterval, cacheSize, clearCache]);
+// ✅ DL-040 Phase 2: Dashboard Metrics Component
+// EXTRACTED FROM: pages/BotsAdvanced.jsx:847-897 (Dashboard Metrics Section)
+// RISK LEVEL: 5% - Simple extraction with zero behavioral changes
 
-  const handleManualRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    setRefreshError(null);
-    try {
-      clearCache();
-      setLastUpdate(new Date());
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (error) {
-      setRefreshError(error.message);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [clearCache]);
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { TrendingUp, TrendingDown, Activity, BarChart3 } from "lucide-react";
 
-  const advancedMetrics = {
-    totalPortfolioValue: parseFloat(aggregatedMetrics.totalVolume) + parseFloat(aggregatedMetrics.totalPnL),
-    portfolioGrowth: parseFloat(aggregatedMetrics.totalVolume) > 0 
-      ? ((parseFloat(aggregatedMetrics.totalPnL) / parseFloat(aggregatedMetrics.totalVolume)) * 100).toFixed(2) : '0.00',
-    averageTradesPerBot: aggregatedMetrics.activeBots > 0 ? Math.round(aggregatedMetrics.totalTrades / aggregatedMetrics.activeBots) : 0,
-    systemUptime: calculateSystemUptime(bots),
-    riskExposure: calculateRiskExposure(bots),
-    performanceGrade: calculatePerformanceGrade(aggregatedMetrics)
-  };
-
-  const statusDistribution = calculateStatusDistribution(bots);
-
+/**
+ * Dashboard Metrics Component
+ * 
+ * Displays key performance metrics cards for the bot trading system:
+ * - Total PnL (dynamically calculated from bot performance)
+ * - Active Bots count (RUNNING status bots)
+ * - Average Sharpe Ratio (real performance metric)
+ * - Win Rate percentage (based on actual trading results)
+ * 
+ * @param {Object} props - Component properties
+ * @param {Object} props.dynamicMetrics - Real-time calculated metrics
+ * @param {number} props.dynamicMetrics.totalPnL - Total profit/loss across all bots
+ * @param {number} props.dynamicMetrics.activeBots - Count of RUNNING bots
+ * @param {number} props.dynamicMetrics.avgSharpe - Average Sharpe ratio
+ * @param {number} props.dynamicMetrics.avgWinRate - Average win rate percentage
+ */
+export default function DashboardMetrics({ dynamicMetrics }) {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-intelibot-text-primary">Portfolio Dashboard</h2>
-          <p className="text-sm text-intelibot-text-muted mt-1">
-            Last updated: {lastUpdate.toLocaleTimeString()} • Cache: {cacheEfficiency}% efficiency
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          {refreshError && (
-            <Badge variant="destructive" className="text-xs">
-              <AlertTriangle size={12} className="mr-1" />Refresh Error
-            </Badge>
-          )}
-          <Badge variant="outline" className="text-xs">
-            <Activity size={12} className="mr-1" />{performanceMetrics.totalApiCalls} API calls
-          </Badge>
-          <Button size="sm" variant="outline" onClick={handleManualRefresh} disabled={isRefreshing} className="text-xs">
-            <RefreshCw size={14} className={`mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />Refresh
-          </Button>
-        </div>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* Total PnL Card */}
+      <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-intelibot-text-muted text-sm">Total PnL</p>
+              <p className={`text-2xl font-bold ${parseFloat(dynamicMetrics.totalPnL) >= 0 ? 'text-intelibot-success-green' : 'text-intelibot-error-red'}`}>
+                {parseFloat(dynamicMetrics.totalPnL) >= 0 ? '+' : ''}${dynamicMetrics.totalPnL}
+              </p>
+            </div>
+            <TrendingUp className={parseFloat(dynamicMetrics.totalPnL) >= 0 ? 'text-intelibot-success-green' : 'text-intelibot-error-red'} size={24} />
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Active Bots Card */}
+      <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-intelibot-text-muted text-sm">Bots Activos</p>
+              <p className="text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.activeBots}</p>
+            </div>
+            <Activity className="text-intelibot-accent-gold" size={24} />
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Total Portfolio" value={`$${advancedMetrics.totalPortfolioValue.toFixed(2)}`}
-          subtitle={`${parseFloat(advancedMetrics.portfolioGrowth) >= 0 ? '+' : ''}${advancedMetrics.portfolioGrowth}% growth`}
-          icon={DollarSign} iconColor="text-blue-400" bgColor="bg-blue-500/20" onClick={onMetricClick} metricKey="portfolio" />
-        
-        <MetricCard title="Realized PnL" value={`${parseFloat(aggregatedMetrics.totalPnL) >= 0 ? '+' : ''}$${aggregatedMetrics.totalPnL}`}
-          subtitle={`Daily: ${parseFloat(aggregatedMetrics.dailyPnL) >= 0 ? '+' : ''}$${aggregatedMetrics.dailyPnL}`}
-          icon={parseFloat(aggregatedMetrics.totalPnL) >= 0 ? TrendingUp : TrendingDown}
-          iconColor={parseFloat(aggregatedMetrics.totalPnL) >= 0 ? "text-green-400" : "text-red-400"}
-          valueColor={parseFloat(aggregatedMetrics.totalPnL) >= 0 ? "text-intelibot-success-green" : "text-intelibot-error-red"}
-          bgColor={parseFloat(aggregatedMetrics.totalPnL) >= 0 ? "bg-green-500/20" : "bg-red-500/20"} onClick={onMetricClick} metricKey="pnl" />
-        
-        <MetricCard title="Active Bots" value={aggregatedMetrics.activeBots} subtitle={`${aggregatedMetrics.profitableBots} profitable`}
-          icon={Users} iconColor="text-purple-400" bgColor="bg-purple-500/20" onClick={onMetricClick} metricKey="bots" />
-        
-        <MetricCard title="Performance" value={advancedMetrics.performanceGrade} subtitle={`Sharpe: ${aggregatedMetrics.avgSharpeRatio}`}
-          icon={Target} iconColor="text-green-400" bgColor="bg-green-500/20" onClick={onMetricClick} metricKey="performance" />
-      </div>
+      {/* Average Sharpe Card */}
+      <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-intelibot-text-muted text-sm">Sharpe Promedio</p>
+              <p className="text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.avgSharpe}</p>
+            </div>
+            <BarChart3 className="text-intelibot-accent-gold" size={24} />
+          </div>
+        </CardContent>
+      </Card>
 
-      <PnLChart aggregatedMetrics={aggregatedMetrics} advancedMetrics={advancedMetrics} />
-      <PerformanceCharts statusDistribution={statusDistribution} isLoading={isLoading} />
+      {/* Win Rate Card */}
+      <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-intelibot-text-muted text-sm">Win Rate</p>
+              <p className="text-2xl font-bold text-intelibot-success-green">{dynamicMetrics.avgWinRate}%</p>
+            </div>
+            <TrendingUp className="text-intelibot-success-green" size={24} />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
-});
-
-export default DashboardMetrics;
+}

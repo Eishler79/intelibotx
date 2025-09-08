@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../features/auth/contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import AddExchangeModal from '../components/exchanges/AddExchangeModal';
 import ExchangeCard from '../components/exchanges/ExchangeCard';
 
 const ExchangeManagement = () => {
   const { 
-    isAuthenticated,
     userExchanges, 
     loadUserExchanges, 
     deleteExchange, 
-    testExchangeConnection
+    testExchangeConnection,
+    isAuthenticated 
   } = useAuth();
   
   const [showAddModal, setShowAddModal] = useState(false);
