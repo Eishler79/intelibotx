@@ -59,7 +59,9 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     exit_order_type: 'MARKET',
     tp_order_type: 'LIMIT',
     sl_order_type: 'STOP_MARKET',
-    trailing_stop: false
+    trailing_stop: false,
+    min_entry_price: 0,
+    min_volume: 0
   });
 
   // ✅ FRONTEND_EXCHANGE_PERSISTENCE_FIX: Load exchanges when modal opens
@@ -1237,6 +1239,48 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                     />
                     <p className="text-xs text-gray-400 mt-2">
                       0 = Sin cooldown | 5-15 = Scalping | 30-60 = Swing | 240+ = Position
+                    </p>
+                  </div>
+                  
+                  <div className="advanced-field">
+                    <label className="block text-sm font-medium text-gray-300 mb-2 advanced-field-label">
+                      Precio Mínimo Entrada ($)
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Precio mínimo requerido para que el bot considere una entrada al mercado">ⓘ</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="min_entry_price"
+                      value={formData.min_entry_price}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="100000"
+                      step="0.01"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">
+                      🎯 Precio mínimo para entrada | 0 = Sin filtro | &gt;0 = Solo si precio ≥ este valor
+                    </p>
+                  </div>
+                  
+                  <div className="advanced-field">
+                    <label className="block text-sm font-medium text-gray-300 mb-2 advanced-field-label">
+                      Volumen Mínimo (24h)
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Volumen mínimo de 24h requerido en el par para operar (protección liquidez)">ⓘ</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="min_volume"
+                      value={formData.min_volume}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="10000000"
+                      step="1000"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">
+                      📊 Protección liquidez | 0 = Sin filtro | &gt;100K = Baja liquidez | &gt;1M = Alta liquidez
                     </p>
                   </div>
                 </motion.div>

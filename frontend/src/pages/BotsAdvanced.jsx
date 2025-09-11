@@ -275,28 +275,35 @@ export default function BotsAdvanced() {
     const botData = newBot.bot || newBot;
     console.log('🚀 Bot creado recibido:', botData);
     
-    // Crear configuración completa del bot
+    // ✅ DL-001 COMPLIANCE: Usar datos directos del backend sin fallbacks hardcoded
     const botConfig = {
-      id: botData.id,
-      name: botData.name,  // ✅ FIX: Add missing name field
-      symbol: botData.symbol,
-      strategy: botData.strategy,
-      stake: botData.stake,
-      take_profit: botData.take_profit,  // ✅ FIX: Use correct field name
-      stop_loss: botData.stop_loss,  // ✅ FIX: Use correct field name
-      takeProfit: botData.take_profit,  // Keep both for compatibility
-      stopLoss: botData.stop_loss,  // Keep both for compatibility
-      riskPercentage: botData.risk_percentage || 1.0,
-      risk_percentage: botData.risk_percentage || 1.0,
-      marketType: botData.market_type || 'spot',
-      market_type: botData.market_type || 'spot',  // ✅ FIX: Use correct field name
-      leverage: botData.leverage || 1,  // ✅ FIX: Add missing leverage field
-      margin_type: botData.margin_type || 'ISOLATED',  // ✅ FIX: Add missing margin_type field
-      status: 'STOPPED'
+      ...botData,  // Usar todos los campos tal como vienen del backend
+      bot_exchange_id: botData.exchange_id,  // Mapear para compatibilidad con BotControlPanel
+      status: 'STOPPED'  // Solo override status para bots recién creados
     };
     
     // Cargar métricas REALES del bot desde el backend
     botConfig.metrics = await getRealBotMetrics(botConfig);
+    
+    // ✅ ENHANCED FIX: Ensure bot is marked as Enhanced with performance metrics
+    if (botData.performance_metrics) {
+      botConfig.enhanced_metrics = {
+        user_configured_strategy: botData.performance_metrics.user_configured_strategy,
+        user_stake_amount: botData.performance_metrics.user_stake_amount,
+        user_risk_percentage: botData.performance_metrics.user_risk_percentage,
+        estimated_trades_per_day: botData.performance_metrics.estimated_trades_per_day,  // ✅ P8 FIX: Missing field mapping
+        risk_adjusted_return: botData.performance_metrics.risk_adjusted_return,  // ✅ P8 FIX: Missing field mapping
+        algorithm_analysis: botData.performance_metrics.algorithm_analysis,
+        total_return_percentage: botData.performance_metrics.total_return_percentage,
+        monthly_return_percentage: botData.performance_metrics.monthly_return_percentage,
+        win_rate: botData.performance_metrics.win_rate,
+        average_trade_duration: botData.performance_metrics.average_trade_duration,
+        sharpe_ratio: botData.performance_metrics.sharpe_ratio,
+        max_drawdown: botData.performance_metrics.max_drawdown,
+        profit_factor: botData.performance_metrics.profit_factor,
+        trades_count: botData.performance_metrics.trades_count
+      };
+    }
     
     setBots(prevBots => [...prevBots, botConfig]);
     setShowEnhancedModal(false);
@@ -704,33 +711,14 @@ export default function BotsAdvanced() {
           // ✅ ENHANCED: Usar performance_metrics si están disponibles
           const hasEnhancedMetrics = bot.performance_metrics;
           
-          // Crear objeto bot completo con enhanced data
+          // ✅ DL-001 COMPLIANCE: Usar datos directos del backend sin fallbacks hardcoded
           const botConfig = {
-            id: bot.id,
-            name: bot.name,
-            symbol: bot.symbol,
-            strategy: bot.strategy,
-            stake: bot.stake,
-            take_profit: bot.take_profit,
-            stop_loss: bot.stop_loss,
+            ...bot,  // Usar todos los campos tal como vienen del backend
             takeProfit: bot.take_profit,  // Keep both for compatibility
             stopLoss: bot.stop_loss,
             riskPercentage: bot.risk_percentage,
-            exchange_id: bot.exchange_id,  // 🚨 CRITICAL FIX: Include exchange_id for BotControlPanel
-            risk_percentage: bot.risk_percentage,
             marketType: bot.market_type,
-            market_type: bot.market_type,
-            leverage: bot.leverage || 1,
-            margin_type: bot.margin_type || 'ISOLATED',
-            // 🚨 CRITICAL FIX: Include ALL fields from backend for complete bot data
-            interval: bot.interval,
-            base_currency: bot.base_currency,
-            quote_currency: bot.quote_currency,
-            dca_levels: bot.dca_levels,
-            cooldown_minutes: bot.cooldown_minutes,
-            max_open_positions: bot.max_open_positions,
-            entry_order_type: bot.entry_order_type,
-            exit_order_type: bot.exit_order_type,
+            bot_exchange_id: bot.exchange_id,  // Mapear para compatibilidad con BotControlPanel
             tp_order_type: bot.tp_order_type,
             sl_order_type: bot.sl_order_type,
             trailing_stop: bot.trailing_stop,
