@@ -4,10 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import TradingViewWidget from "@/components/TradingViewWidget";
+import InstitutionalChart from "@/components/InstitutionalChart";
 import BotControlPanel from "@/components/BotControlPanel";
 import AdvancedMetrics from "@/components/AdvancedMetrics";
-import SmartScalperMetrics from "@/components/SmartScalperMetrics";
+import SmartScalperMetrics from "@/components/SmartScalperMetricsComplete";
 import LatencyMonitor from "@/components/LatencyMonitor";
 import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
 import LiveTradingFeed from "@/components/LiveTradingFeed";
@@ -16,7 +16,7 @@ import BotsTableSection from "../features/bots/components/BotsTableSection";
 import { createTradingOperation, getBotTradingOperations, runSmartTrade, fetchBots, deleteBot, updateBot } from "../services/api";
 import TradingHistory from "../components/TradingHistory";
 import EnhancedBotCreationModal from "../components/EnhancedBotCreationModal";
-import { useAuthDL008 } from "../hooks/useAuthDL008";
+import { useAuthDL008 } from "../shared/hooks/useAuthDL008";
 import BotTemplates from "../components/BotTemplates";
 import { 
   TrendingUp, 
@@ -45,6 +45,7 @@ export default function BotsAdvanced() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedBotId, setSelectedBotId] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [realTimeData, setRealTimeData] = useState({});
   
   // 📊 Ref para manejar intervals de trading bots
   const botIntervals = useRef({});
@@ -916,12 +917,18 @@ export default function BotsAdvanced() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* TradingView Chart Integrado */}
-                <div className="bg-gray-800/50 rounded-lg overflow-hidden" style={{ height: "400px" }}>
-                  <TradingViewWidget 
+                {/* 🏛️ Institutional Chart - Stable Recharts Implementation */}
+                <div className="rounded-lg overflow-hidden" style={{ height: "450px" }}>
+                  <InstitutionalChart 
                     symbol={selectedBot.symbol.replace("/", "")} 
                     interval="15m" 
-                    theme="dark" 
+                    theme="dark"
+                    data={realTimeData[selectedBot.symbol] || []}
+                    institutionalAnalysis={{
+                      risk_profile: selectedBot.risk_profile,
+                      strategy: selectedBot.strategy,
+                      market_type: selectedBot.market_type
+                    }}
                   />
                 </div>
 

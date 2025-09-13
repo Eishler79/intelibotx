@@ -1,0 +1,80 @@
+import React, { createContext, useContext, useEffect } from 'react';
+import useAuthState from '../hooks/useAuthState';
+import useAuthAPI from '../hooks/useAuthAPI';
+import useAuthenticatedFetch from '../hooks/useAuthenticatedFetch';
+import useExchangeOperations from '../../exchanges/hooks/useExchangeOperations';
+
+const AuthContext = createContext();
+
+// Hook para usar el contexto de autenticación
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  // ✅ DL-076 Specialized Hooks Pattern Applied
+  const authState = useAuthState();
+  const { user, token, loading, authProvider, userExchanges, sessionExpired, isAuthenticated,
+          setUser, setToken, setLoading, setAuthProvider, setUserExchanges, setSessionExpired } = authState;
+
+  // ✅ Specialized auth API operations hook (declare first to avoid circular reference)
+  const { login, register, logout } = useAuthAPI(authState, loadUserExchanges);
+
+  // ✅ Specialized HTTP operations hook
+  const { authenticatedFetch, getAuthHeaders, initializeHttpInterceptor } = useAuthenticatedFetch(authState, logout);
+  
+  // ✅ Specialized exchange operations hook (separated from auth concerns)
+  const { loadUserExchanges, addExchange, updateExchange, deleteExchange, testExchangeConnection } = 
+    useExchangeOperations(authState, authenticatedFetch);
+
+  // ✅ Load token from localStorage on initialization
+  useEffect(() => {
+    const savedToken = localStorage.getItem('intelibotx_token');
+    const savedUser = localStorage.getItem('intelibotx_user');
+    const savedProvider = localStorage.getItem('intelibotx_auth_provider');
+    
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+      setAuthProvider(savedProvider || 'email');
+      
+      // Load user exchanges if authenticated
+      loadUserExchanges();
+    }
+    setLoading(false);
+  }, [setToken, setUser, setAuthProvider, setLoading, loadUserExchanges]);
+
+  // ✅ Initialize HTTP Interceptor when context is ready
+  useEffect(() => {
+    initializeHttpInterceptor(loading);
+  }, [loading, initializeHttpInterceptor]);
+
+  // ✅ All authentication and exchange operations now handled by specialized hooks
+
+  // ✅ DL-076 Orchestrator Pattern: Compose specialized hooks into public API
+  const value = {
+    user,
+    token,
+    loading,
+    authProvider,
+    userExchanges,
+    sessionExpired,
+    isAuthenticated,
+    login,
+    register,
+    logout,
+    getAuthHeaders,
+    authenticatedFetch,
+    loadUserExchanges,
+    addExchange,
+    updateExchange,
+    deleteExchange,
+    testExchangeConnection,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

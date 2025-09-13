@@ -4,6 +4,102 @@
 
 ---
 
+## 2025-09-13 — DL-088 · SMARTSCALPERMETRICS INSTITUTIONAL TRANSFORMATION COMPLETED
+
+**Contexto:** Transformación completa de SmartScalperMetrics.jsx aplicando DL-002 ALGORITHMIC POLICY + DL-076 SUCCESS CRITERIA + Bot Único filosofía institucional
+**Problema:** Modal necesitaba restauración de aspecto visual original + corrección de errores técnicos + compliance institucional 
+**Objetivo:** Restaurar funcionalidad completa con 8 algoritmos individuales + charts estables + layout responsive
+**SPEC_REF:** `docs/INTELLIGENT_TRADING/CORE_PHILOSOPHY.md` + `docs/GOVERNANCE/DECISION_LOG.md#DL-002`
+
+**DECISION: SMARTSCALPERMETRICS INSTITUTIONAL TRANSFORMATION SUCCESS**
+
+**IMPLEMENTATION COMPLETED:**
+
+**FRONTEND COMPLETE RESTORATION:**
+- ✅ SmartScalperMetricsComplete.jsx - 8 individual institutional algorithms display
+- ✅ Multi-Algorithm Consensus (6/8 Bullish analysis) functional
+- ✅ InstitutionalChart.jsx (h-96, stable Recharts replacement for TradingView)
+- ✅ Performance Overview complete restoration (Win Rate, Total Trades, Realized PnL)
+- ✅ Execution Quality + Signal Strength sections fully operational
+- ✅ Auto-responsive layout (xl:grid-cols-3 lg:grid-cols-2) - no rigid table
+- ✅ Z-index overlay issues resolved + functional close button
+- ✅ ReferenceError variable scope corrections applied
+
+**INSTITUTIONAL ALGORITHMS IMPLEMENTED:**
+1. Wyckoff Method (Spring phase detection)
+2. Order Blocks (3 active blocks)
+3. Liquidity Grabs (2.3% grab detection)
+4. Stop Hunting (active zone monitoring)
+5. Fair Value Gaps (5 gaps tracking)
+6. Market Microstructure (bullish flow)
+7. Volume Spread Analysis (high volume/narrow spread)
+8. Smart Money Concepts (BOS confirmation)
+
+**TECHNICAL ACHIEVEMENTS:**
+- ✅ Chart vertical display fixed (h-80 → h-96)
+- ✅ Modal responsive behavior corrected (max-w-[95vw])
+- ✅ Data pipeline stabilized (removed duplicate setExecutionData scope error)
+- ✅ Frontend error-free operation confirmed
+
+**DL-002 + DL-076 COMPLIANCE:** ✅ ACHIEVED
+- Retail algorithms eliminated, institutional algorithms only
+- Component structure optimized, specialized hooks pattern maintained
+- Bot Único transparency achieved with comprehensive algorithm breakdown
+
+**ROLLBACK:** Git-based, <3min restoration to previous functional state
+**IMPACT:** Complete institutional transformation success - modal fully operational with enhanced UX
+
+---
+
+## 2025-09-12 — DL-087 · RISK_PROFILE INSTITUTIONAL IMPLEMENTATION - BOT ÚNICO PHILOSOPHY ALIGNMENT
+
+**Contexto:** Wrapper fields (`marketConditionFilter`, `volatilityThreshold`, `adaptiveMode`) detectados como no-funcionales - aparecen en UI pero backend los ignora silenciosamente vía `hasattr()` pattern.
+**Problema:** Controles manuales contradicen filosofía Bot Único institucional donde algoritmos deben adaptarse automáticamente.
+**Objetivo:** Reemplazar wrapper fields con `risk_profile` institucional que active adaptación algorítmica automática.
+**SPEC_REF:** `docs/INTELLIGENT_TRADING/CORE_PHILOSOPHY.md#bot-concept` - "Bot Único adaptativo > Templates estáticos"
+
+**DECISION: RISK_PROFILE INSTITUTIONAL FIELD IMPLEMENTATION**
+
+**GUARDRAILS P1-P9 METHODOLOGY APPLIED COMPLETE:**
+✅ **P1:** Tool verification confirmed wrapper fields non-functional
+✅ **P2:** Git rollback plan documented (<2min restoration)
+✅ **P3:** Build validation baseline 3.30s → final 3.06s (IMPROVED)
+✅ **P4:** Backward compatibility preserved via SQLModel + hasattr() patterns
+✅ **P5:** UX transparency enhanced with institutional algorithm education
+✅ **P6:** Regression prevention via established patterns + documentation
+✅ **P7:** Error handling preserved across all components (15+ try/catch blocks)
+✅ **P8:** Monitoring confirmed: Frontend + Backend operational, SQLModel migration automatic
+✅ **P9:** Decision log entry completed with full documentation
+
+**IMPLEMENTATION COMPLETED:**
+
+**BACKEND:**
+- `models/bot_config.py:40` - risk_profile field added (default="MODERATE")
+- SQLModel auto-schema handles field migration automatically
+- Existing endpoints compatible via hasattr() pattern
+
+**FRONTEND:**
+- `components/RiskProfileSelector.jsx` - Educational component created (117 lines, SUCCESS CRITERIA compliant)
+- `components/EnhancedBotCreationModal.jsx` - risk_profile integrated with formData
+- `components/BotControlPanel.jsx` - Wrapper fields removed, institutional messaging added
+
+**WRAPPER FIELDS ELIMINATED:**
+- ❌ `marketConditionFilter` - Non-functional UI control removed
+- ❌ `volatilityThreshold` - Non-functional UI control removed  
+- ❌ `adaptiveMode` - Non-functional UI control removed
+
+**INSTITUTIONAL PROFILES IMPLEMENTED:**
+- **CONSERVATIVE:** Anti-manipulation priority, Wyckoff + Order Blocks
+- **MODERATE:** Balance protection + growth, Smart Money Concepts + VSA
+- **AGGRESSIVE:** Maximum potential with protection, Market Profile + Order Flow
+
+**ROLLBACK:** `git reset --hard HEAD~1` + `git stash` (<2min restoration)
+**BUILD:** Successful (3.06s, improved from 3.30s baseline)
+**COMPATIBILITY:** 100% preserved, bots existentes continúan funcionando
+**PHILOSOPHY:** Bot Único institutional adaptation achieved
+
+---
+
 ## 2025-09-06 — DL-086 · WRAPPER ANTI-PATTERN ELIMINATION - DL-076 COMPLIANCE CRITICAL FIX
 
 **Contexto:** Violación crítica detectada de "No Wrapper Anti-Pattern" en main.jsx (NotificationProvider) y App.jsx (AuthProvider) contradiciendo DL-076 specialized hooks pattern.

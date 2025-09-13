@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useAuthDL008 } from '../hooks/useAuthDL008';
+import { useAuthDL008 } from '../shared/hooks/useAuthDL008';
 import { motion } from 'framer-motion';
 import { 
   Settings, 
@@ -12,6 +12,7 @@ import {
   RefreshCw 
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import RiskProfileSelector from './RiskProfileSelector';
 
 const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTemplate }) => {
   // ✅ DL-008: Authentication Pattern Hook
@@ -50,6 +51,7 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     stop_loss: 1.5,
     dca_levels: 3,
     risk_percentage: 1.0,
+    risk_profile: 'MODERATE', // SPEC_REF: CORE_PHILOSOPHY.md#bot-concept (Bot Único institutional)
     market_type: 'SPOT',
     leverage: 1,
     margin_type: '', // DL-001: Will be loaded dynamically
@@ -1118,6 +1120,15 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                         ))
                       )}
                     </select>
+                  </div>
+
+                  {/* Risk Profile Institucional - SPEC_REF: CORE_PHILOSOPHY.md#bot-concept */}
+                  <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                    <RiskProfileSelector
+                      value={formData.risk_profile}
+                      onChange={(value) => setFormData(prev => ({ ...prev, risk_profile: value }))}
+                      className="text-white [&_label]:text-gray-300 [&_p]:text-gray-400 [&_div]:bg-gray-800 [&_div]:border-gray-600"
+                    />
                   </div>
 
                   {/* Risk Percentage */}

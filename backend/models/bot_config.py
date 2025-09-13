@@ -35,6 +35,10 @@ class BotConfig(SQLModel, table=True):
     dca_levels: int = Field(default=3, description="Cantidad de niveles de DCA")
     risk_percentage: Optional[float] = Field(default=1.0, description="Porcentaje de riesgo por trade")
     
+    # Risk Profile Institucional (NUEVO - CORE_PHILOSOPHY BOT ÚNICO)
+    # SPEC_REF: CORE_PHILOSOPHY.md#bot-concept (Bot adaptativo)
+    risk_profile: str = Field(default="MODERATE", description="Perfil riesgo institucional: CONSERVATIVE, MODERATE, AGGRESSIVE - Bot ajusta algoritmos automáticamente")
+    
     # Tipo de mercado (MEJORADO)
     market_type: str = Field(
         description="Tipo de mercado: SPOT, FUTURES_USDT, FUTURES_COIN, MARGIN_CROSS, MARGIN_ISOLATED - REQUERIDO por usuario"
@@ -45,7 +49,7 @@ class BotConfig(SQLModel, table=True):
     margin_type: Optional[str] = Field(description="CROSS o ISOLATED para futures - REQUERIDO")
     
     # Condiciones avanzadas (NUEVO)
-    min_volume: Optional[float] = Field(default=None, description="Volumen mínimo para operar")
+    min_volume: Optional[float] = Field(default=0.0, description="Volumen mínimo para operar")
     min_entry_price: Optional[float] = Field(default=None, description="Precio mínimo para entrada")
     max_orders_per_pair: int = Field(default=1, description="Máximo órdenes activas por par")
     

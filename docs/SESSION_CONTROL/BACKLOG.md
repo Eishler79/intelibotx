@@ -19,23 +19,23 @@
 
 ---
 
-## 🔥 **PRIORITY 1: ETAPA 1 - TESTING + VALIDACIÓN**
+## 🔥 **PRIORITY 1: ENCRYPTION_MASTER_KEY Railway Config - CRÍTICA**
 
-### **ENCRYPTION_MASTER_KEY Railway Config - CRÍTICA**
 **STATUS:** ✅ UNBLOCKED (AuthContext refactored)
-**TIMELINE:** Post-validación local
+**TIMELINE:** Immediate - ready for implementation
 **IMPACT:** API key encryption + user data protection
 **SCOPE:** Railway environment variable persistente
 
-### **Frontend Exchange Loading UX - CRÍTICA**
+## 🔥 **PRIORITY 2: Frontend Exchange Loading UX - CRÍTICA**
+
 **STATUS:** Exchange requiere reload manual para reconocimiento
-**TIMELINE:** Post-validación local
+**TIMELINE:** Ready for implementation
 **IMPACT:** Workflow exchange management roto
 **SCOPE:** Auto-refresh + UX improvement
 
 ---
 
-## 🔥 **PRIORITY 2: ETAPA 2 - ALGORITMOS INSTITUCIONALES**
+## 🔥 **PRIORITY 3: ETAPA 2 - ALGORITMOS INSTITUCIONALES**
 
 ### **6 Algoritmos Institucionales Restantes - ALTA**
 **REMAINING:** VSA, SMC, Market Profile, Order Flow, A/D, Composite Man
@@ -56,7 +56,7 @@
 
 ---
 
-## 🔥 **PRIORITY 3: TECHNICAL DEBT & OPTIMIZATION**
+## 🔥 **PRIORITY 4: TECHNICAL DEBT & OPTIMIZATION**
 
 ### **WebSocket Performance Optimization**
 **TARGET:** <50ms latency verification
@@ -78,24 +78,23 @@
 ## 📅 **EXECUTION TIMELINE**
 
 ### **IMMEDIATE (Usuario - Next Actions):**
-1. **Validación Funcional Local** - Testing manual completo antes commit
-2. **Git Commit 199+ archivos** - Preservar refactoring masivo completado 
-3. **Deploy Testing** - Validar funcionalidad en environment staging
+1. **Validación Funcional Local** - Testing manual SmartScalperMetricsComplete functionality
+2. **Git Commit updates** - Preserve DL-088 institutional transformation + fixes applied
 
 ### **SHORT-TERM (1-2 Semanas):**
-4. **ENCRYPTION_MASTER_KEY Railway Config** - Security implementation
-5. **Frontend Exchange Loading UX** - Auto-refresh + workflow fixes
-6. **Naming Collision Cleanup** - 4 archivos useTradingOperations duplicados (código muerto)
+3. **ENCRYPTION_MASTER_KEY Railway Config** - Security implementation
+4. **Frontend Exchange Loading UX** - Auto-refresh + workflow fixes
+5. **Naming Collision Cleanup** - 4 archivos useTradingOperations duplicados (código muerto)
 
 ### **MEDIUM-TERM (2-4 Semanas):**
-7. **WebSocket Performance Optimization** (<50ms latency verification)
-8. **Testing Suite Implementation** (E2E validation + regression prevention)
-9. **Bundle Size Optimization** (Code splitting + lazy loading)
+6. **WebSocket Performance Optimization** (<50ms latency verification)
+7. **Testing Suite Implementation** (E2E validation + regression prevention)
+8. **Bundle Size Optimization** (Code splitting + lazy loading)
 
 ### **LONG-TERM (2-4 Meses):**
-10. **6 Algoritmos Institucionales** (VSA, SMC, Market Profile, Order Flow, A/D, Composite Man)
-11. **4 Modos Operativos** (Trend Following, Anti-Manipulation, News Sentiment, Volatility)
-12. **ML Mode Selection System** (AI-driven bot adaptation)
+9. **6 Algoritmos Institucionales** (VSA, SMC, Market Profile, Order Flow, A/D, Composite Man)
+10. **4 Modos Operativos** (Trend Following, Anti-Manipulation, News Sentiment, Volatility)
+11. **ML Mode Selection System** (AI-driven bot adaptation)
 
 ---
 

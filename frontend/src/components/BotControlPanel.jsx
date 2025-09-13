@@ -47,8 +47,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
     // Parámetros operacionales - valores iniciales seguros
     maxOpenPositions: 0,
     cooldownMinutes: 0,
-    marketConditionFilter: false,
-    volatilityThreshold: 0,
+    // SPEC_REF: CORE_PHILOSOPHY.md#bot-concept - Wrapper fields removed (replaced by risk_profile)
     min_entry_price: 0,
     min_volume: 0,
   });
@@ -98,8 +97,11 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
         // Parámetros operacionales (DL-001 COMPLIANCE: No fallbacks hardcoded)
         maxOpenPositions: bot.max_open_positions ? Number(bot.max_open_positions) : 0,
         cooldownMinutes: bot.cooldown_minutes ? Number(bot.cooldown_minutes) : 0,
-        marketConditionFilter: bot.market_condition_filter !== false,
-        volatilityThreshold: bot.volatility_threshold ? Number(bot.volatility_threshold) : 0,
+        
+        // Parámetros de condiciones avanzadas (DL-001 COMPLIANCE: Load real values)
+        min_entry_price: bot.min_entry_price ? Number(bot.min_entry_price) : 0,
+        min_volume: bot.min_volume ? Number(bot.min_volume) : 0,
+        // SPEC_REF: CORE_PHILOSOPHY.md#bot-concept - Wrapper fields removed, Bot Único adapts via risk_profile
       });
     }
     
@@ -184,9 +186,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
         sl_order_type: parameters.sl_order_type,
         trailing_stop: parameters.trailing_stop,
         
-        // Operational params (already matching)
-        market_condition_filter: parameters.marketConditionFilter,
-        volatility_threshold: parameters.volatilityThreshold,
+        // SPEC_REF: CORE_PHILOSOPHY.md#bot-concept - Wrapper fields removed (Bot Único institutional)
         
         // ✅ CRITICAL FIX: Map frontend names to backend names
         take_profit: parameters.takeProfit,           // takeProfit → take_profit
@@ -651,7 +651,11 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 <RefreshCw className="mx-auto mb-2 text-amber-400" size={20} />
                 <p className="text-xs text-gray-400">Actualizado</p>
                 <p className="font-semibold text-amber-400">
-                  {bot?.updated_at ? new Date(bot.updated_at).toLocaleDateString('es-ES') : 'N/A'}
+                  {bot?.updated_at ? new Date(bot.updated_at).toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: '2-digit', 
+                    day: '2-digit'
+                  }) : 'N/A'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Última modificación
@@ -843,20 +847,18 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
               Configuración Avanzada
             </h3>
             <div className="space-y-3">
-              <SwitchControl
-                label="Modo Adaptativo"
-                checked={parameters.adaptiveMode}
-                onChange={(checked) => handleParameterChange('adaptiveMode', checked)}
-                icon={Activity}
-                description="Adapta parámetros según condiciones de mercado"
-              />
-              <SwitchControl
-                label="Filtro de Volatilidad"
-                checked={parameters.marketConditionFilter}
-                onChange={(checked) => handleParameterChange('marketConditionFilter', checked)}
-                icon={AlertTriangle}
-                description="Evita operar en condiciones de alta volatilidad"
-              />
+              {/* SPEC_REF: CORE_PHILOSOPHY.md#bot-concept - Manual controls removed */}
+              {/* Bot Único adapts automatically via institutional risk_profile */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Activity className="w-5 h-5 text-blue-600" />
+                  <span className="font-medium text-blue-900">Bot Único Institucional</span>
+                </div>
+                <p className="text-sm text-blue-700">
+                  Este bot se adapta automáticamente según condiciones de mercado y algoritmos institucionales.
+                  Los controles manuales han sido reemplazados por inteligencia adaptativa.
+                </p>
+              </div>
             </div>
           </div>
 

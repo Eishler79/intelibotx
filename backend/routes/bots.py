@@ -584,7 +584,7 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
         
         # Convert to float safely, handling string inputs from frontend
         min_entry_price = float(min_entry_price_raw) if min_entry_price_raw not in [None, "", 0] else None
-        min_volume = float(min_volume_raw) if min_volume_raw not in [None, "", 0] else None
+        min_volume = float(min_volume_raw) if min_volume_raw not in [None, ""] else None
         
         logger.info(f"🎯 Creating bot with min_entry_price: {min_entry_price} (from {min_entry_price_raw}), min_volume: {min_volume} (from {min_volume_raw}) for symbol: {symbol}")
         
