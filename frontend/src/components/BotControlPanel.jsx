@@ -12,11 +12,45 @@ import {
   AlertTriangle,
   DollarSign,
   Activity,
-  Target
+  Target,
+  BarChart3,
+  RefreshCw
 } from "lucide-react";
 
 export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
-  const [parameters, setParameters] = useState({});
+  // SOLUCIÓN CONTROLLED/UNCONTROLLED: Inicialización consistente
+  const [parameters, setParameters] = useState({
+    // Parámetros básicos - valores iniciales consistentes
+    name: '',
+    symbol: '',
+    strategy: '',
+    interval: '',
+    stake: 0,
+    base_currency: '',
+    market_type: '',
+    leverage: 0,
+    margin_type: '',
+    
+    // Parámetros de riesgo - valores iniciales numéricos
+    takeProfit: 0,
+    stopLoss: 0,
+    riskPercentage: 0,
+    
+    // Parámetros avanzados - valores iniciales apropiados
+    dca_levels: 0,
+    entry_order_type: '',
+    exit_order_type: '',
+    tp_order_type: '',
+    sl_order_type: '',
+    trailing_stop: false,
+    
+    // Parámetros operacionales - valores iniciales seguros
+    maxOpenPositions: 0,
+    cooldownMinutes: 0,
+    // SPEC_REF: CORE_PHILOSOPHY.md#bot-concept - Wrapper fields removed (replaced by risk_profile)
+    min_entry_price: 0,
+    min_volume: 0,
+  });
   const [currentPrice, setCurrentPrice] = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
   
@@ -36,35 +70,38 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
       console.log('🔍 Cargando datos del bot:', bot);
       console.log('🔍 Campos específicos - name:', bot.name, 'leverage:', bot.leverage, 'market_type:', bot.market_type);
       setParameters({
-        // Parámetros básicos del bot creado (DATOS REALES)
-        name: bot.name || `Bot ${bot.symbol}` || 'Bot',
-        symbol: bot.symbol || 'BTCUSDT',
+        // Parámetros básicos del bot creado (DATOS REALES - DL-001 COMPLIANCE)
+        name: bot.name || `Bot ${bot.symbol}`,
+        symbol: bot.symbol || '',
         strategy: bot.strategy || '', // DL-001: No hardcode fallback
         interval: bot.interval || '', // DL-001: No hardcode fallback
-        stake: Number(bot.stake) || 100,
+        stake: bot.stake ? Number(bot.stake) : 0,
         base_currency: bot.base_currency || '', // DL-001: No hardcode fallback
-        market_type: bot.market_type || bot.marketType || 'SPOT',
-        leverage: Number(bot.leverage) || 1,
-        margin_type: bot.margin_type || 'CROSS',
+        market_type: bot.market_type || bot.marketType || '',
+        leverage: bot.leverage ? Number(bot.leverage) : 0,
+        margin_type: bot.margin_type || '',
         
-        // Parámetros de riesgo (DATOS REALES)
-        takeProfit: Number(bot.take_profit || bot.takeProfit) || 2.5,
-        stopLoss: Number(bot.stop_loss || bot.stopLoss) || 1.5,
-        riskPercentage: Number(bot.risk_percentage || bot.riskPercentage) || 1.0,
+        // Parámetros de riesgo (DATOS REALES - DL-001 COMPLIANCE: No fallbacks hardcoded)
+        takeProfit: (bot.take_profit || bot.takeProfit) ? Number(bot.take_profit || bot.takeProfit) : 0,
+        stopLoss: (bot.stop_loss || bot.stopLoss) ? Number(bot.stop_loss || bot.stopLoss) : 0,
+        riskPercentage: (bot.risk_percentage || bot.riskPercentage) ? Number(bot.risk_percentage || bot.riskPercentage) : 0,
         
-        // Parámetros avanzados de órdenes
-        dca_levels: Number(bot.dca_levels) || 3,
-        entry_order_type: bot.entry_order_type || 'MARKET',
-        exit_order_type: bot.exit_order_type || 'MARKET',
-        tp_order_type: bot.tp_order_type || 'LIMIT',
-        sl_order_type: bot.sl_order_type || 'STOP_MARKET',
+        // Parámetros avanzados de órdenes (DL-001 COMPLIANCE: No fallbacks hardcoded)
+        dca_levels: bot.dca_levels ? Number(bot.dca_levels) : 0,
+        entry_order_type: bot.entry_order_type || '',
+        exit_order_type: bot.exit_order_type || '',
+        tp_order_type: bot.tp_order_type || '',
+        sl_order_type: bot.sl_order_type || '',
         trailing_stop: bot.trailing_stop || false,
         
-        // Parámetros operacionales
-        maxOpenPositions: bot.max_open_positions || 3,
-        cooldownMinutes: bot.cooldown_minutes || 30,
-        marketConditionFilter: bot.market_condition_filter !== false,
-        volatilityThreshold: bot.volatility_threshold || 0.8,
+        // Parámetros operacionales (DL-001 COMPLIANCE: No fallbacks hardcoded)
+        maxOpenPositions: bot.max_open_positions ? Number(bot.max_open_positions) : 0,
+        cooldownMinutes: bot.cooldown_minutes ? Number(bot.cooldown_minutes) : 0,
+        
+        // Parámetros de condiciones avanzadas (DL-001 COMPLIANCE: Load real values)
+        min_entry_price: bot.min_entry_price ? Number(bot.min_entry_price) : 0,
+        min_volume: bot.min_volume ? Number(bot.min_volume) : 0,
+        // SPEC_REF: CORE_PHILOSOPHY.md#bot-concept - Wrapper fields removed, Bot Único adapts via risk_profile
       });
     }
     
@@ -128,7 +165,39 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
   const handleUpdateParameters = async () => {
     setIsUpdating(true);
     try {
-      await onUpdateBot(bot.id, parameters);
+      // ✅ DL-001 COMPLIANCE: Map frontend field names to backend field names
+      const backendParams = {
+        // Basic fields (already matching)
+        name: parameters.name,
+        symbol: parameters.symbol,
+        strategy: parameters.strategy,
+        interval: parameters.interval,
+        stake: parameters.stake,
+        base_currency: parameters.base_currency,
+        market_type: parameters.market_type,
+        leverage: parameters.leverage,
+        margin_type: parameters.margin_type,
+        
+        // Advanced order params (already matching)
+        dca_levels: parameters.dca_levels,
+        entry_order_type: parameters.entry_order_type,
+        exit_order_type: parameters.exit_order_type,
+        tp_order_type: parameters.tp_order_type,
+        sl_order_type: parameters.sl_order_type,
+        trailing_stop: parameters.trailing_stop,
+        
+        // SPEC_REF: CORE_PHILOSOPHY.md#bot-concept - Wrapper fields removed (Bot Único institutional)
+        
+        // ✅ CRITICAL FIX: Map frontend names to backend names
+        take_profit: parameters.takeProfit,           // takeProfit → take_profit
+        stop_loss: parameters.stopLoss,              // stopLoss → stop_loss  
+        risk_percentage: parameters.riskPercentage,  // riskPercentage → risk_percentage
+        max_open_positions: parameters.maxOpenPositions, // maxOpenPositions → max_open_positions
+        cooldown_minutes: parameters.cooldownMinutes    // cooldownMinutes → cooldown_minutes
+      };
+      
+      console.log('🔄 Sending backend params:', backendParams);
+      await onUpdateBot(bot.id, backendParams);
       console.log("✅ Parámetros actualizados exitosamente");
     } catch (error) {
       console.error("❌ Error actualizando parámetros:", error);
@@ -578,6 +647,20 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   Fecha inicio
                 </p>
               </div>
+              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
+                <RefreshCw className="mx-auto mb-2 text-amber-400" size={20} />
+                <p className="text-xs text-gray-400">Actualizado</p>
+                <p className="font-semibold text-amber-400">
+                  {bot?.updated_at ? new Date(bot.updated_at).toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: '2-digit', 
+                    day: '2-digit'
+                  }) : 'N/A'}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Última modificación
+                </p>
+              </div>
             </div>
           </div>
 
@@ -764,20 +847,18 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
               Configuración Avanzada
             </h3>
             <div className="space-y-3">
-              <SwitchControl
-                label="Modo Adaptativo"
-                checked={parameters.adaptiveMode}
-                onChange={(checked) => handleParameterChange('adaptiveMode', checked)}
-                icon={Activity}
-                description="Adapta parámetros según condiciones de mercado"
-              />
-              <SwitchControl
-                label="Filtro de Volatilidad"
-                checked={parameters.marketConditionFilter}
-                onChange={(checked) => handleParameterChange('marketConditionFilter', checked)}
-                icon={AlertTriangle}
-                description="Evita operar en condiciones de alta volatilidad"
-              />
+              {/* SPEC_REF: CORE_PHILOSOPHY.md#bot-concept - Manual controls removed */}
+              {/* Bot Único adapts automatically via institutional risk_profile */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Activity className="w-5 h-5 text-blue-600" />
+                  <span className="font-medium text-blue-900">Bot Único Institucional</span>
+                </div>
+                <p className="text-sm text-blue-700">
+                  Este bot se adapta automáticamente según condiciones de mercado y algoritmos institucionales.
+                  Los controles manuales han sido reemplazados por inteligencia adaptativa.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -824,6 +905,38 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                     💰 <strong>Impacto monetario:</strong> Menos operaciones = menor riesgo pero menor frecuencia de ganancias
                   </p>
                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <SliderInput
+                  label="Precio Mínimo Entrada"
+                  value={parameters.min_entry_price}
+                  min={0}
+                  max={100000}
+                  step={1}
+                  suffix="$"
+                  onChange={(value) => handleParameterChange('min_entry_price', value)}
+                  icon={DollarSign}
+                />
+                <p className="text-xs text-green-400 mt-1">
+                  🎯 Precio mínimo requerido para que el bot considere una entrada al mercado
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <SliderInput
+                  label="Volumen Mínimo"
+                  value={parameters.min_volume}
+                  min={0}
+                  max={1000000}
+                  step={1000}
+                  suffix=""
+                  onChange={(value) => handleParameterChange('min_volume', value)}
+                  icon={BarChart3}
+                />
+                <p className="text-xs text-blue-400 mt-1">
+                  📊 Volumen mínimo de 24h requerido en el par para operar (protección liquidez)
+                </p>
               </div>
             </div>
           </div>

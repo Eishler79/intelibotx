@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useAuthDL008 } from '../hooks/useAuthDL008';
+import { useAuthDL008 } from '../shared/hooks/useAuthDL008';
 import { motion } from 'framer-motion';
 import { 
   Settings, 
@@ -12,6 +12,7 @@ import {
   RefreshCw 
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import RiskProfileSelector from './RiskProfileSelector';
 
 const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTemplate }) => {
   // ✅ DL-008: Authentication Pattern Hook
@@ -50,6 +51,7 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     stop_loss: 1.5,
     dca_levels: 3,
     risk_percentage: 1.0,
+    risk_profile: 'MODERATE', // SPEC_REF: CORE_PHILOSOPHY.md#bot-concept (Bot Único institutional)
     market_type: 'SPOT',
     leverage: 1,
     margin_type: '', // DL-001: Will be loaded dynamically
@@ -59,7 +61,9 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     exit_order_type: 'MARKET',
     tp_order_type: 'LIMIT',
     sl_order_type: 'STOP_MARKET',
-    trailing_stop: false
+    trailing_stop: false,
+    min_entry_price: 0,
+    min_volume: 0
   });
 
   // ✅ FRONTEND_EXCHANGE_PERSISTENCE_FIX: Load exchanges when modal opens
@@ -1118,6 +1122,15 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                     </select>
                   </div>
 
+                  {/* Risk Profile Institucional - SPEC_REF: CORE_PHILOSOPHY.md#bot-concept */}
+                  <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                    <RiskProfileSelector
+                      value={formData.risk_profile}
+                      onChange={(value) => setFormData(prev => ({ ...prev, risk_profile: value }))}
+                      className="text-white [&_label]:text-gray-300 [&_p]:text-gray-400 [&_div]:bg-gray-800 [&_div]:border-gray-600"
+                    />
+                  </div>
+
                   {/* Risk Percentage */}
                   <div className="advanced-field bg-gray-800/50 border border-gray-600 rounded-lg p-4">
                     <label className="advanced-field-label text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
@@ -1237,6 +1250,48 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
                     />
                     <p className="text-xs text-gray-400 mt-2">
                       0 = Sin cooldown | 5-15 = Scalping | 30-60 = Swing | 240+ = Position
+                    </p>
+                  </div>
+                  
+                  <div className="advanced-field">
+                    <label className="block text-sm font-medium text-gray-300 mb-2 advanced-field-label">
+                      Precio Mínimo Entrada ($)
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Precio mínimo requerido para que el bot considere una entrada al mercado">ⓘ</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="min_entry_price"
+                      value={formData.min_entry_price}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="100000"
+                      step="0.01"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">
+                      🎯 Precio mínimo para entrada | 0 = Sin filtro | &gt;0 = Solo si precio ≥ este valor
+                    </p>
+                  </div>
+                  
+                  <div className="advanced-field">
+                    <label className="block text-sm font-medium text-gray-300 mb-2 advanced-field-label">
+                      Volumen Mínimo (24h)
+                      <span className="advanced-field-tooltip text-gray-500 cursor-help" title="Volumen mínimo de 24h requerido en el par para operar (protección liquidez)">ⓘ</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="min_volume"
+                      value={formData.min_volume}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="10000000"
+                      step="1000"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">
+                      📊 Protección liquidez | 0 = Sin filtro | &gt;100K = Baja liquidez | &gt;1M = Alta liquidez
                     </p>
                   </div>
                 </motion.div>

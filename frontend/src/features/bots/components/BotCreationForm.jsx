@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useAuthDL008 } from '../../../hooks/useAuthDL008';
+import { useAuthDL008 } from '../../../shared/hooks/useAuthDL008';
 
 /**
  * Bot Creation Form Logic Hook

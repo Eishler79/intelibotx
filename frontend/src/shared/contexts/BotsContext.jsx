@@ -4,7 +4,7 @@
 
 import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
 import { getBotTradingOperations, createTradingOperation, runSmartTrade, fetchBots, deleteBot, updateBot } from '../../services/api';
-import { useAuthDL008 } from '../../hooks/useAuthDL008';
+import { useAuthDL008 } from '../hooks/useAuthDL008';
 
 /**
  * Bots Context

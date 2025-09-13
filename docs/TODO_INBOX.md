@@ -5,18 +5,11 @@
 
 ---
 
-## ✅ **REFACTORING PHASE CONCLUIDA - INBOX MIGRADO**
+## 🔄 **ITEMS PENDIENTES:**
 
-**📋 ITEMS MIGRADOS A BACKLOG.md:**
-- **ENCRYPTION_MASTER_KEY Railway config** → Trasladado a BACKLOG.md como ETAPA 1
-- **Frontend exchange loading UX** → Trasladado a BACKLOG.md como ETAPA 1  
-- **MASTER_PLAN.md redundancy cleanup** → ✅ RESUELTO (actualizado como concluido)
-
-## 🔄 **POST-REFACTORING ITEMS:**
-
-- **Naming collision cleanup** - 4 archivos useTradingOperations duplicados sin importaciones activas *(origen: Análisis DL-040 Phase 1 - código muerto sin impacto)*
-- **Funcionalidad validation local** - 199+ archivos sin commit requieren testing *(origen: Usuario 2025-09-07 - build OK pero sin pruebas funcionales)*
+### **INBOX LIMPIO:**
+**ESTADO:** Todos los items promovidos a BACKLOG.md con SPEC_REF correspondiente
+**ÚLTIMO ITEM PROCESADO:** Ver Indicadores Avanzados Analysis → DL-088 SmartScalperMetrics Institutional Transformation
+**PRÓXIMOS ITEMS:** Aguardando nuevos descubrimientos de sesión
 
 ---
-
-**📝 NOTA:** TODO_INBOX.md ahora focalizado en post-refactoring + próximas fases algoritmos institucionales.

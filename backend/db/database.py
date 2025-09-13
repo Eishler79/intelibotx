@@ -35,10 +35,16 @@ def create_database_engine():
             engine = create_engine(
                 DATABASE_URL,
                 echo=False,
+                # SQLite connection pool settings for concurrent requests (DEVELOPMENT ONLY)
+                pool_size=20,           # Base connections - 20 simultaneous (user requirement)
+                max_overflow=20,        # Additional connections - 20 more (total: 40)
+                pool_timeout=45,        # Wait time for connection (increased)
+                pool_recycle=1800,      # Recycle connections every 30 minutes
+                pool_pre_ping=True,     # Validate connections before use
                 # SQLite-specific settings
                 connect_args={
                     "check_same_thread": False,
-                    "timeout": 20
+                    "timeout": 30       # SQLite timeout increased to 30s
                 }
             )
             logger.info("🗄️ SQLite engine created for development")

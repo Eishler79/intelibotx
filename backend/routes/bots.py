@@ -2,6 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.responses import HTMLResponse
 from typing import List, Dict, Any
+from datetime import datetime
 
 # Lazy imports to avoid psycopg2 dependency at module level
 import asyncio
@@ -577,9 +578,15 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
                 detail=f"Exchange con ID {exchange_id} no encontrado o no pertenece al usuario"
             )
         
-        # ✅ GUARDRAILS LOGGING: Monitor min_entry_price processing
-        min_entry_price = bot_data.get("min_entry_price")
-        logger.info(f"🎯 Creating bot with min_entry_price: {min_entry_price} for symbol: {symbol}")
+        # ✅ GUARDRAILS LOGGING: Monitor min_entry_price and min_volume processing with type conversion
+        min_entry_price_raw = bot_data.get("min_entry_price")
+        min_volume_raw = bot_data.get("min_volume")
+        
+        # Convert to float safely, handling string inputs from frontend
+        min_entry_price = float(min_entry_price_raw) if min_entry_price_raw not in [None, "", 0] else None
+        min_volume = float(min_volume_raw) if min_volume_raw not in [None, ""] else None
+        
+        logger.info(f"🎯 Creating bot with min_entry_price: {min_entry_price} (from {min_entry_price_raw}), min_volume: {min_volume} (from {min_volume_raw}) for symbol: {symbol}")
         
         # Crear instancia de BotConfig con los datos recibidos
         bot = BotConfig(
@@ -601,8 +608,9 @@ async def create_bot(bot_data: dict, authorization: str = Header(None)):
             leverage=bot_data["leverage"],  # REQUERIDO
             margin_type=bot_data["margin_type"],  # REQUERIDO
             
-            # ✅ GUARDRAILS SYNC: Procesar min_entry_price del frontend
+            # ✅ GUARDRAILS SYNC: Procesar min_entry_price y min_volume del frontend
             min_entry_price=min_entry_price,  # Precio real-time capturado (logged above)
+            min_volume=min_volume,  # Volumen mínimo capturado (logged above)
             
             # ✅ DL-001 COMPLIANCE: Campos avanzados con defaults seguros
             entry_order_type=bot_data.get("entry_order_type", "MARKET"),  # Default seguro
@@ -772,6 +780,9 @@ async def update_bot(bot_id: int, bot_data: dict, authorization: str = Header(No
             for key, value in bot_data.items():
                 if hasattr(bot, key):
                     setattr(bot, key, value)
+            
+            # Auto-update updated_at timestamp
+            bot.updated_at = datetime.utcnow()
             
             session.add(bot)
             session.commit()

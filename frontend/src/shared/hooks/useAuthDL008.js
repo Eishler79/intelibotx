@@ -23,7 +23,7 @@ import useLogout from '../../features/auth/hooks/useLogout';
 export const useAuthDL008 = () => {
   // BRIDGE: Use direct hooks instead of context
   const authState = useAuthState();
-  const logout = useLogout();
+  const { logout } = useLogout(authState);
   
   const { 
     token, 
