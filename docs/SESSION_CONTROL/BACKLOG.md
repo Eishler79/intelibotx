@@ -19,23 +19,35 @@
 
 ---
 
-## 🔥 **PRIORITY 1: ETAPA 1 - TESTING + VALIDACIÓN**
+## 🔥 **PRIORITY 1: POST DL-088 PENDING TASKS**
 
-### **Validación Funcional Local - CRÍTICA**
-**CURRENT:** 199+ archivos sin commit - Build ✅ funcional pero sin testing
-**TIMELINE:** Usuario debe validar antes commit
-**IMPACT:** Toda la funcionalidad del sistema
-**ACTIONS:** Testing manual login/logout, creación bots, dashboard, trading operations
+### **Chart Responsive Layout Optimization - ALTA**
+**CURRENT:** InstitutionalChart height issues (vertical cut-off in modal)
+**TIMELINE:** Immediate (visual UX critical)
+**IMPACT:** SmartScalperMetricsComplete.jsx user experience
+**SCOPE:** Chart container height + responsive layout adjustment
+
+### **Performance Metrics Data Integration - ALTA**  
+**CURRENT:** Performance Overview requires real bot performance data connection
+**TIMELINE:** 1-2 days
+**IMPACT:** Win Rate, Total Trades, Realized PnL accuracy
+**SCOPE:** Backend performance metrics API integration
+
+### **Auto-Responsive Grid Layout Enhancement - MEDIA**
+**CURRENT:** Grid layout needs full auto-responsive behavior across all screen sizes
+**TIMELINE:** 2-3 days  
+**IMPACT:** User experience on different screen formats
+**SCOPE:** CSS grid responsive classes optimization
 
 ### **ENCRYPTION_MASTER_KEY Railway Config - CRÍTICA**
 **STATUS:** ✅ UNBLOCKED (AuthContext refactored)
-**TIMELINE:** Post-validación local
+**TIMELINE:** Ready to implement
 **IMPACT:** API key encryption + user data protection
 **SCOPE:** Railway environment variable persistente
 
 ### **Frontend Exchange Loading UX - CRÍTICA**
 **STATUS:** Exchange requiere reload manual para reconocimiento
-**TIMELINE:** Post-validación local
+**TIMELINE:** Ready to implement
 **IMPACT:** Workflow exchange management roto
 **SCOPE:** Auto-refresh + UX improvement
 
@@ -83,10 +95,10 @@
 
 ## 📅 **EXECUTION TIMELINE**
 
-### **IMMEDIATE (Usuario - Next Actions):**
-1. **Validación Funcional Local** - Testing manual completo antes commit
-2. **Git Commit 199+ archivos** - Preservar refactoring masivo completado 
-3. **Deploy Testing** - Validar funcionalidad en environment staging
+### **IMMEDIATE (Post DL-088 Commit):**
+1. **Chart Responsive Layout Optimization** - Fix InstitutionalChart height issues in modal
+2. **Performance Metrics Data Integration** - Connect real bot performance data
+3. **Testing Manual DL-088** - Validar SmartScalperMetricsComplete functionality
 
 ### **SHORT-TERM (1-2 Semanas):**
 4. **ENCRYPTION_MASTER_KEY Railway Config** - Security implementation
@@ -158,8 +170,8 @@
 
 ---
 
-*Updated: 2025-09-07 - PROYECTO REFACTORING CONCLUIDO*  
-*Status: SUCCESS CRITERIA 100% Completado - Refactoring Arquitectural Finalizado*  
-*Next Phase: ETAPA 1 - Testing/Validación Usuario → ETAPA 2 - Algoritmos Institucionales*  
-*Focus: VSA, SMC, Market Profile, Order Flow, A/D, Composite Man (6/12 remaining)*  
+*Updated: 2025-09-13 - POST DL-088 TRANSFORMATION BACKLOG*  
+*DL-088 Status: ✅ COMMITTED (0ae475b) - SmartScalperMetricsComplete + InstitutionalChart*  
+*Immediate Focus: Chart responsive layout + performance data integration*  
+*Next Phase: VSA, SMC, Market Profile, Order Flow, A/D, Composite Man (6/12 remaining)*  
 *Methodology: GUARDRAILS P1-P9 + INSTITUTIONAL_ALGORITHMS/ documentation*
