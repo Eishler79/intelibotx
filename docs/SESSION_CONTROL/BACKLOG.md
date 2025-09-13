@@ -1,178 +1,139 @@
 # BACKLOG.md - Current Action Plan & Priorities  
-> **STATUS:** ✅ SUCCESS CRITERIA 100% COMPLETADO - Refactoring Arquitectural Concluido
-
----
-
-## 🎯 **CURRENT STATUS SUMMARY**
-
-### **✅ REFACTORING PHASE COMPLETADA:**
-- **SUCCESS CRITERIA:** ✅ **100% COMPLETADO** - Análisis exhaustivo confirmó todos ultra-críticos ya refactorizados
-- **VERIFICATION:** 6/6 ultra-críticos identificados como productos de refactoring previo
-- **ARCHITECTURE:** Feature-based + DL-076 specialized hooks pattern ✅ ESTABLECIDO COMO ESTÁNDAR
-- **METHODOLOGY:** GUARDRAILS P1-P9 probada efectiva en refactorings masivos
-- **BUILD STATUS:** ✅ FUNCIONAL - Vite build success + 199+ archivos refactorizados staging ready
-
-### **⚡ ESTADO ACTUAL:**
-- **ETAPA 0:** ✅ COMPLETADA - Refactoring arquitectural finalizado
-- **SIGUIENTE:** ETAPA 1 - Testing + Validación local (usuario debe probar funcionalidad)
-- **FUTURO:** ETAPA 2 - Algoritmos institucionales avanzados (6/12 remaining)
+> **PURPOSE:** Task management and priority queue - pending items only
 
 ---
 
 ## 🔥 **PRIORITY 1: POST DL-088 PENDING TASKS**
 
 ### **Chart Responsive Layout Optimization - ALTA**
-**CURRENT:** InstitutionalChart height issues (vertical cut-off in modal)
+**SCOPE:** Fix InstitutionalChart height issues (vertical cut-off in modal)
 **TIMELINE:** Immediate (visual UX critical)
-**IMPACT:** SmartScalperMetricsComplete.jsx user experience
-**SCOPE:** Chart container height + responsive layout adjustment
+**DEPENDENCIES:** DL-088 merge completed
 
 ### **Performance Metrics Data Integration - ALTA**  
-**CURRENT:** Performance Overview requires real bot performance data connection
+**SCOPE:** Connect real bot performance data to SmartScalperPerformanceView
 **TIMELINE:** 1-2 days
-**IMPACT:** Win Rate, Total Trades, Realized PnL accuracy
-**SCOPE:** Backend performance metrics API integration
+**DEPENDENCIES:** Chart responsive layout fixed
 
 ### **Auto-Responsive Grid Layout Enhancement - MEDIA**
-**CURRENT:** Grid layout needs full auto-responsive behavior across all screen sizes
+**SCOPE:** Full auto-responsive behavior across all screen sizes
 **TIMELINE:** 2-3 days  
-**IMPACT:** User experience on different screen formats
-**SCOPE:** CSS grid responsive classes optimization
+**DEPENDENCIES:** Performance metrics integration
 
 ### **ENCRYPTION_MASTER_KEY Railway Config - CRÍTICA**
-**STATUS:** ✅ UNBLOCKED (AuthContext refactored)
+**SCOPE:** Railway environment variable implementation for API key encryption
 **TIMELINE:** Ready to implement
-**IMPACT:** API key encryption + user data protection
-**SCOPE:** Railway environment variable persistente
+**DEPENDENCIES:** AuthContext refactored (completed)
 
-## 🔥 **PRIORITY 2: Frontend Exchange Loading UX - CRÍTICA**
-
-**STATUS:** Exchange requiere reload manual para reconocimiento
+### **Frontend Exchange Loading UX - CRÍTICA**
+**SCOPE:** Auto-refresh + UX improvement for exchange recognition
 **TIMELINE:** Ready to implement
-**IMPACT:** Workflow exchange management roto
-**SCOPE:** Auto-refresh + UX improvement
+**ISSUE:** Exchange requires manual reload for recognition
 
 ---
 
-## 🔥 **PRIORITY 3: ETAPA 2 - ALGORITMOS INSTITUCIONALES**
+## 🔥 **PRIORITY 2: ALGORITMOS INSTITUCIONALES PENDIENTES**
 
-### **6 Algoritmos Institucionales Restantes - ALTA**
-**REMAINING:** VSA, SMC, Market Profile, Order Flow, A/D, Composite Man
-**CURRENT:** 6/12 implemented (Wyckoff, Order Blocks, Liquidity Grabs, Stop Hunting, Fair Value Gaps, Market Microstructure) 
-**TIMELINE:** 2-4 months
-**IMPACT:** Completar Bot Único inteligencia institucional
+### **VSA (Volume Spread Analysis) - ALTA**
+**SCOPE:** Implement institutional volume analysis algorithm
+**TIMELINE:** 2-3 weeks
+**DEPENDENCIES:** DL-088 testing completed
 
-### **4 Modos Operativos Adaptativos - ALTA**
-**REMAINING:** Trend Following, Anti-Manipulation, News Sentiment, Volatility Adaptive
-**CURRENT:** 1/5 implemented (Smart Scalper Mode)
-**TIMELINE:** 2-4 months  
-**IMPACT:** Bot adaptativo según condiciones mercado
+### **SMC (Smart Money Concepts) - ALTA**
+**SCOPE:** Market structure and order flow analysis
+**TIMELINE:** 2-3 weeks
+**DEPENDENCIES:** VSA implementation
 
-### **ML Mode Selection System - ALTA**
-**STATUS:** Pending institutional algorithms completion
-**TIMELINE:** Post-12 algorithms
-**IMPACT:** IA que decide modo óptimo automáticamente
+### **Market Profile Analysis - ALTA** 
+**SCOPE:** Volume-based market structure analysis
+**TIMELINE:** 3-4 weeks
+**DEPENDENCIES:** SMC completion
+
+### **Institutional Order Flow - ALTA**
+**SCOPE:** Large order detection and analysis
+**TIMELINE:** 3-4 weeks
+**DEPENDENCIES:** Market Profile implementation
+
+### **Accumulation/Distribution Analysis - MEDIA**
+**SCOPE:** Smart money accumulation patterns
+**TIMELINE:** 2-3 weeks
+**DEPENDENCIES:** Order Flow completion
+
+### **Composite Man Theory Implementation - MEDIA**
+**SCOPE:** Market manipulation detection algorithm
+**TIMELINE:** 4-5 weeks
+**DEPENDENCIES:** A/D analysis completion
+
+---
+
+## 🔥 **PRIORITY 3: MODOS OPERATIVOS PENDIENTES**
+
+### **Trend Following Mode - ALTA**
+**SCOPE:** SMC + Market Profile + VSA integration
+**TIMELINE:** 3-4 weeks
+**DEPENDENCIES:** Core algorithms completion
+
+### **Anti-Manipulation Mode - ALTA**
+**SCOPE:** Composite Man + Order Flow integration
+**TIMELINE:** 4-5 weeks
+**DEPENDENCIES:** Institutional algorithms complete
+
+### **News Sentiment Mode - MEDIA**
+**SCOPE:** Central Bank + Options Flow analysis
+**TIMELINE:** 6-8 weeks
+**DEPENDENCIES:** Anti-Manipulation mode completion
+
+### **Volatility Adaptive Mode - MEDIA**
+**SCOPE:** VSA + Market Profile adaptive integration
+**TIMELINE:** 3-4 weeks
+**DEPENDENCIES:** News Sentiment mode
 
 ---
 
 ## 🔥 **PRIORITY 4: TECHNICAL DEBT & OPTIMIZATION**
 
 ### **WebSocket Performance Optimization**
-**TARGET:** <50ms latency verification
+**SCOPE:** <50ms latency verification for institutional algorithms
 **TIMELINE:** 3-4 days
-**STATUS:** Ready to implement
+**DEPENDENCIES:** Ready to implement
 
 ### **Testing Suite Implementation**  
 **SCOPE:** E2E validation + regression prevention
 **TIMELINE:** 2-3 days
-**STATUS:** Architecture foundation ready
+**DEPENDENCIES:** WebSocket optimization
 
 ### **Bundle Size Optimization**
-**TARGET:** Code splitting + lazy loading implementation
+**SCOPE:** Code splitting + lazy loading implementation
 **TIMELINE:** 1-2 weeks
-**IMPACT:** Improved loading performance
+**DEPENDENCIES:** Testing suite implementation
+
+### **Naming Collision Cleanup**
+**SCOPE:** 4 archivos useTradingOperations duplicados (código muerto)
+**TIMELINE:** 1 day
+**DEPENDENCIES:** Bundle optimization
 
 ---
 
-## 📅 **EXECUTION TIMELINE**
+## 🔥 **PRIORITY 5: ML & AUTOMATION PENDIENTES**
 
-### **IMMEDIATE (Post DL-088 Commit):**
-1. **Chart Responsive Layout Optimization** - Fix InstitutionalChart height issues in modal
-2. **Performance Metrics Data Integration** - Connect real bot performance data
-3. **Testing Manual DL-088** - Validar SmartScalperMetricsComplete functionality
+### **ML Mode Selection System**
+**SCOPE:** AI-driven bot adaptation system
+**TIMELINE:** 8-12 weeks
+**DEPENDENCIES:** All 12 institutional algorithms + 5 operational modes
 
-### **SHORT-TERM (1-2 Semanas):**
-3. **ENCRYPTION_MASTER_KEY Railway Config** - Security implementation
-4. **Frontend Exchange Loading UX** - Auto-refresh + workflow fixes
-5. **Naming Collision Cleanup** - 4 archivos useTradingOperations duplicados (código muerto)
+### **Continuous Learning System**
+**SCOPE:** Bot learns from each trade for evolution
+**TIMELINE:** 6-8 weeks
+**DEPENDENCIES:** ML Mode Selection system
 
-### **MEDIUM-TERM (2-4 Semanas):**
-6. **WebSocket Performance Optimization** (<50ms latency verification)
-7. **Testing Suite Implementation** (E2E validation + regression prevention)
-8. **Bundle Size Optimization** (Code splitting + lazy loading)
-
-### **LONG-TERM (2-4 Meses):**
-9. **6 Algoritmos Institucionales** (VSA, SMC, Market Profile, Order Flow, A/D, Composite Man)
-10. **4 Modos Operativos** (Trend Following, Anti-Manipulation, News Sentiment, Volatility)
-11. **ML Mode Selection System** (AI-driven bot adaptation)
+### **Performance Optimization Engine**
+**SCOPE:** Auto-optimization based on market conditions
+**TIMELINE:** 4-6 weeks
+**DEPENDENCIES:** Continuous Learning system
 
 ---
 
-## 📅 **NEXT SESSION PREPARATION**
-
-### **PRÓXIMA SESIÓN - ETAPA 2 (Post-Testing Usuario):**
-1. **Load CLAUDE.md** (master entry point)
-2. **Focus: Algoritmos Institucionales** (6/12 remaining - VSA, SMC, Market Profile, Order Flow, A/D, Composite Man)
-3. **Apply CORE_PHILOSOPHY.md** (Bot Único institucional anti-manipulación)
-4. **Target: VSA (Volume Spread Analysis)** - Primer algoritmo institucional avanzado
-
-### **SUCCESS CRITERIA PRÓXIMA ETAPA:**
-- ✅ Refactoring arquitectural COMPLETADO (ETAPA 0) 
-- ✅ Testing + validación funcional completada (ETAPA 1)
-- 🎯 **Nuevo objetivo:** Algoritmos institucionales avanzados (ETAPA 2)
-- 🎯 **Meta:** Completar 7/12 algoritmos (VSA implementation)
-
-### **DEPENDENCIES & BLOCKERS:**
-- **Prerequisito:** Usuario debe completar testing + commit de 199+ archivos
-- **Ready:** Feature-based architecture + DL-076 pattern establecido 
-- **Methodology:** GUARDRAILS P1-P9 + INSTITUTIONAL_ALGORITHMS/ documentation
-
----
-
-## 🛡️ **RISK ASSESSMENT**
-
-### **LOW-RISK REFACTORING:**
-- **NotificationSystem.jsx:** UI-focused component, minimal business logic impact
-- **Methodology:** GUARDRAILS P1-P9 proven across 8+ successful applications
-- **Pattern:** DL-076 specialized hooks pattern established and validated
-- **Architecture:** Feature-based structure ready for component extraction
-
-### **MITIGATION STRATEGIES:**
-- **Rollback:** Git-based procedures documented
-- **Build Validation:** Maintained 100% success rate
-- **Backwards Compatibility:** Standard preservation procedures
-
----
-
-## 📋 **PROJECT STATUS SUMMARY**
-
-### **PROYECTO REFACTORING COMPLETADO:**
-- **SUCCESS CRITERIA:** ✅ **100% COMPLETADO** - Todos ultra-críticos ya refactorizados
-- **VERIFICATION:** 6/6 ultra-críticos confirmados como productos de refactoring previo
-- **ARCHITECTURE:** Feature-based + DL-076 specialized hooks pattern ✅ ESTABLECIDO
-- **SECURITY:** Foundation refactored, ENCRYPTION_MASTER_KEY ready for implementation
-- **BUILD STABILITY:** ✅ FUNCIONAL - Vite build success con 199+ archivos staging ready
-
-### **PRÓXIMO FOCUS - ETAPA 2:**
-- **Target:** Algoritmos institucionales avanzados (6/12 remaining)
-- **Next:** VSA (Volume Spread Analysis) implementation
-- **Timeline:** 2-4 meses para algoritmos + modos operativos completos
-- **Methodology:** GUARDRAILS P1-P9 + CORE_PHILOSOPHY.md institucional
-
----
-
-*Updated: 2025-09-13 - POST DL-088 TRANSFORMATION BACKLOG*  
-*DL-088 Status: ✅ COMMITTED (0ae475b) - SmartScalperMetricsComplete + InstitutionalChart*  
-*Immediate Focus: Chart responsive layout + performance data integration*  
-*Next Phase: VSA, SMC, Market Profile, Order Flow, A/D, Composite Man (6/12 remaining)*  
-*Methodology: GUARDRAILS P1-P9 + INSTITUTIONAL_ALGORITHMS/ documentation*
+*Updated: 2025-09-13*  
+*Purpose: Task management only - no project status*  
+*Project status → MASTER_PLAN.md*  
+*DL decisions → DECISION_LOG.md*
