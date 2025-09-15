@@ -362,3 +362,19 @@ const botUniqueTemplates = [
 *Visión: Eduard Guzmán*  
 *Objetivo: Bot Único Institucional Anti-Manipulación*  
 *Status: DL-077 Templates Philosophy Alignment ✅ ACHIEVED*
+
+---
+
+## 🧭 Selección de Modos & Gestión de Riesgo (Ampliado)
+
+### Detectores transversales → Políticas por modo
+- Los 12 algoritmos institucionales funcionan como “detectores”.
+- Cada modo aplica políticas distintas (pesos/umbrales/acciones) sobre los mismos detectores.
+
+### Selección de Modos (conceptual)
+- Ver `MODE_SELECTION_CONCEPT.md`: gating por régimen, scoring por modo, histeresis/estabilidad y acciones.
+
+### Gestión de riesgo/salidas (transversal)
+- Position sizing adaptativo por ATR/confianza.
+- TP parcial en confluencias (OB/FVG/POC/VA edges), trailing dinámico, SL adaptativo por volatilidad/estructura.
+- Protección primero: Anti‑Manipulation prioriza capital sobre ganancia.

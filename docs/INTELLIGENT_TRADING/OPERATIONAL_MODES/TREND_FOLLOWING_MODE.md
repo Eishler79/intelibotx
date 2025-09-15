@@ -247,6 +247,22 @@ INSTITUTIONAL_COMPARISON = {
     'bank_profit_factor': 2.2,      # Our target: 3.0
     'institutional_dd': 0.08        # Our target: 0.05
 }
+
+---
+
+## 🧭 Fases de Evolución
+
+### Fase 1 — Actual
+- Núcleo: SMC (BOS/CHoCH), Market Profile (POC/VA), VSA (parcial), OB de pullback, Microestructura.
+
+### Fase 2 — Optimización
+- SMC completo + Market Profile dedicado (migración POC) + VSA robusto.
+- Reglas ATR‑normalizadas para breakouts/invalidaciones y pullbacks en OB.
+- Gestión de riesgo: trailing progresivo, reducción parcial en VA edges, SL detrás de estructuras clave.
+
+### Fase 3 — Potencialización
+- Order Flow v1 para validar breakouts reales.
+- Ejecución: balance entre Implementation Shortfall y participación en tendencia (POV adaptativo).
 ```
 
 ---

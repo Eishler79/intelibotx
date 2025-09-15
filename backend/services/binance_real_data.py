@@ -66,10 +66,22 @@ class TechnicalIndicators:
 class BinanceRealDataService:
     """Servicio principal para datos reales de Binance"""
     
-    def __init__(self, use_testnet: bool = True):
+    def __init__(self, use_testnet: bool = True, market_type: str = "SPOT"):
         self.use_testnet = use_testnet
-        self.base_url = "https://testnet.binance.vision/api/v3" if use_testnet else "https://api.binance.com/api/v3"
-        self.websocket_url = "wss://testnet.binance.vision/ws" if use_testnet else "wss://stream.binance.com:9443/ws"
+        self.market_type = market_type.upper()
+        
+        # Configurar URLs según tipo de mercado
+        if self.market_type == "SPOT":
+            self.base_url = "https://testnet.binance.vision/api/v3" if use_testnet else "https://api.binance.com/api/v3"
+            self.websocket_url = "wss://testnet.binance.vision/ws" if use_testnet else "wss://stream.binance.com:9443/ws"
+        elif self.market_type in ["FUTURES_USDT", "FUTURES_COIN"]:
+            # FUTURES URLs - siempre usar testnet para desarrollo
+            self.base_url = "https://testnet.binancefuture.com/fapi/v1" if use_testnet else "https://fapi.binance.com/fapi/v1"
+            self.websocket_url = "wss://stream.binancefuture.com/ws" if not use_testnet else "wss://stream.binancefuture.com/ws"
+        else:
+            # Default a SPOT si market_type no reconocido
+            self.base_url = "https://testnet.binance.vision/api/v3" if use_testnet else "https://api.binance.com/api/v3"
+            self.websocket_url = "wss://testnet.binance.vision/ws" if use_testnet else "wss://stream.binance.com:9443/ws"
         
         # Cache para datos históricos (evitar muchas llamadas)
         self.data_cache = {}
@@ -79,7 +91,7 @@ class BinanceRealDataService:
         self.request_timestamps = []
         self.max_requests_per_minute = 1200  # Binance limit
         
-        logger.info(f"✅ BinanceRealDataService inicializado ({'TESTNET' if use_testnet else 'MAINNET'})")
+        logger.info(f"✅ BinanceRealDataService inicializado - {self.market_type} ({'TESTNET' if use_testnet else 'MAINNET'}) - URL: {self.base_url}")
 
     async def get_klines(
         self, 

@@ -248,6 +248,22 @@ class NewsSentimentConsensus:
             )
         
         return FinalNewsSignal.NO_TRADE
+
+---
+
+## 🧭 Fases de Evolución
+
+### Fase 1 — Actual
+- Núcleo: Central Bank Communication + Institutional Options Flow + categorización impacto.
+
+### Fase 2 — Optimización
+- Mejorar scoring (credibilidad fuente, surprise indices) y consensos.
+- Confluencias con Market Profile (niveles imán) y VSA post‑evento.
+- Gestión de riesgo: ventanas temporales, stops amplios con trailing rápido.
+
+### Fase 3 — Potencialización
+- Feeds premium (news/derivados) y detección temprana (latencia reducida).
+- Ejecución adaptativa para evitar impacto (stealth/fragmentación) y evitar “headline whipsaws”.
 ```
 
 ---

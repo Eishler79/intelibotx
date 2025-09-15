@@ -349,6 +349,20 @@ VOLATILITY_MODE_TARGETS = {
 }
 ```
 
+---
+
+## 🧭 Fases de Evolución
+
+### Fase 1 — Actual
+- Núcleo: VSA Volatility + Market Profile Adaptive + flash events + clustering.
+
+### Fase 2 — Optimización
+- ATR‑normalización de objetivos/SL + confluencias (POC migration, microestructura).
+- Gating por régimen + time‑boxing y tamaño de posición adaptable.
+
+### Fase 3 — Potencialización
+- Order Flow v1 en extremos; ejecución adaptativa (stealth/POV) y selector de régimen (HMM/GARCH).
+
 ### **Volatility Pattern Performance:**
 ```python
 VOLATILITY_PATTERN_TRACKING = {

@@ -198,6 +198,23 @@ UTAD Completado → High Confidence Exit
 
 ## ⚖️ **VENTAJAS VS ALGORITMOS RETAIL**
 
+---
+
+## 🧭 Fases de Evolución
+
+### Fase 1 — Actual
+- Uso por modos: Scalping (timing micro‑reversals), Anti‑Manipulation (stopping action), Trend (SOS/SOW básicos).
+- Dependencias: OHLCV + volumen; sin L2.
+
+### Fase 2 — Optimización
+- Normalización por ATR y volumen relativo para stopping action/tests.
+- Reglas explícitas para Spring/UTAD (pequeña ruptura del rango + cierre dentro + wick/ATR alto).
+- Confirmación MTF (5m/15m) y confluencias con VSA/Market Profile.
+
+### Fase 3 — Potencialización
+- Integrar Order Flow (absorción/icebergs) en fases A/C.
+- Aprendizaje de umbrales por régimen; telemetría de eventos (SOS/SOW) para tuning.
+
 ### **VS RSI RETAIL:**
 **RSI:** "Sobreventa 30, sobrecompra 70" (niveles manipulables)
 **WYCKOFF:** "Composite Man completó acumulación, iniciando markup" (análisis profesional)

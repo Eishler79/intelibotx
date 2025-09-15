@@ -200,7 +200,8 @@ async def get_market_data(
     symbol: str,
     timeframe: str = Query("15m", description="Marco temporal"),
     limit: int = Query(100, description="Número de velas", ge=10, le=1000),
-    simple: bool = Query(False, description="✅ DL-019: Solo precio actual - Unified endpoint")
+    simple: bool = Query(False, description="✅ DL-019: Solo precio actual - Unified endpoint"),
+    market_type: str = Query("SPOT", description="Tipo de mercado: SPOT, FUTURES_USDT, FUTURES_COIN")
 ):
     """
     ✅ DL-019 COMPLIANCE: Datos OHLCV + precio simple unificado
@@ -218,8 +219,8 @@ async def get_market_data(
         
         logger.info(f"📈 Datos mercado: {symbol} {timeframe} ({limit} velas)")
         
-        # Initialize service
-        binance_service = BinanceRealDataService(use_testnet=True)
+        # Initialize service with market type
+        binance_service = BinanceRealDataService(use_testnet=True, market_type=market_type)
         
         # Obtener datos OHLCV
         df = await binance_service.get_klines(symbol, timeframe, limit)

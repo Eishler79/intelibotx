@@ -17,6 +17,7 @@ import { createTradingOperation, getBotTradingOperations, runSmartTrade, fetchBo
 import TradingHistory from "../components/TradingHistory";
 import EnhancedBotCreationModal from "../components/EnhancedBotCreationModal";
 import { useAuthDL008 } from "../shared/hooks/useAuthDL008";
+import { useSmartScalperAPI } from "../features/dashboard/hooks/useSmartScalperAPI";
 import BotTemplates from "../components/BotTemplates";
 import { 
   TrendingUp, 
@@ -35,6 +36,9 @@ export default function BotsAdvanced() {
   // ✅ DL-008: Authentication Pattern Hook
   const { authenticatedFetch, getAuthHeaders } = useAuthDL008();
   
+  // ✅ DL-076: Specialized Hook - Real-time data fetching for institutional charts
+  const { fetchTechnicalAnalysis } = useSmartScalperAPI();
+  
   const [bots, setBots] = useState([]);
   const [selectedBot, setSelectedBot] = useState(null);
   const [controlPanelBot, setControlPanelBot] = useState(null);
@@ -49,6 +53,58 @@ export default function BotsAdvanced() {
   
   // 📊 Ref para manejar intervals de trading bots
   const botIntervals = useRef({});
+
+  // 🏛️ DL-089: Real-time data fetching for selected bot's symbol (SPEC_REF: DL-076 specialized hooks pattern)
+  useEffect(() => {
+    const fetchRealTimeDataForBot = async () => {
+      if (!selectedBot?.symbol) {
+        console.log('⚠️ DL-089: No bot symbol selected for real-time data fetching');
+        return;
+      }
+
+      console.log('📊 DL-089: Fetching real-time data for bot symbol:', selectedBot.symbol);
+
+      try {
+        // ✅ DL-089 FIX: Use market-data endpoint for OHLCV chart data instead of technical analysis
+        const response = await authenticatedFetch(`/api/market-data/${selectedBot.symbol}?timeframe=${selectedBot.interval}&limit=100&market_type=${selectedBot.market_type}`);
+        const result = await response.json();
+        
+        if (result?.success && result?.data) {
+          console.log('✅ DL-089: Real-time data received for', selectedBot.symbol, 'Source:', result.dataSource);
+          
+          // ✅ DL-001 COMPLIANCE: Transform API data to chart format - ONLY real data, NO fallbacks/hardcode
+          // ✅ DL-089 FIX: Access klines array from result.data.klines (not result.data directly)
+          const chartData = Array.isArray(result.data.klines) ? result.data.klines.filter(item => 
+            // Only include items with real timestamp and price data from API
+            item.timestamp && item.close
+          ).map(item => ({
+            timestamp: item.timestamp,
+            price: parseFloat(item.close),
+            close: parseFloat(item.close),
+            volume: item.volume ? parseFloat(item.volume) : null,
+            order_blocks: item.order_blocks,
+            liquidity_grabs: item.liquidity_grabs,
+            stop_hunting: item.stop_hunting,
+            wyckoff_phase: item.wyckoff_phase
+          })) : [];
+
+          // ✅ DL-089: Update realTimeData with bot-specific symbol data
+          setRealTimeData(prevData => ({
+            ...prevData,
+            [selectedBot.symbol]: chartData
+          }));
+
+          console.log(`✅ DL-089: Updated realTimeData[${selectedBot.symbol}] with ${chartData.length} data points`);
+        } else {
+          console.warn('⚠️ DL-089: No data received from fetchTechnicalAnalysis for', selectedBot.symbol);
+        }
+      } catch (error) {
+        console.error('❌ DL-089: Error fetching real-time data for', selectedBot.symbol, error);
+      }
+    };
+
+    fetchRealTimeDataForBot();
+  }, [selectedBot?.symbol, selectedBot?.interval, fetchTechnicalAnalysis]); // ✅ P6: REGRESSION PREVENTION - Depend on symbol and interval only
 
   // 📊 Función para cargar métricas iniciales desde base de datos
   const loadRealBotMetrics = async (botId) => {
@@ -936,7 +992,8 @@ export default function BotsAdvanced() {
                 {selectedBot.strategy === 'Smart Scalper' ? (
                   <SmartScalperMetrics 
                     bot={selectedBot}
-                    realTimeData={selectedBot.realTimeData}
+                    realTimeData={realTimeData[selectedBot.symbol] || []}
+                    onClose={() => setSelectedBot(null)}
                   />
                 ) : (
                   <AdvancedMetrics 

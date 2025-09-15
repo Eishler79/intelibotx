@@ -333,8 +333,27 @@ def track_scalping_performance(self, trade_result):
         'time_to_profit': trade_result.duration_minutes,
         'slippage': trade_result.execution_slippage,
         'risk_reward_actual': trade_result.actual_rr_ratio
-    }
-    
+}
+
+---
+
+## 🧭 Fases de Evolución
+
+### Fase 1 — Actual
+- Algoritmos: Wyckoff, Order Blocks, Liquidity Grabs, Stop Hunting, FVG, Microestructura.
+- Objetivo: 0.8–2.5% por trade, consenso multi‑algoritmo 3/6, stops cortos.
+
+### Fase 2 — Optimización
+- Añadir VSA y Market Profile dedicado como confirmaciones.
+- Reglas normalizadas por ATR (depth/retest/wicks/partial‑fill), confluencias OB+FVG+POC.
+- Exponer `consensus_3of6` y `high_confidence_count` en API/UI.
+- Integrar gestión de riesgo/salidas: trailing dinámico, TP parcial en confluencias, SL adaptativo.
+
+### Fase 3 — Potencialización
+- Order Flow L2 (icebergs/blocks) como filtro avanzado.
+- Ejecución adaptativa (TWAP/VWAP/POV) y control de slippage.
+- Selector de modos con régimen/ML y aprendizaje de performance.
+
     # Optimize based on performance
     if metrics['time_to_profit'] > 15:
         self.optimize_entry_timing()

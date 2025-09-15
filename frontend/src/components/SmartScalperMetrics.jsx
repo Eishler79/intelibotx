@@ -30,6 +30,8 @@ export default function SmartScalperMetrics({ bot, realTimeData, onClose }) {
   const [error, setError] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
   const [performanceData, setPerformanceData] = useState({});
+  const [currentPrice, setCurrentPrice] = useState(null);
+  const [priceChange, setPriceChange] = useState(null);
 
   // 🏛️ DL-002 COMPLIANCE: Fetch ONLY institutional algorithm analysis
   useEffect(() => {
@@ -105,6 +107,37 @@ export default function SmartScalperMetrics({ bot, realTimeData, onClose }) {
     return () => clearInterval(interval);
   }, [bot?.symbol]);
 
+  // 📈 REAL-TIME PRICE: Update every 5 seconds
+  useEffect(() => {
+    const fetchRealTimePrice = async () => {
+      if (!bot?.symbol || !bot?.market_type) return;
+
+      try {
+        const token = localStorage.getItem('intelibotx_token');
+        const response = await fetch(`${BASE_URL}/api/market-data/${bot.symbol}?simple=true&market_type=${bot.market_type}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setCurrentPrice(data.price);
+            setPriceChange(data.change_24h);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error fetching real-time price:', error);
+      }
+    };
+
+    fetchRealTimePrice();
+    const priceInterval = setInterval(fetchRealTimePrice, 5000);
+    return () => clearInterval(priceInterval);
+  }, [bot?.symbol, bot?.market_type]);
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -135,15 +168,29 @@ export default function SmartScalperMetrics({ bot, realTimeData, onClose }) {
                 </Badge>
               </div>
               <p className="text-gray-400">
-                {bot?.symbol} • {institutionalMetrics.algorithm_used || 'Institutional Algorithm Matrix'}
+                {bot?.symbol} • {bot?.market_type} • {institutionalMetrics.algorithm_used || 'Institutional Algorithm Matrix'}
               </p>
             </div>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              <X className="text-gray-400 hover:text-white" size={24} />
-            </button>
+            <div className="flex items-center gap-4">
+              {currentPrice && (
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-white">
+                    ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  {priceChange && (
+                    <div className={`text-sm ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
+                    </div>
+                  )}
+                </div>
+              )}
+              <button 
+                onClick={onClose}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="text-gray-400 hover:text-white" size={24} />
+              </button>
+            </div>
           </div>
         </CardHeader>
 

@@ -274,6 +274,23 @@ def calculate_protection_position_size(self, capital, manipulation_confidence):
     return min(final_risk, 0.01)  # Cap at 1% max risk
 ```
 
+---
+
+## 🧭 Fases de Evolución
+
+### Fase 1 — Actual
+- Detectores: Stop Hunting, Liquidity Grabs, Wyckoff básico, Microestructura (proxies).
+- Política: priorizar protección (FLAT/FADE), minimizar exposición.
+
+### Fase 2 — Optimización
+- Añadir Composite Man avanzado, Institutional Order Flow (v1 con proxies), VSA y A/D avanzado.
+- Consenso dual Composite+OrderFlow con umbrales altos; confluencias en VA edges.
+- Gestión de riesgo estricta: stops ceñidos, capturas parciales rápidas, reducción de tamaño bajo manipulación.
+
+### Fase 3 — Potencialización
+- L2 real (Depth WS) para icebergs/blocks y desequilibrios persistentes.
+- Ejecución táctica (stealth/fragmentación) y circuit‑breakers de manipulación.
+
 ### **Protection Timeframes:**
 ```python
 PROTECTION_TIMEFRAMES = {
