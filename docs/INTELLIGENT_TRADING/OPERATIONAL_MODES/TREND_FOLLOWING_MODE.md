@@ -1,6 +1,7 @@
-# TREND_FOLLOWING_MODE.md - Modo Tendencias Institucional
+# TREND_FOLLOWING_MODE.md - Modo Tendencias Institucional (DL‑001)
 
 > **SMC + Market Profile + VSA:** Seguimiento tendencias usando Smart Money Concepts, Market Profile y Volume Spread Analysis institucional.
+> DL‑001: Todos los thresholds/targets/timeframes provienen de parámetros de estrategia/bot (sin literales en lógica de modo).
 
 ---
 
@@ -35,11 +36,11 @@ def smc_trend_signal(self, market_data):
         if choch_confirmation.confirmed:
             return TrendSignal(
                 direction=bos_analysis.direction,
-                confidence=0.85,
+                confidence=mode_params.smc_confidence,
                 pattern='BOS_CHOCH_CONFIRMED',
                 structure_level=bos_analysis.break_level,
-                target=self.calculate_structure_target(bos_analysis),
-                stop=self.calculate_structure_stop(bos_analysis)
+                target=self.calculate_structure_target(bos_analysis, mode_params),
+                stop=self.calculate_structure_stop(bos_analysis, mode_params)
             )
     
     # Inducement detection (fake breakout)
@@ -47,10 +48,10 @@ def smc_trend_signal(self, market_data):
     if inducement.detected:
         return TrendSignal(
             direction=inducement.fade_direction,
-            confidence=0.80,
+            confidence=mode_params.inducement_confidence,
             pattern='INDUCEMENT_FADE',
-            target=0.015,  # 1.5% fade profit
-            stop=0.008     # 0.8% stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
 ```
 
@@ -68,11 +69,11 @@ def market_profile_trend_signal(self, market_data):
         
         return TrendSignal(
             direction=poc_analysis.direction,
-            confidence=0.80,
+            confidence=mode_params.profile_confidence,
             pattern='POC_BREAKOUT_CONFIRMED',
             poc_level=poc_analysis.poc_price,
-            target=self.calculate_poc_target(poc_analysis),
-            stop=self.calculate_poc_retest_stop(poc_analysis)
+            target=self.calculate_poc_target(poc_analysis, mode_params),
+            stop=self.calculate_poc_retest_stop(poc_analysis, mode_params)
         )
     
     # Value Area High/Low tests
@@ -80,10 +81,10 @@ def market_profile_trend_signal(self, market_data):
     if va_test.institutional_rejection:
         return TrendSignal(
             direction=va_test.rejection_direction,
-            confidence=0.75,
+            confidence=mode_params.profile_confidence,
             pattern='VA_BOUNDARY_REJECTION',
-            target=0.020,  # 2% VA move
-            stop=0.010     # 1% stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
 ```
 
@@ -99,37 +100,37 @@ def vsa_trend_signal(self, market_data):
     if vsa_analysis.high_effort_good_result:
         return TrendSignal(
             direction=vsa_analysis.trend_direction,
-            confidence=0.85,
+            confidence=mode_params.vsa_confidence,
             pattern='VSA_PROFESSIONAL_BUYING',
             volume_signature=vsa_analysis.signature,
-            target=0.025,  # 2.5% strong trend
-            stop=0.012     # 1.2% stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
     
     # No Demand / No Supply detection
     elif vsa_analysis.no_demand_detected:
         return TrendSignal(
             direction='SELL',
-            confidence=0.80,
+            confidence=mode_params.vsa_confidence,
             pattern='VSA_NO_DEMAND',
-            target=0.018,  # 1.8% down move
-            stop=0.009     # 0.9% stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
     
     # Climactic action detection
     elif vsa_analysis.climactic_action:
         return TrendSignal(
             direction=vsa_analysis.reversal_direction,
-            confidence=0.90,
+            confidence=mode_params.vsa_confidence,
             pattern='VSA_CLIMACTIC_REVERSAL',
-            target=0.030,  # 3% climax reversal
-            stop=0.008     # 0.8% tight stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
 ```
 
 ---
 
-## 🔄 **TRIPLE CONFIRMATION SYSTEM**
+## 🔄 **TRIPLE CONFIRMATION SYSTEM (DL‑001)**
 
 ### **Institutional Trend Confirmation:**
 ```python
@@ -142,32 +143,32 @@ class TrendFollowingConsensus:
         profile_signal = self.market_profile_trend_signal(market_data)
         vsa_signal = self.vsa_trend_signal(market_data)
         
-        # Require ALL 3 algorithms alignment
-        if self.all_signals_aligned([smc_signal, profile_signal, vsa_signal]):
+        # Require ALL 3 algorithms alignment (umbrales del provider)
+        if self.all_signals_aligned([smc_signal, profile_signal, vsa_signal], threshold=mode_params.alignment_confidence):
             
             consensus_direction = smc_signal.direction
-            combined_confidence = self.calculate_triple_confidence([
-                smc_signal, profile_signal, vsa_signal
-            ])
+            combined_confidence = self.calculate_triple_confidence(
+                [smc_signal, profile_signal, vsa_signal], weights=mode_params.triple_weights
+            )
             
             return FinalTrendSignal(
                 direction=consensus_direction,
                 confidence=combined_confidence,
                 algorithms=['SMC', 'MARKET_PROFILE', 'VSA'],
-                timeframe='15m-4h',
-                target_profit=self.calculate_institutional_target([
-                    smc_signal, profile_signal, vsa_signal
-                ]),
-                stop_loss=self.calculate_institutional_stop([
-                    smc_signal, profile_signal, vsa_signal
-                ])
+                timeframe=mode_params.timeframe_band,
+                target_profit=self.calculate_institutional_target(
+                    [smc_signal, profile_signal, vsa_signal], mode_params
+                ),
+                stop_loss=self.calculate_institutional_stop(
+                    [smc_signal, profile_signal, vsa_signal], mode_params
+                )
             )
         
         return FinalTrendSignal.NO_TRADE
     
-    def all_signals_aligned(self, signals):
-        """Verificar alineación de los 3 algoritmos"""
-        valid_signals = [s for s in signals if s.confidence > 0.75]
+    def all_signals_aligned(self, signals, threshold):
+        """Verificar alineación de los 3 algoritmos (umbral externo)"""
+        valid_signals = [s for s in signals if s.confidence > threshold]
         
         if len(valid_signals) == 3:
             directions = [s.direction for s in valid_signals]
@@ -178,48 +179,36 @@ class TrendFollowingConsensus:
 
 ---
 
-## ⚙️ **EXECUTION PARAMETERS INSTITUCIONALES**
+## ⚙️ **EXECUTION PARAMETERS INSTITUCIONALES (DL‑001)**
 
 ### **Position Sizing Adaptativo:**
 ```python
-def calculate_trend_position_size(self, capital, trend_strength, volatility):
-    """Position sizing para trends institucionales"""
-    
-    base_risk = 0.015  # 1.5% base risk (higher than scalping)
-    
-    # Increase size for stronger institutional trends
-    trend_multiplier = trend_strength / 0.8  # Scale from 80% baseline
-    
-    # Adjust for volatility (institutional trends can handle more vol)
-    volatility_adjustment = 1.0 + (volatility * 2)  # Embrace volatility
-    
+def calculate_trend_position_size(self, capital, trend_strength, volatility, mode_params):
+    """Position sizing para trends institucionales (sin literales)."""
+    base_risk = mode_params.base_risk
+    trend_multiplier = trend_strength / mode_params.baseline_trend
+    volatility_adjustment = 1.0 + (volatility * mode_params.volatility_factor)
     final_risk = base_risk * trend_multiplier * volatility_adjustment
-    
-    return min(final_risk, 0.035)  # Cap at 3.5% for strong trends
+    return min(final_risk, mode_params.max_position_risk)
 ```
 
 ### **Timeframes Institucionales:**
 ```python
-TREND_TIMEFRAMES = {
-    'analysis': ['15m', '1h', '4h'],    # Institutional timeframes
-    'entry': '15m',                     # Precise entry
-    'monitoring': '1h',                 # Trend health check
-    'exit': '15m',                      # Exit optimization
-    'confirmation': '4h'                # Higher TF validation
-}
+TREND_TIMEFRAMES = get_trend_timeframes(mode_params)  # Derivado del provider del modo
 ```
 
 ### **Risk Management Adaptativo:**
 ```python
-TREND_RISK_PARAMS = {
-    'max_position_risk': 0.035,         # 3.5% max risk (trends)
-    'target_profit_range': (0.015, 0.040),  # 1.5-4% targets
-    'stop_loss_range': (0.008, 0.020),      # 0.8-2% stops
-    'max_trade_duration': 180,          # 3 hours max
-    'min_risk_reward': 2.0,            # Minimum 2:1 R:R
-    'trailing_stop_activation': 0.015,  # Trail after 1.5% profit
-    'max_daily_trends': 5              # Max 5 trend trades/day
-}
+TREND_RISK_PARAMS = get_trend_risk_params(mode_params)  # Derivado del provider de modo
+
+---
+
+## DL‑001 Provider del Modo Tendencias (referencia)
+
+Este modo debe consumir parámetros de un provider (sin literales):
+- get_triple_weights(), get_alignment_confidence(), get_timeframe_band(), get_target_stop(), get_vsa_confidence(), get_risk_model(), get_trend_timeframes(), get_trend_risk_params().
+
+No crear endpoints nuevos; reutilizar `POST /api/run-smart-trade/{symbol}`. Las decisiones de modo se basan en confirmaciones institucionales reales (SMC/Profile/VSA) y parámetros externos.
 ```
 
 ---

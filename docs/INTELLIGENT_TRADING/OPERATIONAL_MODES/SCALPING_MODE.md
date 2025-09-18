@@ -1,6 +1,7 @@
-# SCALPING_MODE.md - Modo Base Institucional
+# SCALPING_MODE.md - Modo Base Institucional (DL‑001)
 
 > **MODO DEFAULT:** Scalping institucional anti-manipulación con 6 algoritmos Smart Money implementados.
+> DL‑001: Todos los thresholds/targets/timeframes provienen de parámetros del modo/estrategia (sin literales en lógica de modo).
 
 ---
 
@@ -29,20 +30,20 @@ def wyckoff_scalping_signal(self, market_data):
     if self.detect_micro_accumulation(market_data):
         return ScalpingSignal(
             direction='BUY',
-            confidence=0.75,
+            confidence=mode_params.wyckoff_confidence,
             phase='MICRO_ACCUMULATION',
-            target=0.008,  # 0.8% target
-            stop=0.004     # 0.4% stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
     
     # Spring detection for quick reversal
     elif self.detect_wyckoff_spring(market_data):
         return ScalpingSignal(
             direction='BUY',
-            confidence=0.85,
+            confidence=mode_params.wyckoff_confidence,
             phase='SPRING_REVERSAL', 
-            target=0.012,  # 1.2% target
-            stop=0.003     # 0.3% tight stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
 ```
 
@@ -59,10 +60,10 @@ def order_blocks_scalping_signal(self, market_data):
         if self.is_price_retesting_block(market_data.current_price, block):
             return ScalpingSignal(
                 direction=block.direction,
-                confidence=0.80,
+                confidence=mode_params.ob_confidence,
                 zone='ORDER_BLOCK_RETEST',
-                target=0.010,  # 1.0% from order block
-                stop=0.005     # 0.5% beyond block
+                target=mode_params.target_profit,
+                stop=mode_params.stop_loss
             )
 ```
 
@@ -77,10 +78,10 @@ def liquidity_grabs_scalping_signal(self, market_data):
         
         return ScalpingSignal(
             direction=grab_info.fade_direction,  # Opposite
-            confidence=0.90,
+            confidence=mode_params.liquidity_confidence,
             pattern='LIQUIDITY_GRAB_FADE',
-            target=0.015,  # 1.5% fade profit
-            stop=0.005     # 0.5% tight stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
 ```
 
@@ -95,10 +96,10 @@ def stop_hunting_scalping_signal(self, market_data):
         
         return ScalpingSignal(
             direction=hunt_analysis.reversal_direction,
-            confidence=0.85,
+            confidence=mode_params.stop_hunt_confidence,
             pattern='STOP_HUNT_REVERSAL',
-            target=0.012,  # 1.2% reversal profit
-            stop=0.004     # 0.4% stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
 ```
 
@@ -114,10 +115,10 @@ def fair_value_gaps_scalping_signal(self, market_data):
         if self.is_price_approaching_fvg(market_data.current_price, fvg):
             return ScalpingSignal(
                 direction=fvg.fill_direction,
-                confidence=0.75,
+                confidence=mode_params.fvg_confidence,
                 zone='FVG_FILL',
-                target=0.008,  # 0.8% to FVG center
-                stop=0.004     # 0.4% stop
+                target=mode_params.target_profit,
+                stop=mode_params.stop_loss
             )
 ```
 
@@ -130,13 +131,13 @@ def microstructure_scalping_signal(self, market_data):
     order_flow = self.analyze_order_flow(market_data)
     
     # Bid/ask imbalance detection
-    if order_flow.institutional_bias and order_flow.imbalance > 0.7:
+    if order_flow.institutional_bias and order_flow.imbalance > mode_params.imbalance_threshold:
         return ScalpingSignal(
             direction=order_flow.bias_direction,
-            confidence=0.70,
+            confidence=mode_params.micro_confidence,
             pattern='MICROSTRUCTURE_BIAS',
-            target=0.006,  # 0.6% microstructure move
-            stop=0.003     # 0.3% tight stop
+            target=mode_params.target_profit,
+            stop=mode_params.stop_loss
         )
 ```
 
@@ -159,20 +160,20 @@ class ScalpingModeConsensus:
         signals.append(self.fair_value_gaps_scalping_signal(market_data))
         signals.append(self.microstructure_scalping_signal(market_data))
         
-        # Filter high confidence signals (>0.7)
-        strong_signals = [s for s in signals if s.confidence > 0.7]
+        # Filter high confidence signals (umbral externo)
+        strong_signals = [s for s in signals if s.confidence > mode_params.min_signal_confidence]
         
-        # Require minimum 3/6 algorithm confirmation
-        if len(strong_signals) >= 3:
+        # Require minimum N/6 algorithm confirmation (externo)
+        if len(strong_signals) >= mode_params.min_strong_signals:
             consensus_direction = self.get_consensus_direction(strong_signals)
-            combined_confidence = self.calculate_combined_confidence(strong_signals)
+            combined_confidence = self.calculate_combined_confidence(strong_signals, weights=mode_params.consensus_weights)
             
             return FinalScalpingSignal(
                 direction=consensus_direction,
                 confidence=combined_confidence,
                 algorithms_count=len(strong_signals),
-                target_profit=self.calculate_optimal_target(strong_signals),
-                stop_loss=self.calculate_optimal_stop(strong_signals)
+                target_profit=self.calculate_optimal_target(strong_signals, mode_params),
+                stop_loss=self.calculate_optimal_stop(strong_signals, mode_params)
             )
         
         return FinalScalpingSignal.NO_TRADE
@@ -184,42 +185,32 @@ class ScalpingModeConsensus:
 
 ### **Position Sizing:**
 ```python
-def calculate_scalping_position_size(self, capital, volatility, confidence):
-    """Position sizing adaptativo scalping"""
-    
-    base_risk = 0.01  # 1% base risk
-    
-    # Adjust based on confidence
-    confidence_multiplier = confidence / 0.7  # Scale from 0.7 baseline
-    
-    # Adjust based on volatility (lower vol = larger position)
-    volatility_adjustment = 1.0 / (1.0 + volatility * 10)
-    
+def calculate_scalping_position_size(self, capital, volatility, confidence, mode_params):
+    """Position sizing adaptativo scalping (DL‑001)"""
+    base_risk = mode_params.base_risk
+    confidence_multiplier = confidence / mode_params.confidence_baseline
+    volatility_adjustment = 1.0 / (1.0 + volatility * mode_params.volatility_scale)
     final_risk = base_risk * confidence_multiplier * volatility_adjustment
-    
-    return min(final_risk, 0.02)  # Cap at 2% risk
+    return min(final_risk, mode_params.max_position_risk)
 ```
 
 ### **Timeframes:**
 ```python
-SCALPING_TIMEFRAMES = {
-    'analysis': ['1m', '5m', '15m'],  # Multi-TF analysis
-    'entry': '1m',                    # Precise entry timing
-    'exit': '1m',                     # Quick exit monitoring
-    'confirmation': '5m'              # Higher TF confirmation
-}
+SCALPING_TIMEFRAMES = get_scalping_timeframes(mode_params)  # Derivado del provider del modo
 ```
 
 ### **Risk Management:**
 ```python
-SCALPING_RISK_PARAMS = {
-    'max_position_risk': 0.02,        # 2% max risk per trade
-    'target_profit_range': (0.005, 0.015),  # 0.5-1.5% targets
-    'stop_loss_range': (0.003, 0.008),      # 0.3-0.8% stops
-    'max_trade_duration': 15,         # 15 minutes max
-    'min_risk_reward': 1.5,          # Minimum 1.5:1 R:R
-    'max_daily_trades': 20           # Max 20 scalping trades/day
-}
+SCALPING_RISK_PARAMS = get_scalping_risk_params(mode_params)  # Derivado del provider del modo
+
+---
+
+## DL‑001 Provider del Modo Scalping (referencia)
+
+Este modo debe consumir parámetros de un provider (sin literales):
+- get_algorithm_confidences(), get_target_stop(), get_min_signal_confidence(), get_consensus_weights(), get_scalping_timeframes(), get_scalping_risk_params(), get_micro_thresholds().
+
+No crear endpoints nuevos; reutilizar `POST /api/run-smart-trade/{symbol}`. Las decisiones de modo se basan en confirmaciones institucionales reales y parámetros externos.
 ```
 
 ---

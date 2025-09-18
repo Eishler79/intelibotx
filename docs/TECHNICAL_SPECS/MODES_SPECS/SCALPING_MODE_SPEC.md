@@ -1,4 +1,4 @@
-# SCALPING_MODE_SPEC.md — Implementación por Fases (Estándar Definitivo)
+# SCALPING_MODE_SPEC.md — Implementación por Fases (Estándar Definitivo, DL‑001)
 
 SPEC_REF:
 - Concepto: docs/INTELLIGENT_TRADING/OPERATIONAL_MODES/SCALPING_MODE.md#fases-de-evolución
@@ -34,6 +34,16 @@ Requisitos de implementación
   - Position sizing adaptativo por ATR y confianza.
   - TP parcial en confluencias; trailing dinámico; SL adaptativo por volatilidad/estructura.
 
+Parametrización DL‑001 (provider del modo)
+- Ningún target/stop/umbral fijo en lógica del modo; todo proviene de un `ScalpingModeParamProvider`.
+- Parámetros mínimos requeridos:
+  - get_algorithm_confidences(): confidencias por algoritmo (wyckoff/ob/liq/stop/fvg/micro)
+  - get_target_stop(): `target_profit`, `stop_loss` para el modo
+  - get_consensus_params(): `min_signal_confidence`, `min_strong_signals`, `consensus_weights`
+  - get_micro_thresholds(): `imbalance_threshold` y ajustes por perfil
+  - get_timeframes(), get_risk_params(): marcos temporales y límites de riesgo (sin literales)
+  - get_telemetry_flags(): activación/umbral de `consensus_3of6` y high‑confidence reporting
+
 Contratos/API
 - Campos nuevos en `analysis.*` (conteo de alta confianza, boolean de consenso, bloque `execution_advice` informativo). No eliminar campos existentes.
 
@@ -62,4 +72,13 @@ Pruebas (manuales y de contrato)
 ## Riesgos y Mitigación
 - Sobreajuste umbrales: usar validación cruzada y ajustes por símbolo.
 - Latencia adicional: precalcular/compartir cálculos (p. ej., Market Profile) por símbolo.
+---
 
+## DL‑001 — Notas de cumplimiento
+- Eliminar literales en documentación de lógica (ejemplos pueden mostrar valores, pero la implementación debe obtenerlos del provider).
+- UI/UX no puede simular datos; si falten parámetros/datos, mostrar “No data”.
+
+---
+
+## P2 Rollback
+Este documento afecta solo especificación. Para revertir cambios: `git restore docs/TECHNICAL_SPECS/MODES_SPECS/SCALPING_MODE_SPEC.md`

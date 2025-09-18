@@ -219,6 +219,56 @@ def _evaluate_liquidity_grabs(
         return InstitutionalConfirmation(name="Liquidity Grabs", score=0, bias="INSTITUTIONAL_NEUTRAL", details={"error": str(e)})
 ```
 
+---
+
+## ⚙️ 4) Execution Loop + Persistence (DL‑001) — Testnet Live Trading
+
+Objetivo
+- Definir el flujo de activación/ejecución y persistencia de operaciones para que Trading Live muestre órdenes reales (TESTNET), sin crear endpoints nuevos.
+
+Componentes existentes
+- Orquestación: `POST /api/run-smart-trade/{symbol}` (bots.py) — ya decide señal y puede ejecutar `execute_real`.
+- Persistencia feed: `POST /api/bots/{bot_id}/trading-operations` + `GET /api/trading-feed/live`.
+- Testnet orders: `services/http_testnet_service.py`.
+
+Execution Gate (filtro de calidad)
+- Criterios mínimos parametrizados por BotConfig:
+  - `institutional_quality.overall_score ≥ τ_high(bot_config)`
+  - `high_confidence_count ≥ 3` (o `consensus_3of6 = true` si se expone)
+  - `multi_tf.signal` alinea con BUY/SELL seleccionado
+  - `manipulation_risk ≤ τ_risk(bot_config)`
+
+Pseudocódigo (bots.py)
+```python
+def _passes_execution_gate(iq, multi_tf, direction, bot_config) -> bool:
+    tau_high = 60  # o f_tau_high(bot_config)
+    if iq.overall_score < tau_high: return False
+    hc = iq.institutional_confirmations and sum(1 for k,v in iq.institutional_confirmations.items() if getattr(v,'score',0) >= 70) or 0
+    if hc < 3: return False
+    if direction == 'BUY' and multi_tf.signal != 'BUY': return False
+    if direction == 'SELL' and multi_tf.signal != 'SELL': return False
+    return True
+
+# Dentro de execute_smart_scalper_analysis(): si signal in ['BUY','SELL'] y _passes_execution_gate(...):
+if execute_real:
+    order_result = await create_testnet_order(...)
+    # Persistir operación para Trading Live
+    await persist_trading_operation(bot_config, current_user, symbol, direction, quantity, current_price, algorithm_selection, confidence)
+```
+
+Persistencia (Trading Live)
+- Crear `TradingOperation` tras ejecutar orden en testnet, con `bot_id`, `user_id`, `symbol`, `side`, `quantity`, `price`, `strategy`, `algorithm_used`, `confidence`. Trading Live (`GET /api/trading-feed/live`) lo mostrará.
+
+Frontend (Live Testnet)
+- Agregar toggle “Live Testnet” en la vista avanzada por bot para enviar `execute_real=true` en la invocación al endpoint existente.
+- La UI muestra SOLO datos reales; si no hay resultados, “No data”; sin `Math.random()` ni fallbacks.
+
+Keys por usuario (opcional recomendado)
+- Reemplazar uso de env globals en `http_testnet_service.py` por credenciales de `UserExchange` del usuario (multi‑tenant), cuando se dispare una orden.
+
+Especificación de no‑cambio
+- No se crean endpoints nuevos; se expande la orquestación y se usa el CRUD de `trading-operations` ya existente.
+
 Criterios de aceptación
 - `details` incluye `grab_depth_*_atr`, `cluster_size`, `expected_direction`.
 

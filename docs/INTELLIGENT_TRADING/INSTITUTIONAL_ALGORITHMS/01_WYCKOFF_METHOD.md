@@ -281,6 +281,6 @@ UTAD Completado → High Confidence Exit
 
 ---
 
-*Status: ✅ Implementado en signal_quality_assessor.py*  
-*Usado en: Scalping Mode (principal)*  
+*Status: ✅ Implementado en signal_quality_assessor.py*
+*Usado en: Scalping Mode (principal)*
 *Nivel: Institucional Profesional Verificado*

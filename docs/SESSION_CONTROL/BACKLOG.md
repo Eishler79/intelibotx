@@ -1,139 +1,58 @@
-# BACKLOG.md - Current Action Plan & Priorities  
-> **PURPOSE:** Task management and priority queue - pending items only
+# BACKLOG.md - Roadmap de Implementación
+> **Propósito:** Lista priorizada de acciones pendientes alineadas con el plan F0–F5.
 
 ---
 
-## 🔥 **PRIORITY 1: POST DL-088 PENDING TASKS**
-
-### **Chart Responsive Layout Optimization - ALTA**
-**SCOPE:** Fix InstitutionalChart height issues (vertical cut-off in modal)
-**TIMELINE:** Immediate (visual UX critical)
-**DEPENDENCIES:** DL-088 merge completed
-
-### **Performance Metrics Data Integration - ALTA**  
-**SCOPE:** Connect real bot performance data to SmartScalperPerformanceView
-**TIMELINE:** 1-2 days
-**DEPENDENCIES:** Chart responsive layout fixed
-
-### **Auto-Responsive Grid Layout Enhancement - MEDIA**
-**SCOPE:** Full auto-responsive behavior across all screen sizes
-**TIMELINE:** 2-3 days  
-**DEPENDENCIES:** Performance metrics integration
-
-### **ENCRYPTION_MASTER_KEY Railway Config - CRÍTICA**
-**SCOPE:** Railway environment variable implementation for API key encryption
-**TIMELINE:** Ready to implement
-**DEPENDENCIES:** AuthContext refactored (completed)
-
-### **Frontend Exchange Loading UX - CRÍTICA**
-**SCOPE:** Auto-refresh + UX improvement for exchange recognition
-**TIMELINE:** Ready to implement
-**ISSUE:** Exchange requires manual reload for recognition
+## 🚨 Prioridad 0 · Fase 0 — Baseline UI/UX (inmediato)
+- **Limpiar datos simulados en InstitutionalChart y SmartScalperMetrics.**  
+  `SPEC_REF:` docs/TECHNICAL_SPECS/MODE_SELECTION_SPEC.md, DL-001  
+  `Resultado:` “No data” vs datos falsos hasta que lleguen datos reales.
+- **Auditar componentes front que dependan de `Math.random()` / fallbacks.**  
+  Eliminar simulaciones y dejar hooks preparados para datos reales.
+- **Verificar endpoints actuales (`/api/run-smart-trade/{symbol}`) y registrar payload real.**  
+  Será la base para fases posteriores.
 
 ---
 
-## 🔥 **PRIORITY 2: ALGORITMOS INSTITUCIONALES PENDIENTES**
-
-### **VSA (Volume Spread Analysis) - ALTA**
-**SCOPE:** Implement institutional volume analysis algorithm
-**TIMELINE:** 2-3 weeks
-**DEPENDENCIES:** DL-088 testing completed
-
-### **SMC (Smart Money Concepts) - ALTA**
-**SCOPE:** Market structure and order flow analysis
-**TIMELINE:** 2-3 weeks
-**DEPENDENCIES:** VSA implementation
-
-### **Market Profile Analysis - ALTA** 
-**SCOPE:** Volume-based market structure analysis
-**TIMELINE:** 3-4 weeks
-**DEPENDENCIES:** SMC completion
-
-### **Institutional Order Flow - ALTA**
-**SCOPE:** Large order detection and analysis
-**TIMELINE:** 3-4 weeks
-**DEPENDENCIES:** Market Profile implementation
-
-### **Accumulation/Distribution Analysis - MEDIA**
-**SCOPE:** Smart money accumulation patterns
-**TIMELINE:** 2-3 weeks
-**DEPENDENCIES:** Order Flow completion
-
-### **Composite Man Theory Implementation - MEDIA**
-**SCOPE:** Market manipulation detection algorithm
-**TIMELINE:** 4-5 weeks
-**DEPENDENCIES:** A/D analysis completion
+## 🔥 Prioridad 1 · Fase 1 — Parametrización Algoritmos Existentes (01–06)
+- **Crear ParamProviders iniciales** para Wyckoff, Order Blocks, Liquidity Grabs, Stop Hunting, FVG, Microestructura (leer `BotConfig`, `recent_stats`, `symbol_meta`).
+- **Refactorizar `SignalQualityAssessor`** para consumir dichos providers (sin cambiar comportamiento macro inicialmente).
+- **Exponer detalles adicionales** requeridos en cada spec (e.g., `wyckoff_phase`, `order_block_retests`).
+- **Pruebas unitarias/manuales** para validar parámetros por estrategia (Smart Scalper vs Trend Hunter).
 
 ---
 
-## 🔥 **PRIORITY 3: MODOS OPERATIVOS PENDIENTES**
-
-### **Trend Following Mode - ALTA**
-**SCOPE:** SMC + Market Profile + VSA integration
-**TIMELINE:** 3-4 weeks
-**DEPENDENCIES:** Core algorithms completion
-
-### **Anti-Manipulation Mode - ALTA**
-**SCOPE:** Composite Man + Order Flow integration
-**TIMELINE:** 4-5 weeks
-**DEPENDENCIES:** Institutional algorithms complete
-
-### **News Sentiment Mode - MEDIA**
-**SCOPE:** Central Bank + Options Flow analysis
-**TIMELINE:** 6-8 weeks
-**DEPENDENCIES:** Anti-Manipulation mode completion
-
-### **Volatility Adaptive Mode - MEDIA**
-**SCOPE:** VSA + Market Profile adaptive integration
-**TIMELINE:** 3-4 weeks
-**DEPENDENCIES:** News Sentiment mode
+## 🔥 Prioridad 2 · Fase 2 — Implementación Algoritmos 07–12
+- **Desarrollar evaluadores** para VSA, Market Profile, SMC, Order Flow, Accumulation/Distribution, Composite Man siguiendo sus SPEC (`ParamProvider` + `InstitutionalConfirmation`).
+- **Integrar en `SignalQualityAssessor`** con pesos iniciales definidos en la documentación.
+- **Actualizar `/api/run-smart-trade/{symbol}`** para devolver las nuevas confirmaciones (`institutional_confirmations.*`).
+- **Validar con datasets etiquetados** (springs, UTAD, SOS/SOW, FVG, bloques, etc.).
 
 ---
 
-## 🔥 **PRIORITY 4: TECHNICAL DEBT & OPTIMIZATION**
-
-### **WebSocket Performance Optimization**
-**SCOPE:** <50ms latency verification for institutional algorithms
-**TIMELINE:** 3-4 days
-**DEPENDENCIES:** Ready to implement
-
-### **Testing Suite Implementation**  
-**SCOPE:** E2E validation + regression prevention
-**TIMELINE:** 2-3 days
-**DEPENDENCIES:** WebSocket optimization
-
-### **Bundle Size Optimization**
-**SCOPE:** Code splitting + lazy loading implementation
-**TIMELINE:** 1-2 weeks
-**DEPENDENCIES:** Testing suite implementation
-
-### **Naming Collision Cleanup**
-**SCOPE:** 4 archivos useTradingOperations duplicados (código muerto)
-**TIMELINE:** 1 day
-**DEPENDENCIES:** Bundle optimization
+## 🔥 Prioridad 3 · Fase 3 — ModeParamProvider + Selector Heurístico
+- **Implementar `ModeParamProvider`** para Smart Scalper, Trend Hunter y Anti-Manipulation (pesos, targets, thresholds, consensus N/6).
+- **Construir `IntelligentModeSelector` heurístico** (sin ML) usando los parámetros anteriores.  
+  Integrarlo en el flujo de `/api/run-smart-trade/{symbol}` y registrar `mode_decision` en la respuesta.
+- **Alinear servicios** (`UserTradingService`, etc.) para que usen los parámetros del modo activo.
 
 ---
 
-## 🔥 **PRIORITY 5: ML & AUTOMATION PENDIENTES**
-
-### **ML Mode Selection System**
-**SCOPE:** AI-driven bot adaptation system
-**TIMELINE:** 8-12 weeks
-**DEPENDENCIES:** All 12 institutional algorithms + 5 operational modes
-
-### **Continuous Learning System**
-**SCOPE:** Bot learns from each trade for evolution
-**TIMELINE:** 6-8 weeks
-**DEPENDENCIES:** ML Mode Selection system
-
-### **Performance Optimization Engine**
-**SCOPE:** Auto-optimization based on market conditions
-**TIMELINE:** 4-6 weeks
-**DEPENDENCIES:** Continuous Learning system
+## 🔥 Prioridad 4 · Fase 4 — UI/Telemetría y Packaging
+- **Renderizar datos reales** en SmartScalperMetrics / InstitutionalChart (nuevas confirmaciones, modo actual, acciones FADE/FOLLOW).
+- **Añadir telemetría básica** (logs, métricas, tiempos de respuesta) para futuras capas ML.
+- **Documentar parámetros congelados** y exponerlos en un repositorio de configuración (JSON/YAML).
 
 ---
 
-*Updated: 2025-09-13*  
-*Purpose: Task management only - no project status*  
-*Project status → MASTER_PLAN.md*  
-*DL decisions → DECISION_LOG.md*
+## 🔥 Prioridad 5 · Fase 5 — Validación End-to-End
+- **Simulaciones/backtests** con todos los algoritmos y modos activados.
+- **Pruebas de latencia** en Railway/Vercel con datos reales.
+- **Check-list de despliegue testnet**: validaciones DL-001/002/076 + rollback.
+- **Preparar datasets/telemetría** para la etapa ML (modo selector avanzado, aprendizaje continuo).
+
+---
+
+*Actualizado: 2025-09-17*  
+*Estado del proyecto → MASTER_PLAN.md*  
+*Decisiones formales → DECISION_LOG.md*

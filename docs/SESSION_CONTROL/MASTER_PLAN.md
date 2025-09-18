@@ -1,7 +1,7 @@
 # MASTER_PLAN.md - Status Dinámico Proyecto InteliBotX
 
 > **TRACKER:** Estado actual + progreso + métricas dinámicas  
-> **ACTUALIZADO:** 2025-09-06  
+> **ACTUALIZADO:** 2025-09-17  
 
 ---
 
@@ -14,14 +14,15 @@
 - **Estado:** PROYECTO REFACTORING CONCLUIDO ✅
 
 ### **🎯 SISTEMA BACKEND:**
-- **Authentication:** 90% complete - DL-008 centralized (43 endpoints)
+- **Authentication:** 90% complete - DL-008 centralizado (43 endpoints)
 - **Database:** PostgreSQL Railway deployment ✅ 
-- **Security:** ENCRYPTION_MASTER_KEY pending - CRÍTICO
-- **Smart Scalper:** 6/12 algoritmos institucionales operativos ✅
+- **Security:** ENCRYPTION_MASTER_KEY pendiente - CRÍTICO
+- **Algoritmos operativos en código:** 6/12 (Wyckoff, Order Blocks, Liquidity Grabs, Stop Hunting, FVG, Microstructure)
+- **Especificaciones DL-001 actualizadas:** 12/12 algoritmos + modos documentados con ParamProviders
 
 ### **📈 ALGORITMOS INSTITUCIONALES:**
-- **Implementados:** 6/12 (Wyckoff, Order Blocks, Liquidity Grabs, Stop Hunting, Fair Value Gaps, Market Microstructure)
-- **Pendientes:** 6/12 (VSA, SMC, Market Profile, Order Flow, A/D, Composite Man)
+- **Especificación técnica:** ✅ 12/12 con catálogos DL-001 y payloads definidos
+- **Implementación en código:** 6/12 (VSA, SMC, Market Profile, Order Flow, A/D, Composite Man pendientes)
 
 ---
 
@@ -34,9 +35,12 @@
 - **Resultados:** Build ✅ functional | 199+ archivos refactorizados | Zero componentes >200 líneas sin refactoring previo
 
 ### **📅 SIGUIENTE FASE:**
-- **ETAPA 1:** Testing + Validation local (usuario debe validar funcionalidad)
-- **ETAPA 2:** Algoritmos institucionales avanzados (6/12 remaining: VSA, SMC, Market Profile, Order Flow, A/D, Composite Man)  
-- **ETAPA 3:** Features institucionales advanced
+- **FASE 0 (en progreso):** Limpieza UI (eliminar datos simulados) + baseline antes de nuevas integraciones
+- **FASE 1:** Parametrizar algoritmos existentes (01–06) con sus nuevos ParamProviders
+- **FASE 2:** Implementar algoritmos faltantes (07–12) siguiendo las specs DL-001
+- **FASE 3:** Crear `ModeParamProvider` + selector heurístico inicial (sin ML)
+- **FASE 4:** Ajustes UI/telemetría y empaquetado para testnet monolítico
+- **FASE 5:** Validación end-to-end + preparación para PRD/ML
 
 ---
 
@@ -63,17 +67,18 @@
 
 ## 📅 **HISTORIAL ACTUALIZACIONES**
 
+### **2025-09-17:**
+- ✅ **DL-001 SPEC ALIGNMENT COMPLETED:** Documentación actualizada para los 12 algoritmos y modos (Smart Scalper, Trend Hunter, Anti-Manipulation)
+- ✅ **MODE_SELECTION_SPEC alineado con providers parametrizables**
+- ✅ **Plan de implementación por fases (F0–F5) documentado para transición a MVP institucional**
+- 📌 **Pendientes clave:** Implementar ParamProviders en código, limpiar UI de datos simulados, construir selector de modos
+
 ### **2025-09-14:**
-- ✅ **DL-089 SMARTSCALPERMETRICS REAL-TIME DATA FETCHING IMPLEMENTATION:** Critical bug resolved - empty charts now display real Binance data for user's selected bot symbol
-- ✅ **GUARDRAILS P1-P9 METHODOLOGY APPLIED COMPLETE:** Full methodology compliance from diagnostic to decision log documentation
-- ✅ **REAL-TIME DATA INTEGRATION:** Added useEffect in BotsAdvanced.jsx to fetch technical analysis data when user selects bot
-- ✅ **DL-001 COMPLIANCE ACHIEVED:** Eliminated hardcoded fallbacks, only real API data filtering with proper timestamp/price validation
-- ✅ **DL-076 SPECIALIZED HOOKS PATTERN:** Reused existing useSmartScalperAPI hook with fetchTechnicalAnalysis function
-- ✅ **API ENDPOINT INTEGRATION:** `/api/real-indicators/${symbol}?timeframe=${timeframe}` provides real Binance market data
-- ✅ **DATA FLOW CORRECTION:** User bot selection → useEffect trigger → API call → realTimeData populated → InstitutionalChart displays real data
-- ✅ **BUILD VALIDATION SUCCESS:** 3.70s baseline → 3.92s final (within acceptable performance range)
-- ✅ **ZERO BREAKING CHANGES:** Single component modification preserves all existing functionality
-- **IMPACT:** Users now see correct institutional analysis for their selected bot pair instead of empty charts, eliminating backend API flooding
+- ✅ **DL-090 INTEGRAL MARKET DATA UNIFICATION:** Eliminado overlay loading cada 5s + precio azul duplicado + market_type unificado
+- ✅ **DL-089 SMARTSCALPERMETRICS REAL-TIME DATA FETCHING:** Critical bug resolved - charts display real Binance data for user's bot symbol
+- ✅ **GUARDRAILS P1-P9 METHODOLOGY:** Full compliance applied across DL-089 + DL-090 implementations
+- ✅ **SILENT REFRESH PATTERN:** Refresh cada 5s sin interrupciones UX + isInitialLoad parameter pattern establecido
+- ✅ **HARDCODE ELIMINATIONS:** Precio duplicado + fallbacks eliminados + solo datos reales bot.market_type
 
 ### **2025-09-13:**
 - ✅ **DL-088 SMARTSCALPERMETRICS INSTITUTIONAL TRANSFORMATION COMPLETED:** Complete SmartScalperMetrics restoration achieved

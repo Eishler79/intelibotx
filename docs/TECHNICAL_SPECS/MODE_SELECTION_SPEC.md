@@ -1,528 +1,226 @@
-# MODE_SELECTION_AI.md - Inteligencia Artificial Selecci贸n Modos
+# MODE_SELECTION_SPEC.md — AI Mode Selection (DL-001)
 
-> **BRAIN SISTEM:** IA avanzada que selecciona el modo operativo 贸ptimo en tiempo real analizando condiciones mercado, volatilidad, noticias y patterns manipulaci贸n.
+> **BRAIN SYSTEM:** Advanced AI that selects the optimal operating mode in real time by analysing market regime, volatility, news and manipulation patterns. All weights and thresholds come from `ModeParamProvider`; no literals in implementation.
 
 ---
 
-## 馃 **ARQUITECTURA IA SELECTION**
+## Architecture Overview
 
-### **Machine Learning Framework:**
 ```python
 class IntelligentModeSelector:
-    def __init__(self):
-        self.market_analyzer = RealTimeMarketAnalyzer()
-        self.pattern_classifier = PatternClassificationML()
-        self.mode_predictor = ModeOptimalityPredictor()
-        self.performance_tracker = ModePerfomanceML()
-        self.learning_engine = ContinuousLearningEngine()
-        
-        # Load pre-trained models
-        self.volatility_model = self.load_volatility_classifier()
-        self.manipulation_model = self.load_manipulation_detector()
-        self.news_impact_model = self.load_news_impact_predictor()
-        self.trend_model = self.load_trend_strength_classifier()
-        
+    def __init__(self, mode_params: ModeParamProvider):
+        self.market_analyzer = RealTimeMarketAnalyzer(mode_params)
+        self.pattern_classifier = PatternClassificationML(mode_params)
+        self.mode_predictor = ModeOptimalityPredictor(mode_params)
+        self.performance_tracker = ModePerformanceML(mode_params)
+        self.learning_engine = ContinuousLearningEngine(mode_params)
+        self.mode_params = mode_params
+
     def select_optimal_mode(self, current_market_data):
-        """Selecci贸n inteligente modo 贸ptimo"""
-        
-        # Analyze current market conditions
-        market_features = self.extract_market_features(current_market_data)
-        
-        # Predict optimal mode using ensemble approach
-        mode_probabilities = self.predict_mode_probabilities(market_features)
-        
-        # Apply performance-based weighting
-        weighted_probabilities = self.apply_performance_weighting(mode_probabilities)
-        
-        # Select best mode with confidence threshold
-        selected_mode = self.select_with_confidence(weighted_probabilities)
-        
-        return selected_mode
+        features = self.extract_market_features(current_market_data, self.mode_params)
+        raw_probs = self.predict_mode_probabilities(features, self.mode_params)
+        weighted = self.apply_performance_weighting(raw_probs, self.mode_params)
+        return self.select_with_confidence(weighted, self.mode_params)
 ```
 
 ---
 
-## 馃摑 **FEATURE EXTRACTION AVANZADO**
+## Feature Extraction (DL-001)
 
-### **Market State Features:**
 ```python
-def extract_market_features(self, market_data):
-    """Extracci贸n features completos para IA"""
-    
+def extract_market_features(self, market_data, mode_params):
     features = {}
-    
-    # === VOLATILITY FEATURES ===
     features['volatility'] = {
-        'current_atr': market_data.atr_percentage,
-        'volatility_percentile': market_data.volatility_rank_30d,
-        'volatility_trend': market_data.volatility_trend_direction,
-        'intraday_range': market_data.high_low_percentage,
-        'volume_volatility': market_data.volume_coefficient_variation
+        'current_atr': market_data.atr_pct,
+        'percentile': market_data.volatility_percentile,
+        'trend': market_data.volatility_trend,
+        'intraday_range': market_data.intraday_range,
+        'volume_volatility': market_data.volume_cv,
+        'thresholds': mode_params.get_volatility_thresholds()
     }
-    
-    # === MANIPULATION FEATURES ===
     features['manipulation'] = {
-        'stop_hunt_probability': self.calculate_stop_hunt_probability(market_data),
-        'liquidity_grab_risk': self.calculate_liquidity_grab_risk(market_data),
-        'composite_man_activity': self.detect_composite_man_patterns(market_data),
-        'order_flow_manipulation': self.analyze_order_flow_anomalies(market_data),
-        'false_breakout_risk': self.assess_false_breakout_probability(market_data)
+        'stop_hunt_prob': self.calc_stop_hunt_prob(market_data),
+        'liquidity_risk': self.calc_liquidity_risk(market_data),
+        'composite_man': self.detect_composite_man(market_data),
+        'order_flow_anomaly': self.analyse_order_flow(market_data),
+        'false_breakout_risk': self.calc_false_breakout(market_data),
+        'weights': mode_params.get_manipulation_weights()
     }
-    
-    # === NEWS FEATURES ===
     features['news'] = {
-        'upcoming_high_impact': self.get_upcoming_news_impact_score(),
-        'recent_news_residual': self.calculate_recent_news_residual_impact(),
-        'central_bank_communication': self.analyze_cb_communication_sentiment(),
-        'regulatory_environment': self.assess_regulatory_environment(),
-        'market_sentiment_score': self.calculate_aggregated_sentiment()
+        'upcoming_score': self.upcoming_news_score(),
+        'residual_score': self.recent_news_residual(),
+        'cb_sentiment': self.cb_sentiment(),
+        'regulatory': self.regulatory_score(),
+        'market_sentiment': self.aggregate_sentiment(),
+        'weights': mode_params.get_news_weights()
     }
-    
-    # === TREND FEATURES ===
     features['trend'] = {
-        'institutional_trend_strength': self.calculate_institutional_trend_strength(market_data),
-        'smc_structure_quality': self.assess_smc_structure_quality(market_data),
-        'multi_timeframe_alignment': self.check_mtf_trend_alignment(market_data),
-        'volume_trend_confirmation': self.validate_volume_trend_confirmation(market_data),
-        'breakout_quality': self.assess_breakout_quality(market_data)
+        'institutional_strength': self.trend_strength(market_data),
+        'smc_quality': self.smc_structure_quality(market_data),
+        'mtf_alignment': self.mtf_alignment(market_data),
+        'volume_confirmation': self.volume_trend_confirmation(market_data),
+        'breakout_quality': self.breakout_quality(market_data),
+        'weights': mode_params.get_trend_weights()
     }
-    
-    # === MICROSTRUCTURE FEATURES ===
     features['microstructure'] = {
-        'bid_ask_imbalance': market_data.bid_ask_imbalance_ratio,
-        'order_book_depth': market_data.order_book_depth_score,
-        'institutional_flow': market_data.institutional_flow_score,
-        'retail_positioning': market_data.retail_positioning_extreme,
-        'liquidity_distribution': market_data.liquidity_distribution_score
+        'bid_ask_imbalance': market_data.bid_ask_imbalance,
+        'order_book_depth': market_data.order_book_depth,
+        'institutional_flow': market_data.institutional_flow,
+        'retail_positioning': market_data.retail_positioning,
+        'liquidity_distribution': market_data.liquidity_distribution,
+        'weights': mode_params.get_micro_weights()
     }
-    
     return features
 ```
 
-### **Advanced Pattern Recognition:**
-```python
-def analyze_market_regime(self, market_features):
-    """Clasificaci贸n r茅gimen mercado avanzada"""
-    
-    # Use ensemble of classifiers
-    regime_classifiers = {
-        'volatility_regime': self.volatility_model.predict(market_features['volatility']),
-        'manipulation_regime': self.manipulation_model.predict(market_features['manipulation']),
-        'news_regime': self.news_impact_model.predict(market_features['news']),
-        'trend_regime': self.trend_model.predict(market_features['trend'])
-    }
-    
-    # Weighted ensemble prediction
-    regime_weights = {
-        'volatility_regime': 0.25,
-        'manipulation_regime': 0.30,  # Higher weight for manipulation detection
-        'news_regime': 0.25,
-        'trend_regime': 0.20
-    }
-    
-    final_regime = self.weighted_ensemble_prediction(regime_classifiers, regime_weights)
-    
-    return final_regime
-```
-
 ---
 
-## 馃弳 **MODE SELECTION LOGIC**
+## Mode Probability Estimation
 
-### **Intelligent Mode Selection:**
 ```python
-def predict_mode_probabilities(self, market_features):
-    """Predicci贸n probabilidades 贸ptimo cada modo"""
-    
-    probabilities = {}
-    
-    # === ANTI-MANIPULATION MODE PROBABILITY ===
-    manipulation_score = self.calculate_manipulation_score(market_features['manipulation'])
-    probabilities['ANTI_MANIPULATION'] = min(manipulation_score, 0.95)
-    
-    # === VOLATILITY ADAPTIVE PROBABILITY ===
-    volatility_score = self.calculate_volatility_score(market_features['volatility'])
-    probabilities['VOLATILITY_ADAPTIVE'] = self.sigmoid_transform(volatility_score)
-    
-    # === NEWS SENTIMENT PROBABILITY ===
-    news_score = self.calculate_news_impact_score(market_features['news'])
-    probabilities['NEWS_SENTIMENT'] = self.sigmoid_transform(news_score)
-    
-    # === TREND FOLLOWING PROBABILITY ===
-    trend_score = self.calculate_trend_strength_score(market_features['trend'])
-    probabilities['TREND_FOLLOWING'] = self.sigmoid_transform(trend_score)
-    
-    # === SCALPING MODE PROBABILITY (DEFAULT) ===
-    # Scalping when no other mode is strongly indicated
-    other_modes_max = max([probabilities[mode] for mode in probabilities.keys()])
-    probabilities['SCALPING'] = max(0.1, 1.0 - other_modes_max)
-    
-    return probabilities
+def predict_mode_probabilities(self, features, mode_params):
+    probs = {}
+    probs['ANTI_MANIPULATION'] = min(
+        self.manipulation_score(features['manipulation']),
+        mode_params.get_mode_caps()['ANTI_MANIPULATION']
+    )
+    probs['VOLATILITY_ADAPTIVE'] = self.sigmoid(
+        self.volatility_score(features['volatility']),
+        mode_params.get_sigmoid_params('VOLATILITY_ADAPTIVE')
+    )
+    probs['NEWS_SENTIMENT'] = self.sigmoid(
+        self.news_score(features['news']),
+        mode_params.get_sigmoid_params('NEWS_SENTIMENT')
+    )
+    probs['TREND_FOLLOWING'] = self.sigmoid(
+        self.trend_score(features['trend']),
+        mode_params.get_sigmoid_params('TREND_FOLLOWING')
+    )
+    floor = mode_params.get_mode_floor('SCALPING')
+    probs['SCALPING'] = max(floor, 1.0 - max(probs.values()))
+    return probs
+```
 
-def calculate_manipulation_score(self, manipulation_features):
-    """Score manipulaci贸n para activaci贸n modo protecci贸n"""
-    
+Scoring helpers use provider weights/thresholds:
+```python
+def manipulation_score(self, manipulation):
+    w = manipulation['weights']
     score = 0.0
-    
-    # Stop hunting weight: 30%
-    score += manipulation_features['stop_hunt_probability'] * 0.30
-    
-    # Liquidity grab weight: 25%
-    score += manipulation_features['liquidity_grab_risk'] * 0.25
-    
-    # Composite Man activity weight: 25%
-    score += manipulation_features['composite_man_activity'] * 0.25
-    
-    # Order flow manipulation weight: 20%
-    score += manipulation_features['order_flow_manipulation'] * 0.20
-    
+    score += manipulation['stop_hunt_prob'] * w['stop_hunt']
+    score += manipulation['liquidity_risk'] * w['liquidity']
+    score += manipulation['composite_man'] * w['composite_man']
+    score += manipulation['order_flow_anomaly'] * w['order_flow']
     return min(score, 1.0)
 
-def calculate_volatility_score(self, volatility_features):
-    """Score volatilidad para modo adaptativo"""
-    
-    # Extreme volatility activation
-    if volatility_features['current_atr'] > 0.05:  # 5% ATR
-        return 0.9
-    
-    # High volatility activation  
-    elif volatility_features['current_atr'] > 0.03:  # 3% ATR
-        return 0.7
-    
-    # Volatility trending up
-    elif volatility_features['volatility_trend'] == 'INCREASING':
-        return 0.5
-    
-    return 0.2
-
-def calculate_news_impact_score(self, news_features):
-    """Score impacto noticias"""
-    
-    score = 0.0
-    
-    # Upcoming high-impact news
-    if news_features['upcoming_high_impact'] > 80:
-        score += 0.8
-    
-    # Recent news residual impact
-    score += news_features['recent_news_residual'] * 0.3
-    
-    # Central bank communication
-    score += news_features['central_bank_communication'] * 0.4
-    
-    return min(score, 1.0)
+def volatility_score(self, volatility):
+    t = volatility['thresholds']
+    if volatility['current_atr'] > t['extreme']:
+        return t['score_extreme']
+    if volatility['current_atr'] > t['high']:
+        return t['score_high']
+    if volatility['trend'] == 'INCREASING':
+        return t['score_trending']
+    return t['score_default']
 ```
 
-### **Performance-Based Weighting:**
+---
+
+## Performance Weighting & Hysteresis
+
 ```python
-def apply_performance_weighting(self, mode_probabilities):
-    """Aplicar pesos basados en performance hist贸rica"""
-    
-    # Get recent performance for each mode
-    performance_weights = {}
-    
-    for mode in mode_probabilities.keys():
-        recent_performance = self.performance_tracker.get_recent_performance(mode, days=7)
-        
-        # Calculate performance weight
-        if recent_performance['win_rate'] > 0.75 and recent_performance['profit_factor'] > 2.0:
-            performance_weights[mode] = 1.2  # Boost successful modes
-        elif recent_performance['win_rate'] < 0.6 or recent_performance['profit_factor'] < 1.5:
-            performance_weights[mode] = 0.8  # Reduce underperforming modes
+def apply_performance_weighting(self, probs, mode_params):
+    weights = {}
+    for mode in probs:
+        rules = mode_params.get_performance_rules(mode)
+        perf = self.performance_tracker.get_recent_performance(
+            mode, days=rules['lookback_days']
+        )
+        if perf['win_rate'] > rules['boost_win_rate'] and perf['profit_factor'] > rules['boost_pf']:
+            weights[mode] = rules['boost_weight']
+        elif perf['win_rate'] < rules['penalty_win_rate'] or perf['profit_factor'] < rules['penalty_pf']:
+            weights[mode] = rules['penalty_weight']
         else:
-            performance_weights[mode] = 1.0  # Neutral weight
-    
-    # Apply performance weights
-    weighted_probabilities = {}
-    for mode in mode_probabilities.keys():
-        weighted_probabilities[mode] = (
-            mode_probabilities[mode] * performance_weights[mode]
-        )
-    
-    # Normalize probabilities
-    total_weight = sum(weighted_probabilities.values())
-    for mode in weighted_probabilities.keys():
-        weighted_probabilities[mode] /= total_weight
-    
-    return weighted_probabilities
+            weights[mode] = rules['neutral_weight']
+    return {mode: probs[mode] * weights[mode] for mode in probs}
+
+def select_with_confidence(self, weighted, mode_params):
+    threshold = mode_params.get_selection_threshold()
+    margin = mode_params.get_selection_margin()
+    sorted_modes = sorted(weighted.items(), key=lambda x: x[1], reverse=True)
+    best_mode, best_score = sorted_modes[0]
+    second_score = sorted_modes[1][1] if len(sorted_modes) > 1 else 0.0
+    if best_score < threshold:
+        return mode_params.get_default_mode()
+    if best_score - second_score < margin and self.current_mode_duration < mode_params.get_min_mode_duration():
+        return self.current_mode  # hysteresis
+    return best_mode
 ```
+
+All hysteresis values (`threshold`, `margin`, `min_mode_duration`, `default_mode`) come from the provider.
 
 ---
 
-## 馃帶 **CONTINUOUS LEARNING SYSTEM**
+## ModeParamProvider Contract
 
-### **Mode Performance Learning:**
 ```python
-class ModePerformanceLearning:
-    def __init__(self):
-        self.performance_history = {}
-        self.feature_importance = {}
-        self.adaptation_rate = 0.1
-        
-    def update_mode_performance(self, mode, trade_result, market_features):
-        """Actualizar performance y aprender de resultados"""
-        
-        # Record trade outcome
-        outcome = {
-            'mode': mode,
-            'profit_loss': trade_result.profit_percentage,
-            'duration': trade_result.duration_minutes,
-            'market_features': market_features,
-            'timestamp': trade_result.timestamp
-        }
-        
-        self.performance_history[mode].append(outcome)
-        
-        # Update feature importance for mode selection
-        self.update_feature_importance(mode, trade_result, market_features)
-        
-        # Retrain models if enough new data
-        if len(self.performance_history[mode]) % 50 == 0:
-            self.retrain_mode_selection_model(mode)
-    
-    def update_feature_importance(self, mode, trade_result, market_features):
-        """Actualizar importancia features para cada modo"""
-        
-        # Calculate feature contribution to trade success
-        trade_success = 1.0 if trade_result.profit_percentage > 0 else 0.0
-        
-        # Update feature importance using exponential moving average
-        for feature_category, features in market_features.items():
-            for feature_name, feature_value in features.items():
-                
-                feature_key = f"{feature_category}.{feature_name}"
-                
-                if feature_key not in self.feature_importance[mode]:
-                    self.feature_importance[mode][feature_key] = 0.5
-                
-                # Update importance based on correlation with success
-                correlation = self.calculate_feature_success_correlation(
-                    feature_value, trade_success
-                )
-                
-                self.feature_importance[mode][feature_key] = (
-                    self.feature_importance[mode][feature_key] * (1 - self.adaptation_rate) +
-                    correlation * self.adaptation_rate
-                )
+class ModeParamProvider(Protocol):
+    def get_volatility_thresholds(self) -> Dict[str, float]: ...
+    def get_manipulation_weights(self) -> Dict[str, float]: ...
+    def get_news_weights(self) -> Dict[str, float]: ...
+    def get_trend_weights(self) -> Dict[str, float]: ...
+    def get_micro_weights(self) -> Dict[str, float]: ...
+    def get_regime_weights(self) -> Dict[str, float]: ...
+    def get_sigmoid_params(self, mode: str) -> Dict[str, float]: ...
+    def get_mode_caps(self) -> Dict[str, float]: ...
+    def get_mode_floor(self, mode: str) -> float: ...
+    def get_performance_rules(self, mode: str) -> Dict[str, float]: ...
+    def get_selection_threshold(self) -> float: ...
+    def get_selection_margin(self) -> float: ...
+    def get_min_mode_duration(self) -> float: ...
+    def get_default_mode(self) -> str: ...
 ```
 
-### **Dynamic Model Retraining:**
-```python
-def retrain_mode_selection_model(self, mode):
-    """Reentrenar modelo selecci贸n modo espec铆fico"""
-    
-    # Prepare training data from recent performance
-    training_data = self.prepare_training_data(mode, recent_days=30)
-    
-    # Feature selection based on importance
-    important_features = self.select_important_features(mode, threshold=0.6)
-    
-    # Retrain mode-specific classifier
-    if mode == 'ANTI_MANIPULATION':
-        self.retrain_manipulation_detector(training_data, important_features)
-    elif mode == 'VOLATILITY_ADAPTIVE':
-        self.retrain_volatility_classifier(training_data, important_features)
-    elif mode == 'NEWS_SENTIMENT':
-        self.retrain_news_impact_predictor(training_data, important_features)
-    elif mode == 'TREND_FOLLOWING':
-        self.retrain_trend_classifier(training_data, important_features)
-    
-    # Validate model performance
-    validation_score = self.validate_retrained_model(mode, training_data)
-    
-    if validation_score > 0.7:
-        self.deploy_retrained_model(mode)
-        self.log_model_update(mode, validation_score)
-    else:
-        self.log_retraining_failure(mode, validation_score)
-```
+Implementation examples must read from `BotConfig` (strategy, risk_profile, TP/SL, leverage, cooldown, interval), `recent_stats` (ATR, volatility percentiles) and `symbol_meta` (tick/step).
 
 ---
 
-## 馃寧 **REAL-TIME DECISION ENGINE**
+## Outputs & Integration
 
-### **Ultra-Fast Mode Selection:**
-```python
-def real_time_mode_selection(self, market_data_stream):
-    """Selecci贸n modo tiempo real ultra-r谩pida"""
-    
-    # Fast feature extraction (< 100ms)
-    market_features = self.extract_fast_features(market_data_stream)
-    
-    # Priority-based selection for speed
-    # 1. EMERGENCY: Extreme manipulation detected
-    if market_features['manipulation']['emergency_level'] > 0.9:
-        return ModeSelection(
-            selected_mode='ANTI_MANIPULATION',
-            confidence=0.95,
-            urgency='EMERGENCY',
-            reason='EXTREME_MANIPULATION_DETECTED'
-        )
-    
-    # 2. HIGH PRIORITY: High volatility events
-    elif market_features['volatility']['extreme_event'] > 0.8:
-        return ModeSelection(
-            selected_mode='VOLATILITY_ADAPTIVE',
-            confidence=0.90,
-            urgency='HIGH',
-            reason='EXTREME_VOLATILITY_EVENT'
-        )
-    
-    # 3. HIGH PRIORITY: High-impact news
-    elif market_features['news']['immediate_impact'] > 0.8:
-        return ModeSelection(
-            selected_mode='NEWS_SENTIMENT',
-            confidence=0.85,
-            urgency='HIGH',
-            reason='HIGH_IMPACT_NEWS_DETECTED'
-        )
-    
-    # 4. NORMAL PRIORITY: Use full ML pipeline
-    else:
-        mode_probabilities = self.predict_mode_probabilities(market_features)
-        weighted_probabilities = self.apply_performance_weighting(mode_probabilities)
-        
-        selected_mode = max(weighted_probabilities.items(), key=lambda x: x[1])
-        
-        return ModeSelection(
-            selected_mode=selected_mode[0],
-            confidence=selected_mode[1],
-            urgency='NORMAL',
-            reason='ML_OPTIMIZED_SELECTION'
-        )
-```
-
-### **Mode Transition Management:**
-```python
-def manage_mode_transitions(self, current_mode, new_mode_selection):
-    """Gestionar transiciones inteligentes entre modos"""
-    
-    # Prevent frequent mode switching (stability)
-    time_since_last_switch = self.get_time_since_last_mode_switch()
-    
-    if time_since_last_switch < 300:  # 5 minutes minimum
-        confidence_threshold = 0.85  # Higher threshold for quick switches
-    else:
-        confidence_threshold = 0.75  # Normal threshold
-    
-    # Only switch if new mode has sufficient confidence
-    if new_mode_selection.confidence > confidence_threshold:
-        
-        # Handle active positions in current mode
-        transition_plan = self.plan_mode_transition(current_mode, new_mode_selection.selected_mode)
-        
-        # Execute transition
-        if transition_plan.safe_to_switch:
-            self.execute_mode_transition(transition_plan)
-            return new_mode_selection.selected_mode
-        else:
-            # Delay transition until safe
-            self.schedule_delayed_transition(new_mode_selection, transition_plan.delay_minutes)
-            return current_mode
-    
-    # Stay in current mode
-    return current_mode
-```
-
----
-
-## 馃摑 **PERFORMANCE OPTIMIZATION**
-
-### **A/B Testing Framework:**
-```python
-class ModeSelectionABTesting:
-    def __init__(self):
-        self.test_groups = {}
-        self.test_results = {}
-        
-    def run_mode_selection_test(self, test_name, control_algorithm, test_algorithm):
-        """A/B testing diferentes algoritmos selecci贸n"""
-        
-        # Split traffic 50/50
-        test_group = 'A' if random.random() < 0.5 else 'B'
-        
-        if test_group == 'A':
-            selected_mode = control_algorithm.select_mode(market_data)
-            algorithm_used = 'CONTROL'
-        else:
-            selected_mode = test_algorithm.select_mode(market_data)
-            algorithm_used = 'TEST'
-        
-        # Record for analysis
-        self.record_test_result(test_name, test_group, algorithm_used, selected_mode)
-        
-        return selected_mode
-    
-    def analyze_test_results(self, test_name, minimum_samples=100):
-        """Analizar resultados A/B testing"""
-        
-        if len(self.test_results[test_name]) < minimum_samples:
-            return "INSUFFICIENT_DATA"
-        
-        control_performance = self.calculate_performance_metrics('A', test_name)
-        test_performance = self.calculate_performance_metrics('B', test_name)
-        
-        # Statistical significance testing
-        significance = self.calculate_statistical_significance(
-            control_performance, test_performance
-        )
-        
-        if significance.p_value < 0.05 and test_performance.profit_factor > control_performance.profit_factor:
-            return TestResult(
-                winner='TEST_ALGORITHM',
-                improvement=test_performance.profit_factor / control_performance.profit_factor,
-                confidence=1 - significance.p_value
-            )
-        
-        return TestResult(winner='CONTROL_ALGORITHM', improvement=1.0, confidence=0.5)
-```
-
----
-
-## 馃攷 **MONITORING & ALERTS**
-
-### **Mode Selection Monitoring:**
-```python
-def monitor_mode_selection_performance(self):
-    """Monitoreo continuo performance selecci贸n modos"""
-    
-    monitoring_metrics = {
-        'mode_selection_accuracy': self.calculate_mode_selection_accuracy(),
-        'avg_confidence_score': self.calculate_avg_confidence(),
-        'mode_switch_frequency': self.calculate_switch_frequency(),
-        'performance_by_mode': self.calculate_performance_by_mode(),
-        'feature_drift_detection': self.detect_feature_drift()
+- Endpoint: reuse `POST /api/run-smart-trade/{symbol}`. Selected mode is reported in `analysis.mode` (future enhancement) along with confidence, reasons and gating features.
+- Payload additions (conceptual):
+  ```json
+  "mode_decision": {
+    "selected": "TREND_FOLLOWING",
+    "confidence": 0.82,
+    "scores": {
+      "SCALPING": 0.34,
+      "TREND_FOLLOWING": 0.82,
+      "ANTI_MANIPULATION": 0.41,
+      "VOLATILITY_ADAPTIVE": 0.27,
+      "NEWS_SENTIMENT": 0.19
+    },
+    "features": {
+      "volatility": {...},
+      "manipulation": {...},
+      "news": {...},
+      "trend": {...},
+      "microstructure": {...}
     }
-    
-    # Alert conditions
-    if monitoring_metrics['mode_selection_accuracy'] < 0.7:
-        self.send_alert("Mode selection accuracy below threshold", severity='HIGH')
-    
-    if monitoring_metrics['mode_switch_frequency'] > 10:  # Per hour
-        self.send_alert("Excessive mode switching detected", severity='MEDIUM')
-    
-    if monitoring_metrics['feature_drift_detection']:
-        self.send_alert("Market regime drift detected - consider model retraining", severity='HIGH')
-    
-    return monitoring_metrics
-```
+  }
+  ```
+- No data simulation in UI; if mode decision is unavailable, display neutral state.
 
 ---
 
-## 鉁呪湪 **MODE SELECTION AI COMPLETO**
+## Testing & Compliance
 
-**CARACTER脥STICAS:**
-- 鉁呪湪 **ML Pipeline Completo** - Feature extraction + Classification + Learning
-- 鉁呪湪 **Real-time Selection** - < 100ms decision time
-- 鉁呪湪 **Continuous Learning** - Auto-improvement basado performance
-- 鉁呪湪 **Performance Weighting** - Modes boost/penalize seg煤n resultados
-- 鉁呪湪 **A/B Testing** - Optimizaci贸n continua algoritmos
-- 鉁呪湪 **Emergency Detection** - Protecci贸n instant谩nea manipulaci贸n extrema
-
-**OBJETIVO:** Brain del sistema que selecciona el modo operativo 贸ptimo en tiempo real maximizando performance y minimizando drawdown mediante IA avanzada.
+- Validate behaviour across market regimes (normal, high volatility, high manipulation, news events, trending markets).
+- Ensure thresholds/weights match provider values per strategy (Smart Scalper vs Trend Hunter vs others).
+- Monitor performance feedback loop (win rate, PF, drawdown per mode).
 
 ---
 
-*Componente: Mode Selection AI*  
-*Tecnolog铆a: Machine Learning + Real-time Analytics*  
-*Estado: ESPECIFICADO - Core del sistema inteligente*
+## Rollback (P2)
+
+This document affects specification only. To revert changes:
+`git restore docs/TECHNICAL_SPECS/MODE_SELECTION_SPEC.md`

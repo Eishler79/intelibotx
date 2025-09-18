@@ -4,6 +4,135 @@
 
 ---
 
+## 2025-09-17 — DL-093 · Alineación DL-001 de Especificaciones Institucionales
+
+**Contexto:** Las especificaciones de los 12 algoritmos y modos operativos estaban desfasadas respecto al diseño institucional actual (ParamProviders, payloads, confluencias, selector de modo).
+**Problema:** Riesgo de implementar el MVP institucional sin contratos claros ni plan faseado.
+**Objetivo:** Normalizar documentación técnica DL‑001 y definir roadmap F0–F5 antes de tocar código.
+**SPEC_REF:** docs/TECHNICAL_SPECS/INSTITUTIONAL_ALGORITHMS_SPECS/, docs/TECHNICAL_SPECS/MODE_SELECTION_SPEC.md, docs/INTELLIGENT_TRADING/OPERATIONAL_MODES/, docs/SESSION_CONTROL/MASTER_PLAN.md
+
+**Decisión:** Adoptar documentación DL‑001 completa + plan F0–F5 como base obligatoria.
+- ✅ Especificaciones actualizadas (algoritmos 1–12, Smart Scalper, Trend Hunter, Anti-Manipulation, Mode Selector) con ParamProviders y payloads definidos.
+- ✅ Backlog reorganizado en fases (F0: limpieza UI; F1: parametrización 01–06; F2: implementación 07–12; F3: ModeParamProvider + selector; F4: UI/telemetría; F5: validación).
+- 📌 Código aún sin cambios: implementar respetando DL‑001/002/076 + GUARDRAILS P1-P9.
+
+**Impacto:**
+- Previene inconsistencias entre documentación y desarrollo.
+- Proporciona un camino claro para llevar el monolito a Testnet/PRD.
+- Alinea modos, algoritmos y selector bajo contratos comunes.
+
+**Rollback:**
+- `git restore` de las especificaciones y documentos estratégicos al commit previo.
+- Revertir `MASTER_PLAN.md`, `BACKLOG.md`, `TODO_INBOX.md` si el roadmap necesitara revisión.
+
+## 2025-09-15 — DL-092 · BOT ÚNICO ARCHITECTURAL DISCONNECT CRITICAL
+
+**Contexto:** Usuario crea Exchange ✅ + Bot ✅ pero visualiza "Algoritmos Avanzados" ❌ NO ve algoritmos REALES que bot usa para trading.
+**Problema:** Desconexión TOTAL entre algoritmos institucionales implementados (AdvancedAlgorithmSelector 975+ líneas) y visualización frontend (hardcode 'Accumulation', undefined fields).
+**Objetivo:** Reconectar algoritmos institucionales reales con visualización usuario para consistencia trading = UI.
+**SPEC_REF:** `docs/INTELLIGENT_TRADING/CORE_PHILOSOPHY.md#bot-unique` + `docs/GOVERNANCE/GUARDRAILS.md#P1-P9` + `backend/services/advanced_algorithm_selector.py`
+
+**DECISION: BOT ÚNICO ARCHITECTURAL RECONNECTION MANDATORY**
+
+**ARQUITECTURA CRÍTICA ESTABLECIDA:**
+- ✅ **Real Algorithms:** AdvancedAlgorithmSelector + InstitutionalDetector + MarketMicrostructureAnalyzer EXISTING (verified)
+- ✅ **Bot Parameters:** strategy, interval, risk_percentage, leverage, exchange_id STORED (verified)
+- ❌ **Visualization:** TOTALLY DISCONNECTED from real algorithms (hardcode fallbacks identified)
+- ❌ **Parameter Usage:** Bot config IGNORED in algorithm selection for visualization
+
+**METODOLOGÍA OBLIGATORIA: GUARDRAILS P1-P9 4-PHASE IMPLEMENTATION**
+
+**FASE 1: API Integration (P1-P2-P3)**
+- Create `/api/bot-technical-analysis/{bot_id}` endpoint bot-specific
+- Integrate existing AdvancedAlgorithmSelector + InstitutionalDetector
+- Return REAL institutional data using ALL bot parameters
+- Zero hardcode compliance DL-001
+
+**FASE 2: Frontend Connection (P4-P5-P6)**
+- Modify BotsAdvanced.jsx:993 pass complete bot to modal
+- Modify SmartScalperMetricsComplete.jsx:140 bot-specific API call
+- Eliminate hardcode fallbacks InstitutionalChart.jsx:150-200
+- Real algorithm data integration
+
+**FASE 3: Signal Generation Integration (P7-P8)**
+- UserTradingService consistency with visualization algorithms
+- Validation: Trading signals = Visualization algorithms SAME
+- E2E consistency: What user sees = What bot uses for decisions
+
+**FASE 4: Parameter Compliance (P9)**
+- Full DL-001 + DL-076 compliance verification
+- ALL bot parameters influence algorithm selection
+- Component optimization <150 lines
+- Complete parameter integration validation
+
+**IMPACTO CRÍTICO:**
+- **User Trust:** Usuario ve MISMOS algoritmos que bot usa para trading decisions
+- **Philosophy Compliance:** Restaura integridad BOT ÚNICO institucional
+- **Architecture:** Elimina desconexión total entre real algorithms y UI
+- **Parameters:** ALL user bot config influye algorithm selection
+
+**ROLLBACK PLAN:**
+- Each phase independent git branch + rollback procedures
+- Emergency restore: revert to current hardcode fallbacks if needed
+- Build validation mandatory each phase
+- Component backup before specialized hooks extraction
+
+**VALIDATION CRITERIA:**
+- Zero hardcode in institutional algorithm display
+- Bot parameters influence algorithm selection (verified)
+- Trading and visualization use identical algorithms (tested)
+- E2E user journey: Exchange → Bot → Algorithms consistent
+
+---
+
+## 2025-09-14 — DL-090 · INTEGRAL MARKET DATA UNIFICATION & OVERLAY ELIMINATION
+
+**Contexto:** SmartScalperMetrics tenía dos intervals duplicados cada 5s causando loading overlay + precio azul duplicado de mercado incorrecto.
+**Problema:** Doble fetch (analysis + price) con market_type inconsistente + loading overlay interrumpiendo UX cada 5s.
+**Objetivo:** Unificar market_type análisis + precio + eliminar overlay en refresh + precio azul duplicado.
+**SPEC_REF:** `docs/GOVERNANCE/GUARDRAILS.md#P1-P9` + `docs/TODO_INBOX.md#DL-089D`
+
+**DECISION: INTEGRAL MARKET DATA UNIFICATION COMPLETED**
+
+**IMPLEMENTACIÓN P1-P9 GUARDRAILS METODOLOGÍA:**
+- ✅ **P1:** Diagnóstico verificado - duplicidad línea 140 + 186 identificada
+- ✅ **P2:** Rollback point commit 43e45cc creado
+- ✅ **P3:** Build validation 3.79s → 3.90s → 3.69s SUCCESS
+- ✅ **P4:** Impact analysis - unificación market_type + UX mejorado
+- ✅ **P5:** UX preservado + overlay eliminado en refresh
+- ✅ **P6:** Pattern `isInitialLoad` parameter para regression prevention
+- ✅ **P7:** Error handling preservado completo
+- ✅ **P8:** Build validation final successful
+
+**CAMBIOS CORE:**
+```javascript
+// SmartScalperMetricsComplete.jsx - Unificación integral
+const fetchCompleteAnalysis = async (isInitialLoad = true) => {
+  if (isInitialLoad) setLoading(true); // Solo inicial, no refresh
+
+  // Análisis institucional + precio unificado mismo market_type
+  const smartScalperData = await fetchSmartScalperAnalysis(bot.symbol);
+  const priceData = await fetch(`${BASE_URL}/api/market-data/${bot.symbol}?market_type=${bot.market_type}`);
+
+  setCurrentPrice(priceData.price);
+  // ... resto análisis institucional
+};
+
+// Interval unificado
+const interval = setInterval(() => fetchCompleteAnalysis(false), 5000); // Silent refresh
+```
+
+**HARDCODE ELIMINATIONS:**
+- ✅ Precio azul duplicado eliminado (InstitutionalChart.jsx:103)
+- ✅ Order Block level corregido (no precio mercado)
+- ✅ Precio blanco principal preservado solo en header
+
+**RESULTADO:** Bot analiza y muestra datos mercado coherente (FUTURES) sin interrupciones visuales + refresh silencioso + precio único correcto según bot.market_type.
+
+**ROLLBACK:** `git reset --hard 43e45cc` + npm run build validation
+
+---
+
 ## 2025-09-14 — DL-089 · SMARTSCALPERMETRICS REAL-TIME DATA FETCHING IMPLEMENTATION
 
 **Contexto:** Critical bug fix - SmartScalperMetrics displayed empty/wrong data instead of real Binance data for user's selected bot symbol. User reported 50+ API calls flooding backend instead of displaying correct bot pair data.
