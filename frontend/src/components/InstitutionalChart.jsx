@@ -12,22 +12,19 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
   Area,
   ComposedChart,
   Bar
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Activity, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 
 const InstitutionalChart = ({ 
   symbol = "BTCUSDT", 
@@ -38,59 +35,59 @@ const InstitutionalChart = ({
 }) => {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPrice, setCurrentPrice] = useState(0);
+  const [currentPrice, setCurrentPrice] = useState(null);
 
   // 🏛️ Transform real trading data into institutional visualization
   useEffect(() => {
-    if (data && data.length > 0) {
-      const transformedData = data.map((item, index) => ({
-        time: new Date(item.timestamp || Date.now() - (data.length - index) * 900000).toLocaleTimeString('en-US', { 
-          hour12: false, 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        price: parseFloat(item.price || item.close || Math.random() * 1000 + 40000),
-        volume: parseFloat(item.volume || Math.random() * 100000),
-        orderBlocks: item.order_blocks || (Math.random() > 0.7 ? Math.random() * 500 + item.price : null),
-        liquidityGrabs: item.liquidity_grabs || (Math.random() > 0.8 ? Math.random() * 200 + item.price : null),
-        stopHunting: item.stop_hunting || (Math.random() > 0.85 ? Math.random() * 300 + item.price : null),
-        wyckoffPhase: item.wyckoff_phase || ['Accumulation', 'Markup', 'Distribution', 'Markdown'][Math.floor(Math.random() * 4)]
-      }));
-      
-      setChartData(transformedData);
-      setCurrentPrice(transformedData[transformedData.length - 1]?.price || 0);
-      setLoading(false);
-    } else {
-      // Generate sample institutional data when no real data available
-      generateSampleInstitutionalData();
-    }
-  }, [data, symbol]);
+    setLoading(true);
 
-  const generateSampleInstitutionalData = () => {
-    const basePrice = 45000; // Sample BTC price
-    const sampleData = Array.from({ length: 50 }, (_, i) => {
-      const timestamp = Date.now() - (50 - i) * 900000; // 15min intervals
-      const price = basePrice + (Math.sin(i * 0.1) * 2000) + (Math.random() - 0.5) * 1000;
-      
-      return {
-        time: new Date(timestamp).toLocaleTimeString('en-US', { 
-          hour12: false, 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        price: parseFloat(price.toFixed(2)),
-        volume: Math.random() * 100000,
-        orderBlocks: Math.random() > 0.7 ? price + (Math.random() - 0.5) * 500 : null,
-        liquidityGrabs: Math.random() > 0.8 ? price + (Math.random() - 0.5) * 200 : null,
-        stopHunting: Math.random() > 0.85 ? price + (Math.random() - 0.5) * 300 : null,
-        wyckoffPhase: ['Accumulation', 'Markup', 'Distribution', 'Markdown'][Math.floor(Math.random() * 4)]
-      };
-    });
-    
-    setChartData(sampleData);
-    setCurrentPrice(sampleData[sampleData.length - 1]?.price || basePrice);
+    if (!Array.isArray(data) || data.length === 0) {
+      setChartData([]);
+      setCurrentPrice(null);
+      setLoading(false);
+      return;
+    }
+
+    const transformedData = data
+      .map((item, index) => {
+        const rawPrice = item?.price ?? item?.close ?? item?.c;
+        const price = rawPrice !== undefined && rawPrice !== null ? Number(rawPrice) : null;
+
+        const rawVolume = item?.volume ?? item?.v;
+        const volume = rawVolume !== undefined && rawVolume !== null ? Number(rawVolume) : null;
+
+        const timestamp = item?.timestamp ?? item?.time;
+        let timeLabel;
+
+        if (timestamp !== undefined && timestamp !== null) {
+          const date = new Date(timestamp);
+          timeLabel = Number.isNaN(date.getTime())
+            ? String(timestamp)
+            : date.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+        } else {
+          timeLabel = `#${index + 1}`;
+        }
+
+        return {
+          time: timeLabel,
+          price,
+          volume,
+          orderBlocks: item?.order_blocks ?? null,
+          liquidityGrabs: item?.liquidity_grabs ?? null,
+          stopHunting: item?.stop_hunting ?? null,
+          wyckoffPhase: item?.wyckoff_phase ?? null
+        };
+      })
+      .filter((point) => point.price !== null);
+
+    setChartData(transformedData);
+    setCurrentPrice(transformedData.length > 0 ? transformedData[transformedData.length - 1].price : null);
     setLoading(false);
-  };
+  }, [data, symbol, interval]);
 
   // 🎯 Custom Tooltip for Institutional Data
   const CustomTooltip = ({ active, payload, label }) => {
@@ -99,20 +96,20 @@ const InstitutionalChart = ({
       return (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-lg">
           <p className="text-white font-semibold mb-2">{`Time: ${label}`}</p>
-          <p className="text-blue-400">{`Price: $${data.price?.toLocaleString()}`}</p>
-          <p className="text-gray-400">{`Volume: ${data.volume?.toLocaleString()}`}</p>
+          <p className="text-blue-400">{`Price: $${data.price !== null && data.price !== undefined ? Number(data.price).toLocaleString() : 'N/A'}`}</p>
+          <p className="text-gray-400">{`Volume: ${data.volume !== null && data.volume !== undefined ? Number(data.volume).toLocaleString() : 'N/A'}`}</p>
           
-          {data.orderBlocks && (
-            <p className="text-orange-400">🏛️ Order Block: ${data.orderBlocks.toFixed(2)}</p>
+          {data.orderBlocks !== null && data.orderBlocks !== undefined && (
+            <p className="text-orange-400">🏛️ Order Block: ${Number(data.orderBlocks).toFixed(2)}</p>
           )}
-          {data.liquidityGrabs && (
-            <p className="text-red-400">🎯 Liquidity Grab: ${data.liquidityGrabs.toFixed(2)}</p>
+          {data.liquidityGrabs !== null && data.liquidityGrabs !== undefined && (
+            <p className="text-red-400">🎯 Liquidity Grab: ${Number(data.liquidityGrabs).toFixed(2)}</p>
           )}
-          {data.stopHunting && (
-            <p className="text-yellow-400">⚡ Stop Hunting: ${data.stopHunting.toFixed(2)}</p>
+          {data.stopHunting !== null && data.stopHunting !== undefined && (
+            <p className="text-yellow-400">⚡ Stop Hunting: ${Number(data.stopHunting).toFixed(2)}</p>
           )}
           
-          <p className="text-purple-400 mt-2">📈 Wyckoff: {data.wyckoffPhase}</p>
+          <p className="text-purple-400 mt-2">📈 Wyckoff: {data.wyckoffPhase || 'N/A'}</p>
         </div>
       );
     }
@@ -142,8 +139,22 @@ const InstitutionalChart = ({
     );
   }
 
-  const priceChange = chartData.length > 1 ? 
-    ((currentPrice - chartData[0].price) / chartData[0].price * 100) : 0;
+  if (chartData.length === 0) {
+    return (
+      <Card className="bg-gray-800/50 border-gray-700/50">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center h-96 text-gray-400">
+            No data available for {symbol} ({interval})
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const basePrice = chartData.length > 0 ? chartData[0].price : null;
+  const priceChange = basePrice && basePrice !== 0 && currentPrice !== null
+    ? ((currentPrice - basePrice) / basePrice) * 100
+    : 0;
 
   return (
     <Card className="bg-gray-800/50 border-gray-700/50">
@@ -160,7 +171,7 @@ const InstitutionalChart = ({
             </Badge>
           </div>
           <div className="text-2xl font-bold text-blue-400">
-            ${currentPrice?.toLocaleString()}
+            {currentPrice !== null && currentPrice !== undefined ? `$${Number(currentPrice).toLocaleString()}` : '—'}
           </div>
         </CardTitle>
       </CardHeader>

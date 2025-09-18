@@ -121,7 +121,7 @@ export default function SmartScalperAnalysisPanel({ analysisData, institutionalM
           <div className="flex justify-between items-center">
             <span className="text-gray-400">Wyckoff Phase:</span>
             <Badge className={getWyckoffPhaseColor(analysisData?.wyckoff_phase)}>
-              {analysisData?.wyckoff_phase || 'ACCUMULATION'}
+              {analysisData?.wyckoff_phase ?? 'N/A'}
             </Badge>
           </div>
         </CardContent>

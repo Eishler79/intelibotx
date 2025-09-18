@@ -63,7 +63,7 @@ export default function SmartScalperMetrics({ bot, realTimeData, onClose }) {
               algorithm_selected: data.analysis.algorithm_selected,
               market_regime: data.analysis.market_regime,
               institutional_confidence: data.analysis.selection_confidence,
-              wyckoff_phase: data.analysis.wyckoff_phase || 'ACCUMULATION',
+              wyckoff_phase: data.analysis.wyckoff_phase ?? null,
               risk_assessment: data.analysis.risk_assessment?.overall_risk || 'LOW',
               top_algorithms: data.top_algorithms?.map(algo => ({
                 algorithm: algo.algorithm,

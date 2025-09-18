@@ -110,7 +110,7 @@ export const useInstitutionalAlgorithmData = () => {
       ...processInstitutionalAlgorithms(analysisData),
       entryConditions: processEntryConditions(analysisData),
       marketCondition: analysisData.market_condition || 'UNKNOWN',
-      wyckoffPhase: analysisData.wyckoff_phase || 'ACCUMULATION',
+      wyckoffPhase: analysisData.wyckoff_phase ?? null,
       riskScore: analysisData.risk_score,
       dataSource: analysisData.data_source || 'unknown'
     };
