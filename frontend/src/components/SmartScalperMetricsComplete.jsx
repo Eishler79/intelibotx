@@ -1,191 +1,380 @@
 /**
- * 🏛️ SmartScalperMetricsComplete - Modal Completo con Gráfico Institucional
+ * 🏛️ SmartScalperMetricsComplete - Institutional Analysis Modal
  * 
- * RESTORATION: Recupera funcionalidad completa original + InstitutionalChart estable
- * ELIMINATION: Solo elimina TradingViewWidget problemático
- * PRESERVATION: Mantiene todas las métricas, análisis y aspecto visual original
- * 
- * Eduard Guzmán - InteliBotX
+ * Rebuilt to provide dynamic institutional insights, timeframe selection
+ * and real trading snapshots for Smart Scalper bots.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useAuthDL008 } from '../shared/hooks/useAuthDL008';
 import { useSmartScalperAPI } from '../features/dashboard/hooks/useSmartScalperAPI';
+import { getBotTradingOperations } from '@/services/api';
 import InstitutionalChart from './InstitutionalChart';
-import { Building, Activity, TrendingUp, Shield, X, AlertCircle, CheckCircle } from "lucide-react";
+import { Building, Activity, TrendingUp, TrendingDown, Shield, X, AlertCircle, CheckCircle, Compass, History } from "lucide-react";
 
-export default function SmartScalperMetricsComplete({ bot, realTimeData, onClose }) {
-  // ✅ DL-008: Authentication Pattern Hook
+const MODE_DETAILS = {
+  SCALPING: {
+    label: 'Smart Scalper',
+    action: 'Follow micro targets with tight risk controls',
+    badgeClass: 'bg-blue-500/20 text-blue-300'
+  },
+  TREND_FOLLOWING: {
+    label: 'Trend Hunter',
+    action: 'Ride dominant trend with progressive trailing',
+    badgeClass: 'bg-green-500/20 text-green-300'
+  },
+  ANTI_MANIPULATION: {
+    label: 'Anti-Manipulation',
+    action: 'Fade traps, protect capital, size down',
+    badgeClass: 'bg-red-500/20 text-red-300'
+  },
+  VOLATILITY_ADAPTIVE: {
+    label: 'Volatility Adaptive',
+    action: 'Time-box entries, dynamic sizing & targets',
+    badgeClass: 'bg-yellow-500/20 text-yellow-300'
+  },
+  NEWS_SENTIMENT: {
+    label: 'News Sentiment',
+    action: 'Widen stops, trail fast after event spike',
+    badgeClass: 'bg-purple-500/20 text-purple-300'
+  }
+};
+
+const ALGORITHM_META = {
+  wyckoff_method: { icon: '🏛️', label: 'Wyckoff Method' },
+  order_blocks: { icon: '📦', label: 'Order Blocks' },
+  liquidity_grabs: { icon: '🎯', label: 'Liquidity Grabs' },
+  stop_hunting: { icon: '⚡', label: 'Stop Hunting' },
+  fair_value_gaps: { icon: '📈', label: 'Fair Value Gaps' },
+  market_microstructure: { icon: '🔬', label: 'Market Microstructure' },
+  volume_spread_analysis: { icon: '📊', label: 'Volume Spread Analysis' },
+  market_profile: { icon: '🗺️', label: 'Market Profile' },
+  institutional_order_flow: { icon: '💧', label: 'Institutional Order Flow' },
+  accumulation_distribution: { icon: '📦', label: 'Accumulation / Distribution' },
+  smart_money_concepts: { icon: '💎', label: 'Smart Money Concepts' },
+  composite_man: { icon: '🧠', label: 'Composite Man' }
+};
+
+const formatPercent = (value) => {
+  if (value === null || value === undefined || Number.isNaN(value)) return 'N/A';
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+};
+
+const biasBadge = (bias) => {
+  switch ((bias || '').toUpperCase()) {
+    case 'SMART_MONEY':
+      return 'bg-green-500/20 text-green-300';
+    case 'RETAIL_TRAP':
+      return 'bg-red-500/20 text-red-300';
+    default:
+      return 'bg-gray-500/20 text-gray-200';
+  }
+};
+
+const summarizeDetails = (details = {}) => {
+  if (!details || typeof details !== 'object') return '—';
+  const candidates = [
+    details.market_expectation,
+    details.dominant_direction,
+    details.regime,
+    details.grab_direction,
+    details.hunt_direction,
+    details.structure_type,
+    details.order_flow_direction,
+    details.flow_direction,
+    details.market_phase,
+    details.direction,
+    details.smart_points && `Smart points: ${details.smart_points}`,
+    details.confirmations && `Confirmations: ${details.confirmations}`
+  ];
+  return candidates.find(Boolean) || '—';
+};
+
+const formatFeatureValue = (value) => {
+  if (value === null || value === undefined || Number.isNaN(value)) return 'Analizando';
+  if (typeof value === 'number') return `${Math.round(value * 100)}%`;
+  return String(value);
+};
+
+const formatOperation = (operation) => {
+  if (!operation) return null;
+  const executedAt = operation.executed_at || operation.created_at || operation.timestamp || null;
+  const side = (operation.side || operation.action || 'N/A').toUpperCase();
+  const price = operation.price || operation.execution_price || operation.entry_price || null;
+  const pnl = operation.pnl ?? operation.profit ?? null;
+  const reason = operation.reason || operation.notes || operation.signal_reason || '-';
+  return {
+    id: operation.id || `${executedAt || Date.now()}-${side}`,
+    executedAt,
+    side,
+    price,
+    pnl,
+    reason
+  };
+};
+
+// ✅ DL-100: Convertir timeframe del usuario a segundos para refresh dinámico
+const convertTimeframeToSeconds = (timeframe) => {
+  if (!timeframe || typeof timeframe !== 'string') return 15; // fallback 15s
+
+  const timeframeMap = {
+    '1m': 60,
+    '5m': 300,
+    '15m': 900,
+    '30m': 1800,
+    '1h': 3600,
+    '4h': 14400,
+    '1d': 86400
+  };
+
+  return timeframeMap[timeframe] || 15; // fallback 15s si timeframe no reconocido
+};
+
+// ✅ DL-100: Formatear countdown para display legible
+const formatCountdownDisplay = (seconds) => {
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (mins > 0) return `${hours}h${mins}m${secs}s`;
+    return `${hours}h${secs}s`;
+  } else if (seconds >= 60) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m${secs}s`;
+  } else {
+    return `${seconds}s`;
+  }
+};
+
+export default function SmartScalperMetricsComplete({ bot, botId, botSymbol, realTimeData = {}, onClose }) {
   const { authenticatedFetch } = useAuthDL008();
-  
-  // ✅ DL-076: Specialized Hook - Real API Integration
-  const { fetchSmartScalperAnalysis, loading: apiLoading, error: apiError } = useSmartScalperAPI();
-  
-  const [institutionalMetrics, setInstitutionalMetrics] = useState({});
+  const { fetchBotSpecificAnalysis } = useSmartScalperAPI();
+
+  const normalizedSymbol = useMemo(() => botSymbol?.replace('/', '') || bot?.symbol?.replace('/', '') || '', [botSymbol, bot?.symbol]);
+
+  const [analysisData, setAnalysisData] = useState(null);
+  const [modeDecision, setModeDecision] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [analysisData, setAnalysisData] = useState(null);
-  const [performanceData, setPerformanceData] = useState({});
-  const [executionData, setExecutionData] = useState(null);
-  const [countdown, setCountdown] = useState(5);
+  // ✅ DL-100: Countdown dinámico basado en timeframe del bot
+  const userTimeframe = bot?.interval || '15m';
+  const refreshIntervalSeconds = convertTimeframeToSeconds(userTimeframe);
+  const [countdown, setCountdown] = useState(refreshIntervalSeconds);
+  const [selectedTimeframe, setSelectedTimeframe] = useState(userTimeframe.replace(/\s+/g, ''));
+  const [chartSeries, setChartSeries] = useState(Array.isArray(realTimeData?.[botSymbol]) ? realTimeData[botSymbol] : []);
+  const [chartLoading, setChartLoading] = useState(false);
   const [currentPrice, setCurrentPrice] = useState(null);
   const [priceChange, setPriceChange] = useState(null);
+  const [operations, setOperations] = useState([]);
+  const [operationsLoading, setOperationsLoading] = useState(false);
+  const [operationsError, setOperationsError] = useState(null);
 
-  // 🏛️ DL-002 COMPLIANCE: Fetch ONLY institutional algorithm analysis using specialized hook
+  const timeframeOptions = useMemo(() => {
+    const base = ['1m', '5m', '15m', '1h', '4h'];
+    if (bot?.interval) base.unshift(bot.interval.replace(/\s+/g, ''));
+    return Array.from(new Set(base));
+  }, [bot?.interval]);
+
   useEffect(() => {
-    const fetchCompleteAnalysis = async () => {
-      if (!bot?.symbol) {
-        console.log('⚠️ SmartScalperMetrics: No bot symbol provided');
-        return;
+    if (bot?.interval) {
+      setSelectedTimeframe(bot.interval.replace(/\s+/g, ''));
+    }
+  }, [bot?.interval]);
+
+  useEffect(() => {
+    if (Array.isArray(realTimeData?.[botSymbol])) {
+      const series = realTimeData[botSymbol];
+      setChartSeries(series);
+      if (series.length > 0) {
+        const latest = parseFloat(series[series.length - 1]?.price ?? series[series.length - 1]?.close ?? 0);
+        const base = parseFloat(series[0]?.price ?? series[0]?.close ?? latest);
+        setCurrentPrice(latest);
+        setPriceChange(base ? ((latest - base) / base) * 100 : null);
       }
+    }
+  }, [realTimeData, botSymbol]);
 
-      console.log('🔍 SmartScalperMetrics received bot:', {
-        id: bot.id,
-        symbol: bot.symbol,
-        strategy: bot.strategy,
-        exchange: bot.exchange_name,
-        status: bot.status
-      });
+  const loadChartData = useCallback(async () => {
+    if (!normalizedSymbol) return;
+    try {
+      setChartLoading(true);
+      const response = await authenticatedFetch(`/api/market-data/${normalizedSymbol}?timeframe=${selectedTimeframe}&limit=150&market_type=${bot?.market_type || 'SPOT'}`);
+      if (response?.ok) {
+        const result = await response.json();
+        const klines = result?.data?.klines || [];
+        const formatted = klines.map((k) => ({
+          time: k.datetime,
+          price: Number(k.close),
+          open: Number(k.open),
+          high: Number(k.high),
+          low: Number(k.low),
+          volume: Number(k.volume)
+        }));
+        setChartSeries(formatted);
+        if (formatted.length > 0) {
+          const lastPrice = formatted[formatted.length - 1].price;
+          const firstPrice = formatted[0].price || lastPrice;
+          setCurrentPrice(lastPrice);
+          setPriceChange(firstPrice ? ((lastPrice - firstPrice) / firstPrice) * 100 : null);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading institutional chart data:', err);
+    } finally {
+      setChartLoading(false);
+      setCountdown(5);
+    }
+  }, [authenticatedFetch, normalizedSymbol, selectedTimeframe, bot?.market_type]);
 
-      try {
+  useEffect(() => {
+    if (!normalizedSymbol) return;
+    loadChartData();
+    const interval = setInterval(loadChartData, refreshIntervalSeconds * 1000);  // ✅ DL-100: chart refresh = timeframe usuario
+    return () => clearInterval(interval);
+  }, [normalizedSymbol, loadChartData, refreshIntervalSeconds]);
+
+  useEffect(() => {
+    const fetchCompleteAnalysis = async (isInitialLoad = true) => {
+      if (!botId || !botSymbol || !bot?.market_type) return;
+      if (isInitialLoad) {
         setLoading(true);
-        setError(null);
-
-        console.log('📞 Calling fetchSmartScalperAnalysis for:', bot.symbol);
-        // ✅ DL-076: Use specialized hook instead of manual fetch
-        const smartScalperData = await fetchSmartScalperAnalysis(bot.symbol);
-        
+        setModeDecision(null);
+      }
+      setError(null);
+      try {
+        const smartScalperData = await fetchBotSpecificAnalysis(botId, botSymbol, bot);
         if (smartScalperData) {
-          // 🏛️ COMPLETE ANALYSIS DATA MAPPING from specialized hook
-          setAnalysisData({
+          setAnalysisData(smartScalperData);
+          setModeDecision(smartScalperData.mode_decision || null);
+          // ✅ DL-102: Frontend console logs for algorithm strategy boosting verification
+          console.log('🎯 DL-102: STRATEGY ALGORITHM VERIFICATION', {
+            bot_strategy: bot?.strategy,
+            algorithm_selected: smartScalperData.algorithm_used,  // ✅ FIXED: Use mapped field name
+            selection_confidence: smartScalperData.confidence,     // ✅ FIXED: Use mapped field name
+            market_regime: smartScalperData.market_condition,      // ✅ FIXED: Use mapped field name
+            strategy_boost_applied: bot?.strategy ? 'YES' : 'NO',
+            // 🔍 DIAGNOSIS: Original raw backend data for comparison
+            raw_analysis_exists: !!smartScalperData.analysis,
+            data_source: smartScalperData.data_source
+          });
+
+          // ✅ DL-109: Frontend console logs for mode selection → algorithm integration verification
+          console.log('🎯 DL-109: MODE SELECTION → ALGORITHM INTEGRATION VERIFICATION', {
+            mode_decision: smartScalperData.mode_decision,
             algorithm_selected: smartScalperData.algorithm_used,
-            market_regime: smartScalperData.market_condition,
-            institutional_confidence: `${(smartScalperData.confidence * 100).toFixed(1)}%`,
-            wyckoff_phase: smartScalperData.wyckoff_phase,
-            risk_assessment: smartScalperData.risk_score,
-            consensus: `${smartScalperData.all_algorithms_evaluated?.filter(algo => algo.confidence > 50).length || 0}/${smartScalperData.all_algorithms_evaluated?.length || 8} Bullish`,
-            top_algorithms: smartScalperData.all_algorithms_evaluated || []
+            mode_algorithm_coherence: `${smartScalperData.mode_decision} → ${smartScalperData.algorithm_used}`,
+            integration_status: smartScalperData.mode_decision && smartScalperData.algorithm_used ? 'COHERENT' : 'CHECK_NEEDED',
+            execution_order: 'Mode Selection → Algorithm Integration (DL-109 compliant)'
           });
 
-          // 📊 EXECUTION DATA from real API
-          setExecutionData({
-            signal: {
-              current: smartScalperData.market_condition?.includes('trending') ? 'BUY' : 'HOLD',
-              strength: smartScalperData.confidence > 0.75 ? 'STRONG' : 'MODERATE'
-            },
-            confidence: {
-              current: Math.round(smartScalperData.confidence * 100),
-              level: smartScalperData.confidence > 0.75 ? 'HIGH' : 'MEDIUM'
-            },
-            volume: {
-              level: smartScalperData.risk_score < 0.3 ? 'HIGH' : smartScalperData.risk_score < 0.7 ? 'MEDIUM' : 'LOW'
-            },
-            spread: {
-              type: smartScalperData.market_condition?.includes('volatile') ? 'WIDE' : 'NARROW'
-            },
-            effort: {
-              direction: smartScalperData.market_condition?.includes('trending') ? 'BUYING' : 'NEUTRAL'
-            },
-            smartMoney: {
-              structure: smartScalperData.wyckoff_phase === 'ACCUMULATION' ? 'BOS' : 'CHoCH',
-              direction: smartScalperData.market_condition?.includes('trending') ? 'BULLISH' : 'NEUTRAL',
-              confirmation: smartScalperData.confidence > 0.7 ? 'CONFIRMED' : 'PENDING'
-            },
-            tradeStatus: {
-              status: bot.status === 'RUNNING' ? '🟢 Active Trading' : '🟡 Paused',
-              action: smartScalperData.algorithm_used === 'wyckoff_spring' ? 'WAIT FOR SPRING' : 'MONITOR LEVELS'
-            },
-            technicalConfirmation: `${smartScalperData.algorithm_used} pattern detected with ${smartScalperData.market_condition} conditions`
-          });
+          // 🎯 DETAILED ALGORITHM RANKING AND WEIGHTS IN TABLE FORMAT
+          if (smartScalperData.all_algorithms_evaluated?.length > 0) {
+            console.log('🏆 ALGORITHM_WEIGHT_ANALYSIS - TABLE FORMAT');
+            console.table(smartScalperData.all_algorithms_evaluated.map((algo, index) => ({
+              'Rank': index + 1,
+              'Algorithm': algo.algorithm,
+              'Score': `${algo.score}%`,
+              'Confidence': `${algo.confidence}%`,
+              'Selected': algo.algorithm === smartScalperData.algorithm_used ? '✅ YES' : '❌ No'
+            })));
 
-          setInstitutionalMetrics({
-            algorithm_used: smartScalperData.algorithm_used,
-            confidence_level: `${(smartScalperData.confidence * 100).toFixed(1)}%`,
-            market_condition: smartScalperData.market_condition,
-            institutional_quality_score: smartScalperData.expected_performance?.win_rate || null
+            console.log('📊 ALGORITHM_SELECTION_SUMMARY', {
+              selected_algorithm: smartScalperData.algorithm_used,
+              total_algorithms_analyzed: smartScalperData.all_algorithms_evaluated?.length,
+              market_regime_detected: smartScalperData.market_condition,
+              strategy_applied: bot?.strategy,
+              top_3: smartScalperData.all_algorithms_evaluated?.slice(0, 3).map(a => a.algorithm)
+            });
+          }
+
+          console.log('🎯 BOT_EXECUTION_ANALYSIS', {
+            // 📊 Bot Configuration
+            bot_id: botId,
+            bot_status: bot?.status,
+            bot_symbol: botSymbol,
+            bot_strategy: bot?.strategy,
+            execute_real_sent: bot?.status === 'RUNNING' ? 'true' : 'false',
+
+            // 🚨 Signal Analysis
+            signal_generated: smartScalperData.signals?.signal,
+            signal_reason: smartScalperData.signals?.reason,
+            signal_confidence: smartScalperData.signals?.confidence,
+            multi_tf_signal: smartScalperData.signals?.multi_tf_signal,
+
+            // 🤖 Algorithm Selection (DL-102)
+            algorithm_selected: smartScalperData.analysis?.algorithm_selected,
+            selection_confidence: smartScalperData.analysis?.selection_confidence,
+            market_regime: smartScalperData.analysis?.market_regime,
+
+            // 🏛️ Institutional Analysis
+            smart_money_recommendation: smartScalperData.smart_money_recommendation,
+            institutional_quality_score: smartScalperData.institutional_quality_score,
+            institutional_confidence: smartScalperData.institutional_confidence_level,
+
+            // 🚀 Execution Result
+            order_execution_result: smartScalperData.order_execution,
+
+            // ❓ Why No Trade?
+            will_execute: `Signal=${smartScalperData.signals?.signal}, Bot=${bot?.status}, Execute=${bot?.status === 'RUNNING' ? 'YES' : 'NO'}`,
+            execution_criteria: smartScalperData.signals?.signal === 'BUY' || smartScalperData.signals?.signal === 'SELL' ? 'CRITERIA_MET' : 'SIGNAL_NOT_BUY_OR_SELL',
+
+            // 📈 Mode Decision
+            mode_decision: smartScalperData.mode_decision,
+            timestamp: new Date().toISOString()
           });
         }
-
-        // 📊 Performance metrics from bot data
-        setPerformanceData({
-          totalTrades: bot.total_trades || 0,
-          successfulTrades: bot.successful_trades || 0,
-          winRate: bot.win_rate || '0.0',
-          avgProfit: bot.avg_profit_per_trade || 0,
-          currentStatus: bot.status || 'STOPPED',
-          realizedPnL: bot.realized_pnl || 0,
-          sharpeRatio: bot.sharpe_ratio || '0.00',
-          maxDrawdown: bot.max_drawdown || '0.0',
-          strategy: bot.strategy || 'Smart Scalper',
-          timeframe: bot.interval || '15m',
-          leverage: bot.leverage || 1,
-          takeProfit: bot.take_profit || 2.5,
-          stopLoss: bot.stop_loss || 1.5
-        });
-
       } catch (err) {
         console.error('🚨 Complete Analysis Error:', err);
-        setError(apiError || err.message);
+        setError(err.message || 'Error fetching institutional analysis');
       } finally {
-        setLoading(apiLoading);
+        if (isInitialLoad) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchCompleteAnalysis();
-    
-    // 🔄 REAL-TIME: Update every 5 seconds for institutional data freshness
-    const interval = setInterval(fetchCompleteAnalysis, 5000);
+    fetchCompleteAnalysis(true);
+    const interval = setInterval(() => fetchCompleteAnalysis(false), refreshIntervalSeconds * 1000);  // ✅ DL-100: usar timeframe del bot
     return () => clearInterval(interval);
-  }, [bot?.symbol]); // ✅ P6: REGRESSION PREVENTION - Only re-run when bot symbol changes to prevent infinite loop
+  }, [botId, botSymbol, bot?.market_type, fetchBotSpecificAnalysis, selectedTimeframe, refreshIntervalSeconds]);
 
-  // 📈 COUNTDOWN TIMER: Update every second for visual feedback
+  const loadOperations = useCallback(async () => {
+    if (!botId) return;
+    try {
+      setOperationsLoading(true);
+      const response = await getBotTradingOperations(botId.toString(), { limit: 5 });
+      setOperations(response?.operations || []);
+      setOperationsError(null);
+    } catch (err) {
+      console.error('Error fetching recent operations:', err);
+      setOperations([]);
+      setOperationsError(err.message || 'Error cargando operaciones');
+    } finally {
+      setOperationsLoading(false);
+    }
+  }, [botId]);
+
+  useEffect(() => {
+    loadOperations();
+  }, [loadOperations]);
+
   useEffect(() => {
     const countdownInterval = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          return 5; // Reset to 5 seconds
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => (prev <= 1 ? refreshIntervalSeconds : prev - 1));
     }, 1000);
-    
     return () => clearInterval(countdownInterval);
-  }, []);
+  }, [refreshIntervalSeconds]);
 
-  // 📈 REAL-TIME PRICE: Update every 5 seconds
+  // ✅ DL-100 TER: Detectar cambios en timeframe del bot y resetear countdown
   useEffect(() => {
-    const fetchRealTimePrice = async () => {
-      if (!bot?.symbol || !bot?.market_type) return;
-
-      try {
-        const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
-        const token = localStorage.getItem('intelibotx_token');
-        const response = await fetch(`${BASE_URL}/api/market-data/${bot.symbol}?simple=true&market_type=${bot.market_type}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            setCurrentPrice(data.price);
-            setPriceChange(data.change_24h);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error fetching real-time price:', error);
-      }
-    };
-
-    fetchRealTimePrice();
-    const priceInterval = setInterval(fetchRealTimePrice, 5000);
-    return () => clearInterval(priceInterval);
-  }, [bot?.symbol, bot?.market_type]);
+    setCountdown(refreshIntervalSeconds);
+    setSelectedTimeframe(userTimeframe.replace(/\s+/g, ''));
+  }, [userTimeframe, refreshIntervalSeconds]);
 
   if (loading) {
     return (
@@ -227,10 +416,39 @@ export default function SmartScalperMetricsComplete({ bot, realTimeData, onClose
     );
   }
 
+  const activeMode = modeDecision?.selected || 'SCALPING';
+  const modeInfo = MODE_DETAILS[activeMode] || MODE_DETAILS.SCALPING;
+  const modeConfidence = modeDecision ? Math.round((modeDecision.confidence ?? 0) * 100) : null;
+  const modeScores = Object.entries(modeDecision?.scores || {});
+  const modeFeatures = Object.entries(modeDecision?.features || {});
+  const confirmationEntries = Object.entries(analysisData?.institutional_confirmations_breakdown || {});
+  const topAlgorithms = analysisData?.all_algorithms_evaluated?.slice(0, 3) || [];
+  const manipulationAlerts = analysisData?.manipulation_alerts || analysisData?.signals?.manipulation_alerts || [];
+  const consensusLabel = analysisData?.smart_money_recommendation || 'N/A';
+  const consensusConfidence = analysisData?.expected_performance?.confidence_level || null;
+  const datasetReason = analysisData?.signal_reason || null;
+  const formattedOperations = operations.map(formatOperation).filter(Boolean);
+
+  const priceChangeValue = typeof priceChange === 'number' ? priceChange : null;
+  const priceBadgeClass = priceChangeValue === null
+    ? 'bg-gray-500/20 text-gray-200'
+    : priceChangeValue >= 0
+      ? 'bg-green-500/20 text-green-400'
+      : 'bg-red-500/20 text-red-400';
+  const priceIcon = priceChangeValue === null
+    ? null
+    : priceChangeValue >= 0
+      ? <TrendingUp size={14} />
+      : <TrendingDown size={14} />;
+
+  const handleTimeframeChange = (value) => {
+    setSelectedTimeframe(value);
+    setCountdown(5);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4">
       <div className="bg-gray-900 rounded-lg shadow-2xl max-w-[95vw] w-full max-h-[95vh] overflow-y-auto relative z-[10000]">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700 bg-gray-900 relative z-[10001]">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/20 rounded-lg">
@@ -239,603 +457,263 @@ export default function SmartScalperMetricsComplete({ bot, realTimeData, onClose
             <div>
               <h2 className="text-2xl font-bold text-white">Smart Scalper Institutional Analysis</h2>
               <div className="flex items-center gap-2 text-gray-400">
-                <span>{bot?.symbol} • {analysisData?.wyckoff_phase}</span>
+                <span>{bot?.symbol} • {analysisData?.wyckoff_phase || '—'}</span>
                 <Badge className="bg-blue-500/20 text-blue-400">Bot Único Mode</Badge>
               </div>
             </div>
           </div>
-          <Button 
-            onClick={onClose} 
-            variant="ghost" 
-            size="icon" 
-            className="text-gray-400 hover:text-white hover:bg-gray-700/50 relative z-[10002] cursor-pointer"
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="icon"
+            className="text-gray-400 hover:text-white hover:bg-gray-700/50"
           >
             <X size={24} />
           </Button>
         </div>
 
-        {/* Main Content Grid */}
         <div className="p-6 space-y-6">
-          
-          {/* 🏛️ Institutional Chart Section - ESTABLE */}
           <Card className="bg-gray-800/50 border-gray-700/50 relative">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                📊 Institutional Market Analysis Live Data
-                <Badge className="bg-green-500/20 text-green-400">{bot?.market_type || 'SPOT'}</Badge>
-                <div className="flex items-center gap-2 ml-auto">
-                  {currentPrice && (
-                    <div className="text-right">
-                      <div className="text-xl font-bold text-white">
-                        ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                      {priceChange && (
-                        <div className={`text-sm ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1 text-blue-400">
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-white flex items-center gap-2">
+                  📊 Institutional Market Analysis
+                  <Badge className="bg-blue-500/20 text-blue-300">{bot?.strategy || 'Smart Scalper'}</Badge>
+                </CardTitle>
+                <div className="flex items-center gap-3 mt-2 text-sm text-gray-300">
+                  <span className="flex items-center gap-1 text-blue-300">
                     <Activity className="animate-pulse" size={16} />
-                    <span className="text-sm font-mono">{countdown}s</span>
-                  </div>
+                    {formatCountdownDisplay(countdown)} refresh
+                  </span>
+                  <Badge className="bg-slate-600/40 text-slate-200">{bot?.market_type || 'SPOT'}</Badge>
                 </div>
-              </CardTitle>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge className={`px-3 py-1 flex items-center gap-1 ${priceBadgeClass}`}>
+                  {priceIcon}
+                  {formatPercent(priceChangeValue)}
+                </Badge>
+                <div className="text-2xl font-semibold text-white">
+                  {currentPrice ? `$${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                </div>
+                <Select value={selectedTimeframe} onValueChange={handleTimeframeChange}>
+                  <SelectTrigger className="w-32 bg-gray-800 border-gray-600 text-gray-200">
+                    <SelectValue placeholder="Timeframe" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 text-gray-200 border-gray-600">
+                    {timeframeOptions.map((tf) => (
+                      <SelectItem key={tf} value={tf}>{tf}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
-            <CardContent className="p-4">
-              <div className="h-96 w-full overflow-hidden">
-                <InstitutionalChart 
-                  symbol={bot.symbol}
-                  interval={bot.interval}
+            <CardContent className="p-0">
+              <div className="relative h-96">
+                {chartLoading && (
+                  <div className="absolute inset-0 bg-gray-900/60 flex items-center justify-center z-10">
+                    <Activity className="animate-spin text-blue-400" size={24} />
+                  </div>
+                )}
+                <InstitutionalChart
+                  symbol={normalizedSymbol}
+                  interval={selectedTimeframe}
                   theme="dark"
-                  data={realTimeData || []}
+                  data={chartSeries}
+                  loading={chartLoading}
+                  onTimeframeChange={handleTimeframeChange}
+                  timeframeOptions={timeframeOptions}
                   institutionalAnalysis={{
-                    risk_profile: bot.risk_profile,
-                    strategy: bot.strategy,
-                    market_type: bot.market_type
+                    risk_profile: bot?.risk_profile,
+                    strategy: bot?.strategy,
+                    market_type: bot?.market_type
                   }}
                 />
               </div>
             </CardContent>
           </Card>
 
-          {/* 🏛️ 8 ALGORITMOS INDIVIDUALES SMART SCALPER - COMPREHENSIVE DISPLAY */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <Card className="bg-blue-900/20 border-blue-500/30">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Compass size={18} className="text-blue-300" />
+                  Intelligent Mode Selector
+                  <Badge className={modeInfo.badgeClass}>{modeInfo.label}</Badge>
+                  {modeConfidence !== null && (
+                    <Badge className="bg-white/10 text-blue-200 border border-blue-400/30">
+                      {modeConfidence}% confidence
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-gray-300">
+                  Recommended Action: <span className="text-blue-300 font-semibold">{modeInfo.action}</span>
+                </div>
+                {modeDecision?.remaining_duration !== undefined && (
+                  <div className="text-xs text-gray-400">Min. remaining duration: {Math.ceil(modeDecision.remaining_duration)} bars</div>
+                )}
+                {modeScores.length > 0 ? (
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Mode Scores</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                      {modeScores.map(([mode, score]) => {
+                        const details = MODE_DETAILS[mode] || { label: mode };
+                        return (
+                          <div key={mode} className="bg-blue-500/10 border border-blue-500/20 rounded-md px-3 py-2">
+                            <p className="text-xs text-blue-200 uppercase tracking-wide">{details.label || mode}</p>
+                            <p className="text-lg font-semibold text-white">{Math.round(score * 100)}%</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">Mode scores are still being calculated…</p>
+                )}
+                {modeFeatures.length > 0 ? (
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Feature Snapshot</p>
+                    <div className="flex flex-wrap gap-2">
+                      {modeFeatures.map(([feature, value]) => (
+                        <Badge key={feature} className="bg-blue-800/40 text-blue-200 border border-blue-500/30">
+                          {feature}: {formatFeatureValue(value)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">Feature extraction en progreso…</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800/50 border-gray-700/50">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Shield className="text-yellow-400" size={18} />
+                  Smart Money Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-3 text-sm text-gray-200">
+                  <Badge className="bg-purple-500/20 text-purple-300">Consensus: {consensusLabel}</Badge>
+                  {consensusConfidence && (
+                    <Badge className="bg-blue-500/20 text-blue-300">Confidence: {consensusConfidence}</Badge>
+                  )}
+                  {datasetReason && (
+                    <Badge className="bg-slate-600/30 text-slate-200">Signal: {datasetReason}</Badge>
+                  )}
+                </div>
+
+                {topAlgorithms.length > 0 && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Top Institutional Algorithms</p>
+                    <div className="space-y-2">
+                      {topAlgorithms.map((algo, index) => (
+                        <div key={`${algo.algorithm}-${index}`} className="flex items-center justify-between bg-gray-700/30 border border-gray-600/40 rounded px-3 py-2">
+                          <span className="text-sm text-gray-200">#{index + 1} {algo.algorithm}</span>
+                          <span className="text-green-400 font-semibold">{Math.round(algo.confidence)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {manipulationAlerts.length > 0 && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Manipulation Alerts</p>
+                    <ul className="space-y-1 text-sm text-red-300">
+                      {manipulationAlerts.slice(0, 3).map((alert, idx) => (
+                        <li key={idx} className="flex items-center gap-2">
+                          <AlertCircle size={14} />
+                          {alert}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           <Card className="bg-gray-800/50 border-gray-700/50">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                🧠 Smart Scalper Multi-Algorithm Analysis
-                <Badge className="bg-purple-500/20 text-purple-400">8 Institutional Algorithms</Badge>
+                🧠 Institutional Algorithm Breakdown
+                <Badge className="bg-purple-500/20 text-purple-400">12 algorithms</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                
-                {/* 1. Wyckoff Method */}
-                <div className="bg-gray-700/40 rounded-lg p-4 border border-gray-600/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">🏛️</span>
-                    <h4 className="text-white font-semibold text-sm">Wyckoff Method</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Phase:</span>
-                      <span className="text-blue-400">{analysisData?.wyckoff_phase}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Confidence:</span>
-                      <span className="text-green-400">{analysisData?.institutional_confidence}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Signal:</span>
-                      <span className="text-yellow-400">{analysisData?.wyckoff_phase}</span>
-                    </div>
-                  </div>
+              {confirmationEntries.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {confirmationEntries.map(([key, confirmation]) => {
+                    const meta = ALGORITHM_META[key] || { icon: '📈', label: key.replace(/_/g, ' ') };
+                    return (
+                      <div key={key} className="bg-gray-700/40 border border-gray-600/40 rounded-lg p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-white">
+                            <span className="text-lg">{meta.icon}</span>
+                            <span className="font-semibold text-sm">{meta.label}</span>
+                          </div>
+                          <Badge className={biasBadge(confirmation.bias)}>{confirmation.bias || 'NEUTRAL'}</Badge>
+                        </div>
+                        <div className="text-2xl font-semibold text-white">{Math.round(confirmation.score || 0)}%</div>
+                        <p className="text-xs text-gray-300">{summarizeDetails(confirmation.details)}</p>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {/* 2. Order Blocks */}
-                <div className="bg-gray-700/40 rounded-lg p-4 border border-gray-600/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">📦</span>
-                    <h4 className="text-white font-semibold text-sm">Order Blocks</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Active:</span>
-                      <span className="text-orange-400">{realTimeData?.orderBlocks?.length || 0} Blocks</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Strength:</span>
-                      <span className="text-green-400">{analysisData?.confidence > 0.75 ? 'HIGH' : analysisData?.confidence > 0.5 ? 'MEDIUM' : 'LOW'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Level:</span>
-                      <span className="text-blue-400">${realTimeData?.price || 'Loading...'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Liquidity Grabs */}
-                <div className="bg-gray-700/40 rounded-lg p-4 border border-gray-600/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">🎯</span>
-                    <h4 className="text-white font-semibold text-sm">Liquidity Grabs</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Recent:</span>
-                      <span className="text-red-400">{realTimeData?.liquidityGrabs?.length || 0} Events</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Target:</span>
-                      <span className="text-yellow-400">${realTimeData?.liquidityTarget || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Status:</span>
-                      <span className="text-green-400">{realTimeData?.liquidityGrabs?.length > 0 ? 'DETECTED' : 'MONITORING'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Stop Hunting */}
-                <div className="bg-gray-700/40 rounded-lg p-4 border border-gray-600/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">⚡</span>
-                    <h4 className="text-white font-semibold text-sm">Stop Hunting</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Activity:</span>
-                      <span className="text-red-400">{realTimeData?.stopHunting?.active ? 'ACTIVE' : 'INACTIVE'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Zone:</span>
-                      <span className="text-purple-400">${realTimeData?.stopHunting?.zone || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Risk:</span>
-                      <span className="text-yellow-400">{analysisData?.risk_assessment ? (analysisData.risk_assessment > 0.7 ? 'HIGH' : analysisData.risk_assessment > 0.4 ? 'MEDIUM' : 'LOW') : 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 5. Fair Value Gaps */}
-                <div className="bg-gray-700/40 rounded-lg p-4 border border-gray-600/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">📈</span>
-                    <h4 className="text-white font-semibold text-sm">Fair Value Gaps</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Open Gaps:</span>
-                      <span className="text-blue-400">{realTimeData?.fairValueGaps?.length || 0} Gaps</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Next Fill:</span>
-                      <span className="text-green-400">${realTimeData?.fairValueGaps?.[0]?.target || realTimeData?.price || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Probability:</span>
-                      <span className="text-yellow-400">{realTimeData?.fairValueGaps?.[0]?.probability ? `${Math.round(realTimeData.fairValueGaps[0].probability * 100)}%` : `${Math.round((analysisData?.confidence || 0.75) * 100)}%`}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 6. Market Microstructure */}
-                <div className="bg-gray-700/40 rounded-lg p-4 border border-gray-600/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">🔬</span>
-                    <h4 className="text-white font-semibold text-sm">Market Microstructure</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Flow:</span>
-                      <span className="text-green-400">{analysisData?.market_condition?.includes('bullish') || analysisData?.market_condition?.includes('trending') ? 'BULLISH' : 'BEARISH'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Depth:</span>
-                      <span className="text-blue-400">{analysisData?.confidence > 0.75 ? 'STRONG' : analysisData?.confidence > 0.5 ? 'MODERATE' : 'WEAK'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Imbalance:</span>
-                      <span className="text-yellow-400">{realTimeData?.imbalance ? `${(realTimeData.imbalance * 100).toFixed(1)}%` : 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 7. Volume Spread Analysis */}
-                <div className="bg-gray-700/40 rounded-lg p-4 border border-gray-600/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">📊</span>
-                    <h4 className="text-white font-semibold text-sm">Volume Spread Analysis</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Volume:</span>
-                      <span className="text-green-400">{executionData?.volume?.level || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Spread:</span>
-                      <span className="text-blue-400">{executionData?.spread?.type || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Effort:</span>
-                      <span className="text-yellow-400">{executionData?.effort?.direction || 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 8. Smart Money Concepts */}
-                <div className="bg-gray-700/40 rounded-lg p-4 border border-gray-600/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">💎</span>
-                    <h4 className="text-white font-semibold text-sm">Smart Money Concepts</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Structure:</span>
-                      <span className="text-green-400">{executionData?.smartMoney?.structure || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Direction:</span>
-                      <span className="text-blue-400">{executionData?.smartMoney?.direction || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Confirmation:</span>
-                      <span className="text-green-400">{executionData?.smartMoney?.confirmation || 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Algorithm Analysis Summary */}
-              <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <div className="flex items-center gap-2 mb-3">
-                  <Activity className="text-blue-400" size={20} />
-                  <h4 className="text-blue-400 font-semibold">Multi-Algorithm Consensus</h4>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-400">Overall Signal:</span>
-                    <p className={`${executionData?.signal?.current === 'BUY' ? 'text-green-400' : executionData?.signal?.current === 'SELL' ? 'text-red-400' : 'text-yellow-400'} font-semibold`}>{executionData?.signal?.current || 'ANALYZING'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Consensus:</span>
-                    <p className="text-blue-400 font-semibold">{analysisData?.consensus || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Strength:</span>
-                    <p className={`${executionData?.signal?.strength === 'STRONG' ? 'text-green-400' : executionData?.signal?.strength === 'MODERATE' ? 'text-yellow-400' : 'text-gray-400'} font-semibold`}>{executionData?.signal?.strength || 'ANALYZING'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Confidence:</span>
-                    <p className="text-green-400 font-semibold">{analysisData?.institutional_confidence || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
+              ) : (
+                <p className="text-sm text-gray-400">Institutional confirmations will appear once the first analysis completes…</p>
+              )}
             </CardContent>
           </Card>
 
-          {/* Métricas Grid - RESTORED COMPLETE */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-4 lg:gap-6">
-            
-            {/* Left Column - Institutional Algorithm Analysis */}
-            <div className="space-y-4">
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    🏛️ Institutional Algorithm Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-gray-400 text-sm">Selected Algorithm:</p>
-                    <Badge className="bg-blue-500/20 text-blue-400 text-lg px-3 py-1">
-                      {analysisData?.algorithm_selected || 'Wyckoff Spring'}
-                    </Badge>
-                  </div>
-                  
-                  <div>
-                    <p className="text-gray-400 text-sm">Confidence Level:</p>
-                    <p className="text-2xl font-bold text-green-400">
-                      {analysisData?.institutional_confidence || 'N/A'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-gray-400 text-sm">Market Regime:</p>
-                    <Badge className={`${
-                      analysisData?.market_regime?.includes('trending') ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                    }`}>
-                      {analysisData?.market_regime || 'weak_trending'}
-                    </Badge>
-                  </div>
-
-                  <div>
-                    <p className="text-gray-400 text-sm">Wyckoff Phase:</p>
-                    <Badge className="bg-purple-500/20 text-purple-400">
-                      {analysisData?.wyckoff_phase || 'distribution'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Top Institutional Algorithms */}
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    🔒 Top Institutional Algorithms
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {analysisData?.top_algorithms?.slice(0, 3).map((algo, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-700/30 rounded">
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-400 font-semibold">#{idx + 1}</span>
-                        <span className="text-white text-sm">{algo.algorithm}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-400 font-semibold">{algo.confidence}%</span>
-                        <CheckCircle className="text-green-400" size={16} />
-                      </div>
-                    </div>
-                  )) || [
-                    <div key="1" className="flex items-center justify-between p-2 bg-gray-700/30 rounded">
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-400 font-semibold">#1</span>
-                        <span className="text-white text-sm">{analysisData?.algorithm_selected || 'Wyckoff Spring'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-400 font-semibold">{analysisData?.institutional_confidence || 'N/A'}</span>
-                        <CheckCircle className="text-green-400" size={16} />
-                      </div>
-                    </div>,
-                    <div key="2" className="flex items-center justify-between p-2 bg-gray-700/30 rounded">
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-400 font-semibold">#2</span>
-                        <span className="text-white text-sm">{analysisData?.top_algorithms?.[1]?.algorithm || 'Loading...'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-400 font-semibold">{analysisData?.top_algorithms?.[1]?.confidence ? `${analysisData.top_algorithms[1].confidence}%` : 'N/A'}</span>
-                        <CheckCircle className="text-green-400" size={16} />
-                      </div>
-                    </div>,
-                    <div key="3" className="flex items-center justify-between p-2 bg-gray-700/30 rounded">
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-400 font-semibold">#3</span>
-                        <span className="text-white text-sm">{analysisData?.top_algorithms?.[2]?.algorithm || 'Loading...'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-400 font-semibold">{analysisData?.top_algorithms?.[2]?.confidence ? `${analysisData.top_algorithms[2].confidence}%` : 'N/A'}</span>
-                        <CheckCircle className="text-green-400" size={16} />
-                      </div>
-                    </div>
-                  ]}
-                </CardContent>
-              </Card>
-
-              {/* Risk Assessment */}
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Shield className="text-yellow-400" size={20} />
-                    Risk Assessment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <p className="text-gray-400 text-sm mb-1">Overall Risk Level:</p>
-                    <Badge className={`text-lg px-3 py-1 ${
-                      analysisData?.risk_assessment === 'LOW' ? 'bg-green-500/20 text-green-400' :
-                      analysisData?.risk_assessment === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-red-500/20 text-red-400'
-                    }`}>
-                      {analysisData?.risk_assessment || '0.4'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Center Column - Performance Overview */}
-            <div className="space-y-4">
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    📈 Performance Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-gray-400 text-sm">Current Status:</p>
-                      <Badge className={`${
-                        performanceData.currentStatus === 'RUNNING' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {performanceData.currentStatus === 'RUNNING' ? '🟢 ACTIVE' : '🟡 PAUSED'}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Win Rate:</p>
-                      <p className="text-xl font-bold text-green-400">{performanceData.winRate}%</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Total Trades:</p>
-                      <p className="text-xl font-bold text-white">{performanceData.totalTrades}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Successful:</p>
-                      <p className="text-xl font-bold text-green-400">{performanceData.successfulTrades}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Avg Profit/Trade:</p>
-                      <p className="text-xl font-bold text-blue-400">${performanceData.avgProfit}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Realized PnL:</p>
-                      <p className="text-xl font-bold text-green-400">${performanceData.realizedPnL}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Execution Quality */}
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    ⚡ Execution Quality
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-400">Strategy:</p>
-                      <Badge className="bg-blue-500/20 text-blue-400">{performanceData.strategy}</Badge>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Timeframe:</p>
-                      <p className="text-white font-semibold">{performanceData.timeframe}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Leverage:</p>
-                      <p className="text-white font-semibold">{performanceData.leverage}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Take Profit:</p>
-                      <p className="text-green-400 font-semibold">{performanceData.takeProfit}%</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Stop Loss:</p>
-                      <p className="text-red-400 font-semibold">{performanceData.stopLoss}%</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Signal Strength - RESTORED */}
-              {executionData && (
-                <Card className="bg-gray-800/50 border-gray-700/50">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      📊 Signal Strength
-                      <TrendingUp className="text-blue-400" size={16} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+          <Card className="bg-gray-800/50 border-gray-700/50">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <History size={18} className="text-blue-300" />
+                Recent Operations Snapshot
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {operationsLoading ? (
+                <div className="flex items-center gap-2 text-blue-300 text-sm">
+                  <Activity className="animate-spin" size={16} />
+                  Loading operations…
+                </div>
+              ) : operationsError ? (
+                <p className="text-sm text-red-300">{operationsError}</p>
+              ) : formattedOperations.length > 0 ? (
+                <div className="space-y-2">
+                  {formattedOperations.map((operation) => (
+                    <div key={operation.id} className="bg-gray-700/30 border border-gray-600/40 rounded-md px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
-                        <p className="text-gray-400">Current Signal</p>
-                        <p className={`text-xl font-bold ${
-                          executionData.signal.current === 'BUY' ? 'text-green-400' :
-                          executionData.signal.current === 'SELL' ? 'text-red-400' :
-                          'text-gray-400'
-                        }`}>
-                          {executionData.signal.current}
-                        </p>
+                        <p className="text-sm text-gray-200">{operation.executedAt ? new Date(operation.executedAt).toLocaleString() : '—'}</p>
+                        <p className="text-xs text-gray-400">{operation.reason}</p>
                       </div>
-                      <div>
-                        <p className="text-gray-400">Signal Strength</p>
-                        <p className={`font-semibold ${
-                          executionData.signal.strength === 'STRONG' ? 'text-green-400' :
-                          executionData.signal.strength === 'MODERATE' ? 'text-yellow-400' :
-                          'text-red-400'
-                        }`}>
-                          {executionData.signal.strength}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400">Confidence</p>
-                        <p className="font-semibold text-blue-400">
-                          {executionData.confidence.current}%
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400">Confidence Level</p>
-                        <p className={`font-semibold ${
-                          executionData.confidence.level === 'HIGH' ? 'text-green-400' :
-                          executionData.confidence.level === 'MEDIUM' ? 'text-blue-400' :
-                          'text-yellow-400'
-                        }`}>
-                          {executionData.confidence.level}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-700/30 rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400 text-sm">TRADING STATUS:</span>
-                        <span className="text-white font-semibold">{executionData.tradeStatus.status}</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400 text-sm">RECOMMENDED ACTION:</span>
-                        <span className="text-blue-400 font-semibold text-sm">{executionData.tradeStatus.action}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-600">
-                        <span className="text-gray-400 text-sm">ENTRY QUALITY:</span>
-                        <span className={`font-semibold text-sm ${
-                          executionData.confidence.current > 80 ? 'text-green-400' :
-                          executionData.confidence.current > 60 ? 'text-yellow-400' :
-                          'text-red-400'
-                        }`}>
-                          {executionData.confidence.current > 80 ? 'HIGH QUALITY' :
-                           executionData.confidence.current > 60 ? 'MEDIUM QUALITY' :
-                           'LOW QUALITY'}
+                      <div className="flex items-center gap-3">
+                        <Badge className={operation.side === 'SELL' ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}>{operation.side}</Badge>
+                        <span className="text-sm text-gray-200">{operation.price ? `$${Number(operation.price).toFixed(2)}` : '—'}</span>
+                        <span className={`text-sm font-semibold ${operation.pnl > 0 ? 'text-green-400' : operation.pnl < 0 ? 'text-red-400' : 'text-gray-300'}`}>
+                          {operation.pnl !== null && operation.pnl !== undefined ? `$${Number(operation.pnl).toFixed(2)}` : '—'}
                         </span>
                       </div>
                     </div>
-
-                    {executionData.technicalConfirmation && (
-                      <div className="text-xs text-gray-500 text-center">
-                        Technical Confirmation: {executionData.technicalConfirmation}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">No recent operations recorded for this bot.</p>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Right Column - Configuration */}
-            <div className="space-y-4">
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    ⚙️ Configuration
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-gray-400 text-sm">Symbol:</p>
-                    <p className="text-xl font-bold text-white">{bot?.symbol || 'N/A'}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-gray-400 text-sm">Created:</p>
-                    <p className="text-white">{new Date(bot?.created_at || Date.now()).toLocaleDateString()}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-gray-400 text-sm">Bot ID:</p>
-                    <p className="text-white">{bot?.id || 'N/A'}</p>
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-600">
-                    <Badge className="bg-blue-500/20 text-blue-400 w-full justify-center py-2">
-                      🏛️ {bot?.symbol || 'N/A'} Smart Scalper Mode
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Footer Note */}
           <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <p className="text-xs text-blue-400 text-center">
-              📊 <strong>Institutional Analysis:</strong> Displaying real institutional algorithm selection with 
-              Wyckoff Method, Order Blocks, Liquidity Grabs, and Stop Hunting analysis. 
-              Chart powered by stable Recharts implementation replacing problematic TradingView widget.
+              📊 Institutional analysis combines Wyckoff, Order Blocks, Liquidity Grabs, Stop Hunting, FVG, VSA,
+              Market Profile, Order Flow, Accumulation/Distribution, SMC and Composite Man algorithms for Smart Scalper decisions.
             </p>
           </div>
         </div>

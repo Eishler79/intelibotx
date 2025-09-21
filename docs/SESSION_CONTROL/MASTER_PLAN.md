@@ -1,7 +1,7 @@
 # MASTER_PLAN.md - Status Dinámico Proyecto InteliBotX
 
 > **TRACKER:** Estado actual + progreso + métricas dinámicas  
-> **ACTUALIZADO:** 2025-09-17  
+> **ACTUALIZADO:** 2025-09-18  
 
 ---
 
@@ -17,12 +17,13 @@
 - **Authentication:** 90% complete - DL-008 centralizado (43 endpoints)
 - **Database:** PostgreSQL Railway deployment ✅ 
 - **Security:** ENCRYPTION_MASTER_KEY pendiente - CRÍTICO
-- **Algoritmos operativos en código:** 6/12 (Wyckoff, Order Blocks, Liquidity Grabs, Stop Hunting, FVG, Microstructure)
+- **Algoritmos operativos en código:** ✅ **12/12** (se integran VSA, Market Profile, SMC, Order Flow, A/D, Composite Man)
 - **Especificaciones DL-001 actualizadas:** 12/12 algoritmos + modos documentados con ParamProviders
+- **Parametrización runtime:** SignalQualityAssessor consume BotConfig y expone detalles institucionales completos ✅
 
 ### **📈 ALGORITMOS INSTITUCIONALES:**
 - **Especificación técnica:** ✅ 12/12 con catálogos DL-001 y payloads definidos
-- **Implementación en código:** 6/12 (VSA, SMC, Market Profile, Order Flow, A/D, Composite Man pendientes)
+- **Implementación en código:** ✅ 12/12 integrados en SignalQualityAssessor y endpoints
 
 ---
 
@@ -34,13 +35,114 @@
 - **Verificación:** Análisis exhaustivo confirmó que todos los ultra-críticos ya fueron refactorizados en sesiones previas
 - **Resultados:** Build ✅ functional | 199+ archivos refactorizados | Zero componentes >200 líneas sin refactoring previo
 
-### **📅 SIGUIENTE FASE:**
-- **FASE 0 (en progreso):** Limpieza UI (eliminar datos simulados) + baseline antes de nuevas integraciones
-- **FASE 1:** Parametrizar algoritmos existentes (01–06) con sus nuevos ParamProviders
-- **FASE 2:** Implementar algoritmos faltantes (07–12) siguiendo las specs DL-001
-- **FASE 3:** Crear `ModeParamProvider` + selector heurístico inicial (sin ML)
-- **FASE 4:** Ajustes UI/telemetría y empaquetado para testnet monolítico
-- **FASE 5:** Validación end-to-end + preparación para PRD/ML
+### ✅ **FASE 0 (Baseline UI/UX) CONCLUIDA:**
+- InstitutionalChart + SmartScalperMetrics consumen solo datos reales con fallback “No data” confirmado
+- Eliminados `Math.random()` y fallbacks visuales en flujo operativo principal
+- Endpoints verificados con payload real para nueva instrumentación
+
+### ✅ **FASE 1 (Parametrización Algoritmos 01–06) CONCLUIDA:**
+- ParamProviders aplicados en runtime leyendo BotConfig + estadísticas recientes
+- SignalQualityAssessor retorna confirmaciones con detalles completos para UI avanzada
+- `/api/run-smart-trade/{symbol}` expone `institutional_confirmations_breakdown` + bias/recommendations por algoritmo
+- Validación manual + `python -m compileall backend/routes/bots.py` sin errores
+
+### ✅ **FASE 2 (Implementación Algoritmos 07–12) CONCLUIDA:**
+- Evaluadores institucionales para VSA, Market Profile, Order Flow, Accumulation/Distribution, SMC y Composite Man operativos
+- DefaultInstitutionalParamProvider extendido con parámetros adaptativos DL-001 para algoritmos 07–12
+- Respuesta `/api/run-smart-trade/{symbol}` incluye confirmaciones ampliadas (`volume_spread_analysis`, `market_profile`, `institutional_order_flow`, `accumulation_distribution`, `smart_money_concepts`, `composite_man`)
+- Validación: `python -m compileall backend/services/institutional_params.py backend/services/signal_quality_assessor.py backend/routes/bots.py`
+
+### ✅ **FASE 3 (ModeParamProvider + Selector) CONCLUIDA:**
+- `DefaultModeParamProvider` derivado de BotConfig + estadísticas recientes
+- `IntelligentModeSelector` heurístico decide entre SCALPING, TREND, ANTI-MANIPULATION, VOLATILITY, NEWS
+- Respuesta `/api/run-smart-trade/{symbol}` expone `mode_decision` con scores, features y confianza
+- Validación: `python -m compileall backend/services/mode_params.py backend/routes/bots.py`
+
+### ✅ **FASE 4 (UI & Telemetría) CONCLUIDA:**
+- SmartScalperMetrics muestra modo activo, acciones recomendadas y métricas derivadas del selector
+- Telemetría básica almacenada en `bot_states` + logging estructurado para históricos de modo
+- Repositorio `configs/mode_defaults.json` documenta parámetros congelados para empaquetado/testnet
+- Validación: `python -m compileall backend/services/mode_params.py backend/routes/bots.py` + inspección UI
+
+### 🚀 **FASE 5 ACTUAL: EXPERIENCIA USUARIO COHERENTE**
+**REORGANIZADA:** Según flujo lógico cronológico del usuario real
+
+#### **🚪 ETAPA 1: ACCESO FUNCIONAL (P0 - SISTEMA USABLE)**
+- **Estado:** ✅ RESUELTO - DL-101 useAuthState localStorage implementation
+- **Meta:** Usuario login → dashboard funcional → puede crear bots
+- **Completado:** Bot creation, BotsAdvanced, SmartScalperMetricsComplete funcionales
+
+#### **🤖 ETAPA 2: CONFIGURACIÓN BOT COHERENTE (P0 - PARÁMETROS CONECTADOS)**
+- **Estado:** 🔴 CRÍTICO - Análisis completado: 7 desconexiones arquitecturales identificadas
+- **Meta:** Usuario crea bot → parámetros trasladan automáticamente a algoritmos
+- **Progreso:** Timeframe dinámico ✅, **7 DESCONEXIONES CRÍTICAS DETECTADAS:**
+  1. **STRATEGY → ANÁLISIS:** Strategy usuario ignorada, algoritmos siempre misma lógica
+  2. **RISK_PROFILE → MODES:** Mode Selection ignora CONSERVATIVE/AGGRESSIVE usuario
+  3. **MARKET_TYPE → FEEDS:** FUTURES_USDT recibe datos SPOT incorrectos
+  4. **TP/SL → SIGNALS:** Algoritmos ignoran tolerancia riesgo usuario configurada
+  5. **COOLDOWN → FREQUENCY:** Sistema genera señales más rápido que cooldown usuario
+  6. **LEVERAGE → ANALYSIS:** Análisis institucional no considera apalancamiento
+  7. **ORDER_TYPES → EXECUTION:** Hardcoded MARKET orders, ignora LIMIT configurado
+- **Evidencia:** Análisis completo con GUARDRAILS P1-P9, sin especulación
+- **Impacto:** Desconexión arquitectural profunda - parámetros usuario totalmente ignorados
+
+#### **📊 ETAPA 3: TABLA PROFESIONAL INFORMATIVA (P0 - UX CRÍTICO)**
+- **Estado:** 🔴 CRÍTICO - Sin señal visible, estado no persiste
+- **Meta:** Usuario ve: Estado, Señal Actual, Algoritmo Activo, Estrategia
+- **Acciones:** Columna señal BUY/SELL/HOLD, persistencia RUNNING/PAUSED
+
+#### **⚡ ETAPA 4: BOT AUTOMÁTICO REAL (P0 - FUNCIONALIDAD PRINCIPAL)**
+- **Estado:** 🔴 CRÍTICO - Solo funciona con modal abierto
+- **Meta:** RUNNING → análisis automático → operaciones reales
+- **Acciones:** Scheduler background, separar análisis/visualización
+
+#### **🎯 ETAPA 5: VISTA ALGORITMOS LÓGICA (P0 - UX FUNDAMENTAL)**
+- **Estado:** 🔴 CRÍTICO - Información incoherente, sin narrativa
+- **Meta:** Parámetros → Análisis → Decisión → Señal → Acción (secuencia lógica)
+- **Acciones:** Modal coherente, overlays funcionales, mensajes comprensibles
+
+#### **📈 ETAPA 6: PERFORMANCE VISIBLE (P1 - FUNCIONALIDAD PERDIDA)**
+- **Estado:** 🟡 PENDIENTE - Componentes eliminados
+- **Meta:** Performance Overview + Execution Quality restaurados
+- **Acciones:** Reintegrar métricas rendimiento, historial operaciones
+
+#### **📊 ETAPA 7: DATASETS LIMPIOS (P2 - TELEMETRÍA)**
+- **Estado:** 🟢 FUNCIONAL - Needs cleanup
+- **Meta:** Dataset usable para ML learning
+- **Acciones:** Clean console.log, export CSV, capture decisions
+
+#### **🔧 ETAPA 8: VALIDACIÓN INTEGRAL (P3 - QUALITY ASSURANCE)**
+- **Estado:** ⏳ FUTURO - Después correcciones
+- **Meta:** Flujo completo end-to-end funcional
+- **Acciones:** Testing integral, backtests, deployment Railway/Vercel
+
+### 🚀 **FASE 6 FUTURA: UNIFICACIÓN SISTEMA AUTENTICACIÓN**
+**OBJETIVO:** Eliminar duplicación AuthContext monolítico vs useAuthState refactorizado
+
+#### **🔄 ETAPA 1: MIGRAR COMPONENTES SIMPLES (P2 - UNIFICACIÓN)**
+- **Estado:** ⏳ PLANIFICADO - Post DL-101
+- **Meta:** Header.jsx, Dashboard.jsx usen useAuthDL008 en lugar de AuthContext
+- **Acciones:**
+  - Migrar Header.jsx: user, logout → useAuthDL008
+  - Migrar dashboardService: localStorage directo → useAuthDL008
+  - Testing componentes migrados
+
+#### **🔄 ETAPA 2: MIGRAR COMPONENTES COMPLEJOS (P2 - ARQUITECTURA)**
+- **Estado:** ⏳ PLANIFICADO - Post migración simple
+- **Meta:** ExchangeManagement, AddExchangeModal usen hooks especializados
+- **Acciones:**
+  - Crear useExchangeOperations hook especializado
+  - Migrar exchange management APIs a useAuthDL008
+  - Deprecar AuthContext.authenticatedFetch
+
+#### **🔄 ETAPA 3: ELIMINAR AUTHCONTEXT MONOLÍTICO (P2 - CLEANUP)**
+- **Estado:** ⏳ PLANIFICADO - Post migración completa
+- **Meta:** Un solo sistema de autenticación unificado
+- **Acciones:**
+  - Deprecated warnings en AuthContext
+  - Remove src/contexts/AuthContext.jsx
+  - Update all imports globally
+  - Documentation cleanup
 
 ---
 
@@ -66,6 +168,13 @@
 ---
 
 ## 📅 **HISTORIAL ACTUALIZACIONES**
+
+- ✅ **FASE 0 Baseline cerrada:** InstitutionalChart/SmartScalperMetrics sin datos simulados; payload real verificado
+- ✅ **FASE 1 Runtime closure:** BotConfig inyectado en SignalQualityAssessor + `institutional_confirmations_breakdown` servidos vía API
+- ✅ **FASE 2 Institutional Algorithms 07–12:** VSA, Market Profile, Order Flow, Acc/Dist, SMC y Composite Man implementados en backend
+- ✅ **FASE 3 Mode Selection:** ModeParamProvider + IntelligentModeSelector integrados; `mode_decision` disponible en API
+- ✅ **FASE 4 UI/Telemetría:** Modo activo visible en SmartScalperMetrics + telemetría histórica y configuración empaquetada
+- 🧪 **Validación:** `python -m compileall backend/services/institutional_params.py backend/services/signal_quality_assessor.py backend/services/mode_params.py backend/routes/bots.py` + revisión manual de payload/UI
 
 ### **2025-09-17:**
 - ✅ **DL-001 SPEC ALIGNMENT COMPLETED:** Documentación actualizada para los 12 algoritmos y modos (Smart Scalper, Trend Hunter, Anti-Manipulation)
@@ -150,6 +259,4 @@
 
 ---
 
-*Actualizado: 2025-09-07 - PROYECTO REFACTORING CONCLUIDO*  
-*Estado Final: SUCCESS CRITERIA 100% completado - Todos ultra-críticos ya refactorizados*  
-*Próxima fase: Testing + Validación local → Algoritmos institucionales avanzados (ETAPA 2)*
+*Actualizado: 2025-09-18 - Fases 0 y 1 completadas; iniciar implementación de algoritmos institucionales Fase 2*

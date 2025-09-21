@@ -29,11 +29,17 @@ const BotsEnhanced = () => {
   const handleCreateBot = async (botData) => {
     setLoading(true);
     try {
+      // 🔍 DEBUG: Log para identificar problema
+      const token = localStorage.getItem('intelibotx_token');
+      console.log('🔍 FRONTEND CREATE-BOT DEBUG:');
+      console.log('📝 Token from localStorage:', token);
+      console.log('📝 Bot data to send:', botData);
+
       const response = await fetch('/api/create-bot', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('intelibotx_token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(botData)
       });

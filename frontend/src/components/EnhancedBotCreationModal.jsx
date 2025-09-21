@@ -685,7 +685,12 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    // 🔍 DEBUG: Log para identificar si este componente se usa
+    console.log('🔍 ENHANCED-BOT-CREATION-MODAL DEBUG:');
+    console.log('📝 Form data:', formData);
+    console.log('📝 Token check:', localStorage.getItem('intelibotx_token'));
+
     if (!validateForm()) return;
 
     setLoading(true);

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import InstitutionalChart from "@/components/InstitutionalChart";
 import BotControlPanel from "@/components/BotControlPanel";
 import AdvancedMetrics from "@/components/AdvancedMetrics";
-import SmartScalperMetrics from "@/components/SmartScalperMetricsComplete";
+import SmartScalperMetricsComplete from "@/components/SmartScalperMetricsComplete";
+import TrendHunterMetricsComplete from "@/components/TrendHunterMetricsComplete";
 import LatencyMonitor from "@/components/LatencyMonitor";
 import ProfessionalBotsTable from "@/components/ProfessionalBotsTable";
 import LiveTradingFeed from "@/components/LiveTradingFeed";
@@ -990,13 +991,20 @@ export default function BotsAdvanced() {
 
                 {/* Métricas Específicas por Estrategia */}
                 {selectedBot.strategy === 'Smart Scalper' ? (
-                  <SmartScalperMetrics 
+                  <SmartScalperMetricsComplete
                     bot={selectedBot}
-                    realTimeData={realTimeData[selectedBot.symbol] || []}
+                    botId={selectedBot.id}
+                    botSymbol={selectedBot.symbol}
+                    realTimeData={realTimeData}
+                    onClose={() => setSelectedBot(null)}
+                  />
+                ) : selectedBot.strategy === 'Trend Hunter' ? (
+                  <TrendHunterMetricsComplete
+                    bot={selectedBot}
                     onClose={() => setSelectedBot(null)}
                   />
                 ) : (
-                  <AdvancedMetrics 
+                  <AdvancedMetrics
                     bot={selectedBot}
                     equityData={selectedBot.metrics.equity}
                     tradeHistory={selectedBot.metrics.trades}

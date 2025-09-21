@@ -13,16 +13,69 @@ import os
 import logging
 import time
 import uuid
+from dataclasses import asdict, is_dataclass
 from typing import Dict, List, Optional, Set, Any
 from datetime import datetime
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+try:  # Optional heavy deps - avoid import errors in minimal envs
+    import numpy as _np  # type: ignore
+except Exception:  # pragma: no cover - numpy not required in all envs
+    _np = None
+
+try:
+    import pandas as _pd  # type: ignore
+except Exception:  # pragma: no cover - pandas optional
+    _pd = None
+
 from utils.exceptions import RateLimitError, ConfigurationError
 from utils.rate_limiter import rate_limiter, RateLimitType, get_client_identifier
 
 logger = logging.getLogger(__name__)
+
+
+def sanitize_data_structure(data: Any) -> Any:
+    """Recursively convert numpy/pandas objects into JSON-safe types.
+
+    Security middleware relies on this helper when normalizing payloads.  
+    It is also imported by downstream modules (e.g. Smart Scalper) to avoid
+    raising serialization errors when institutional algorithms emit numpy
+    scalars or pandas timestamps.
+    """
+
+    # Numpy scalars/arrays
+    if _np is not None:
+        if isinstance(data, _np.generic):
+            return data.item()
+        if isinstance(data, _np.ndarray):
+            return [sanitize_data_structure(item) for item in data.tolist()]
+
+    # Pandas specific objects
+    if _pd is not None:
+        if isinstance(data, _pd.Timestamp):
+            return data.to_pydatetime().isoformat()
+        if isinstance(data, _pd.Series):
+            return [sanitize_data_structure(item) for item in data.tolist()]
+        if isinstance(data, _pd.DataFrame):
+            return [sanitize_data_structure(row) for row in data.to_dict("records")]
+
+    # Dataclasses (used by institutional detectors)
+    if is_dataclass(data):
+        return sanitize_data_structure(asdict(data))
+
+    if isinstance(data, dict):
+        return {str(key): sanitize_data_structure(value) for key, value in data.items()}
+
+    if isinstance(data, (list, tuple, set)):
+        return [sanitize_data_structure(item) for item in data]
+
+    if isinstance(data, datetime):
+        return data.isoformat()
+
+
+    return data
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -108,7 +161,22 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         try:
             # Process request
             response = await call_next(request)
-            
+
+            # JSON payload normalization (prevents numpy/pandas serialization issues)
+            try:
+                if isinstance(response, JSONResponse) and getattr(response, "body", None):
+                    import json
+
+                    payload = json.loads(response.body.decode("utf-8"))
+                    sanitized_payload = sanitize_data_structure(payload)
+
+                    if sanitized_payload is not payload:
+                        new_body = json.dumps(sanitized_payload).encode("utf-8")
+                        response.body = new_body
+                        response.headers["content-length"] = str(len(new_body))
+            except Exception as san_error:
+                logger.debug(f"Security middleware payload sanitization skipped: {san_error}")
+
             # Add security headers to response
             self._add_security_headers(request, response)
             

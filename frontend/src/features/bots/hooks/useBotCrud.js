@@ -19,6 +19,11 @@ export const useBotCrud = () => {
   // ✅ DL-008 COMPLIANT: Create bot with authentication
   const createBot = useCallback(async (botData) => {
     try {
+      // 🔍 DEBUG: Log para identificar si useBotCrud se ejecuta
+      console.log('🔍 USE-BOT-CRUD DEBUG:');
+      console.log('📝 Bot data received:', botData);
+      console.log('📝 Token available:', !!localStorage.getItem('intelibotx_token'));
+
       // ✅ DL-001: Real API endpoint, no hardcode
       const response = await authenticatedFetch('/api/bots', {
         method: 'POST',

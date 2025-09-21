@@ -53,6 +53,26 @@ class HttpInterceptor {
     const originalFetch = window.fetch;
     
     window.fetch = async (...args) => {
+      const [url, options = {}] = args;
+      const isDashboardRequest = typeof url === 'string' && url.includes('/api/dashboard/');
+
+      if (isDashboardRequest) {
+        const method = options?.method || 'GET';
+        let bodyPreview = null;
+        if (options?.body && typeof options.body === 'string') {
+          try {
+            bodyPreview = JSON.parse(options.body);
+          } catch (e) {
+            bodyPreview = options.body;
+          }
+        }
+        console.log('🛰️ Dashboard request →', {
+          url,
+          method,
+          body: bodyPreview
+        });
+      }
+
       try {
         // Pre-request validation
         await this.preRequestValidation(args);
@@ -60,10 +80,31 @@ class HttpInterceptor {
         // Execute request
         const response = await originalFetch(...args);
         
+        if (isDashboardRequest) {
+          const cloned = response.clone();
+          let payload = null;
+          try {
+            payload = await cloned.json();
+          } catch (_) {
+            payload = '[non-JSON body]';
+          }
+          console.log('🛰️ Dashboard response ←', {
+            url,
+            status: response.status,
+            payload
+          });
+        }
+        
         // Post-response processing
         return await this.postResponseProcessing(response, args);
         
       } catch (error) {
+        if (isDashboardRequest) {
+          console.error('🛰️ Dashboard request failed', {
+            url,
+            error: error?.message || error
+          });
+        }
         return this.handleRequestError(error, args);
       }
     };

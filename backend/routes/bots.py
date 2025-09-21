@@ -259,6 +259,88 @@ async def execute_smart_scalper_analysis(
         )
 
 
+# 🎯 TrendHunter Engine - Dedicated pipeline for Trend Hunter mode
+async def execute_trend_hunter_analysis(
+    symbol: str,
+    bot_config,
+    quantity: float,
+    execute_real: bool = False
+) -> Dict[str, Any]:
+    """
+    Execute complete TrendHunter analysis with SMC + Market Profile + VSA
+    SPEC_REF: TREND_HUNTER_MODE_ARCHITECTURE.md
+
+    Args:
+        symbol: Trading pair (e.g: BTCUSDT)
+        bot_config: Bot configuration from DB
+        quantity: Trading quantity
+        execute_real: Whether to execute real order
+
+    Returns:
+        Complete TrendHunter analysis and trading result
+    """
+    try:
+        # TrendHunter imports
+        from services.trend_hunter_analyzer import TrendHunterAnalyzer
+        from services.trend_mode_provider import TrendModeProvider
+        from services.binance_real_data import BinanceRealDataService
+
+        # Initialize TrendHunter services
+        trend_analyzer = TrendHunterAnalyzer()
+        trend_provider = TrendModeProvider()
+        binance_service = BinanceRealDataService()
+
+        # Get real market data
+        df = await binance_service.get_klines(symbol=symbol, interval=bot_config.interval, limit=100)
+
+        if df.empty:
+            raise HTTPException(
+                status_code=500,
+                detail=f"No market data available for {symbol}"
+            )
+
+        # Convert to required format
+        market_data = df.to_dict('records')
+
+        # Execute TrendHunter analysis
+        trend_analysis = await trend_analyzer.analyze_trend_hunter_signals(
+            symbol=symbol,
+            market_data=market_data,
+            mode_decision="TREND_FOLLOWING"
+        )
+
+        # Get current price
+        current_price = df['close'].iloc[-1]
+
+        # Return TrendHunter formatted response
+        return {
+            "message": f"🎯 Trend Hunter análisis completado para {symbol}",
+            "symbol": symbol,
+            "mode": "trend_hunter_pro",
+            "current_price": current_price,
+            "analysis": {
+                "trend_strength": trend_analysis.get('trend_strength', 0),
+                "smc_analysis": trend_analysis.get('smc_analysis', {}),
+                "market_profile_analysis": trend_analysis.get('market_profile_analysis', {}),
+                "vsa_analysis": trend_analysis.get('vsa_analysis', {}),
+                "institutional_confirmations": trend_analysis.get('institutional_confirmations', {}),
+                "recommendation": trend_analysis.get('recommendation', {})
+            },
+            "signals": {
+                "signal": trend_analysis.get('recommendation', {}).get('action', 'HOLD'),
+                "confidence": trend_analysis.get('trend_strength', 0),
+                "reason": trend_analysis.get('recommendation', {}).get('reason', 'TrendHunter SMC + Profile + VSA analysis')
+            },
+            "top_algorithms": trend_analysis.get('algorithms_evaluated', [])
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error en Trend Hunter: {str(e)}"
+        )
+
+
 def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe):
     """Crear TimeframeData con indicadores técnicos calculados"""
     
@@ -356,6 +438,7 @@ async def get_backtest_chart(symbol: str, authorization: str = Header(None)):
 async def run_smart_trade(
     symbol: str,
     scalper_mode: bool = False,
+    trend_hunter_mode: bool = False,  # DL-102: Trend Hunter discriminator parameter
     quantity: float = 0.001,
     execute_real: bool = False,
     authorization: str = Header(None)
@@ -409,12 +492,14 @@ async def run_smart_trade(
         interval = result.interval
         strategy = result.strategy
 
-        # 🏛️ INSTITUCIONAL ÚNICAMENTE (DL-003): SIEMPRE usar Smart Scalper profesional
-        # ELIMINADO: Flujo retail legacy (CSV + indicadores básicos) - DECISIÓN ESTRATÉGICA
-        # REFACTORED: quantity pasado pero internamente manejado según execute_real
-        return await execute_smart_scalper_analysis(
-            normalized_symbol, result, quantity, execute_real
-        )
+        # 🏛️ DL-102: Unified endpoint discriminator (TREND_HUNTER_MODE_ARCHITECTURE.md)
+        if trend_hunter_mode:
+            return await execute_trend_hunter_analysis(normalized_symbol, result, quantity, execute_real)
+        else:
+            # 🏛️ INSTITUCIONAL ÚNICAMENTE (DL-003): Smart Scalper profesional
+            return await execute_smart_scalper_analysis(
+                normalized_symbol, result, quantity, execute_real
+            )
     
     except HTTPException:
         # Re-raise HTTP exceptions as-is

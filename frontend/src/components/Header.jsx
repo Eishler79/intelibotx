@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { UserCircle, LogOut, Settings } from "lucide-react";
+import { UserCircle, LogOut, Settings, Menu } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -12,8 +12,17 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-[#1E293B] text-white px-6 py-4 flex justify-between items-center shadow-md">
-      <h1 className="text-xl font-semibold tracking-wide">InteliBotX Panel</h1>
+    <header className="bg-[#1E293B] text-white px-4 sm:px-6 py-4 flex justify-between items-center shadow-md">
+      <div className="flex items-center gap-4">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
+        >
+          <Menu size={20} />
+        </button>
+        <h1 className="text-lg sm:text-xl font-semibold tracking-wide">InteliBotX Panel</h1>
+      </div>
       
       <div className="relative">
         <div 

@@ -25,9 +25,9 @@ async def get_dashboard_summary(
     from db.database import get_session
     from services.auth_service import get_current_user_safe
     from models.bot_config import BotConfig
-    from routes.trading_operations import TradingOperation
+    from models.trading_operation import TradingOperation
     from sqlmodel import select
-    from fastapi import HTTPException, status, Header
+    from fastapi import HTTPException, status
     import logging
     
     logger = logging.getLogger(__name__)
@@ -36,61 +36,52 @@ async def get_dashboard_summary(
     current_user = await get_current_user_safe(authorization)
     
     try:
-        session = get_session()
-        
-        # 🤖 Obtener bots del usuario
-        bots_query = select(BotConfig).where(BotConfig.user_id == current_user.id)
-        bots = session.exec(bots_query).all()
-        
-        active_bots = len([bot for bot in bots if bot.status == 'RUNNING'])
-        total_bots = len(bots)
-        
-        # 💰 Calcular balance total inicial
-        initial_capital = sum(float(bot.stake or 0) for bot in bots)
-        
-        # 📊 Obtener operaciones del usuario (últimos 30 días)
-        operations_query = select(TradingOperation).where(
-            TradingOperation.user_id == current_user.id,
-            TradingOperation.created_at >= datetime.utcnow() - timedelta(days=30)
-        )
-        operations = session.exec(operations_query).all()
-        
-        # 📈 Calcular métricas PnL
-        total_pnl = sum(op.pnl for op in operations)
-        today_operations = [op for op in operations if op.created_at.date() == datetime.utcnow().date()]
-        today_pnl = sum(op.pnl for op in today_operations)
-        
-        # 💵 Balance actual = Capital inicial + PnL total
-        current_balance = initial_capital + total_pnl
-        
-        # 📊 Operaciones por símbolo
-        symbol_pnl = defaultdict(float)
-        for op in operations:
-            symbol_pnl[op.symbol] += op.pnl
-        
-        # 🎯 Win rate
-        profitable_ops = len([op for op in operations if op.pnl > 0])
-        total_ops = len(operations)
-        win_rate = (profitable_ops / total_ops * 100) if total_ops > 0 else 0
-        
-        # 📈 Performance últimos 7 días
-        last_7_days = []
-        for i in range(7):
-            day = datetime.utcnow() - timedelta(days=i)
-            day_ops = [op for op in operations if op.created_at.date() == day.date()]
-            day_pnl = sum(op.pnl for op in day_ops)
-            last_7_days.append({
-                "date": day.strftime("%Y-%m-%d"),
-                "pnl": round(day_pnl, 2),
-                "operations": len(day_ops)
-            })
-        
-        last_7_days.reverse()  # Orden cronológico
-        
+        with get_session() as session:
+            bots = session.exec(
+                select(BotConfig).where(BotConfig.user_id == current_user.id)
+            ).all()
+
+            active_bots = sum(1 for bot in bots if bot.status == 'RUNNING')
+            total_bots = len(bots)
+            initial_capital = sum(float(bot.stake or 0) for bot in bots)
+
+            operations = session.exec(
+                select(TradingOperation)
+                .where(
+                    TradingOperation.user_id == current_user.id,
+                    TradingOperation.created_at >= datetime.utcnow() - timedelta(days=30)
+                )
+                .order_by(TradingOperation.created_at)
+            ).all()
+
+            total_pnl = sum(op.pnl for op in operations)
+            today_ops = [op for op in operations if op.created_at.date() == datetime.utcnow().date()]
+            today_pnl = sum(op.pnl for op in today_ops)
+            current_balance = initial_capital + total_pnl
+
+            symbol_pnl = defaultdict(float)
+            for op in operations:
+                symbol_pnl[op.symbol] += op.pnl
+
+            profitable_ops = sum(1 for op in operations if op.pnl > 0)
+            total_ops = len(operations)
+            win_rate = (profitable_ops / total_ops * 100) if total_ops else 0
+
+            last_7_days = []
+            for i in range(7):
+                day = (datetime.utcnow() - timedelta(days=i)).date()
+                day_ops = [op for op in operations if op.created_at.date() == day]
+                day_pnl = sum(op.pnl for op in day_ops)
+                last_7_days.append({
+                    "date": day.isoformat(),
+                    "pnl": round(day_pnl, 2),
+                    "operations": len(day_ops)
+                })
+            last_7_days.reverse()
+
         return {
             "success": True,
             "summary": {
-                # Métricas principales
                 "active_bots": active_bots,
                 "total_bots": total_bots,
                 "initial_capital": round(initial_capital, 2),
@@ -98,16 +89,10 @@ async def get_dashboard_summary(
                 "total_pnl": round(total_pnl, 2),
                 "today_pnl": round(today_pnl, 2),
                 "total_operations": total_ops,
-                "today_operations": len(today_operations),
+                "today_operations": len(today_ops),
                 "win_rate": round(win_rate, 1),
-                
-                # Performance por símbolo (top 5)
                 "top_symbols": dict(sorted(symbol_pnl.items(), key=lambda x: x[1], reverse=True)[:5]),
-                
-                # Datos para gráfico
                 "last_7_days": last_7_days,
-                
-                # Status
                 "last_updated": datetime.utcnow().isoformat()
             }
         }

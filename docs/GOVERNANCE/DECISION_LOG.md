@@ -4,6 +4,110 @@
 
 ---
 
+## 2025-09-20 — DL-109 · MODE SELECTION → ALGORITHM INTEGRATION COMPLETED
+
+**Contexto:** Orden de ejecución crítico - Algorithm Selection ejecutaba ANTES de Mode Selection causando decisiones algorítmicas incoherentes con modo seleccionado por IA.
+**Problema:** Mode "NEWS_SENTIMENT" seleccionaba algoritmos manipulation por ejecutar algorithm selector sin conocer mode context.
+**Objetivo:** Invertir orden ejecución + integrar mode_decision como parámetro en algorithm selection para coherencia mode-algorithm.
+**SPEC_REF:** BACKLOG.md#DL-109 + GUARDRAILS.md#P1-P9 + routes/bots.py execution flow
+
+**Decisión:** Implementar Mode Selection → Algorithm Integration con mode-based algorithm weighting.
+- ✅ Invertido orden ejecución: Mode selection primero (línea 236), algorithm selection después (línea 143)
+- ✅ Extendido select_optimal_algorithm() con parámetro mode_decision
+- ✅ Creado mode-algorithm priority mapping:
+  - NEWS_SENTIMENT: Central Bank Policy (1.3x), Options Flow (1.25x), Sentiment Analysis (1.2x)
+  - ANTI_MANIPULATION: Liquidity Grab Fade (1.3x), Stop Hunt Reversal (1.25x), Composite Man (1.2x)
+  - SCALPING: Wyckoff Spring (1.3x), Order Block Retest (1.25x), Volume Breakout (1.2x)
+  - TREND_FOLLOWING: MA Alignment (1.3x), Market Profile (1.25x), VSA Trend (1.2x)
+  - VOLATILITY_ADAPTIVE: VSA Volatility (1.3x), Adaptive Profile (1.25x), Regime Detection (1.2x)
+- ✅ Implementado _apply_mode_algorithm_boost() en AdvancedAlgorithmSelector
+- ✅ Conectado routes/bots.py para pasar mode_decision a algorithm selection
+
+**Impacto:**
+- Resuelve: Desconexión MODE SELECTION → ALGORITHM INTEGRATION (2/7 desconexiones ETAPA 2)
+- Usuario ve algoritmos coherentes con modo IA seleccionado
+- News Sentiment mode ahora prioriza algoritmos news/sentiment apropiados
+- Anti-Manipulation mode prioriza algoritmos anti-manipulación correctos
+- Mantiene compatibilidad: mode_decision opcional, fallback neutral
+
+**Rollback:**
+```bash
+git checkout HEAD~1 -- backend/services/advanced_algorithm_selector.py backend/routes/bots.py
+```
+
+**Testing Required:**
+- ✅ VALIDADO: Syntax check passed + import validation
+- ✅ COMPLETADO: Mode NEWS_SENTIMENT → prioriza Central Bank Policy algorithms
+- ✅ COMPLETADO: Mode ANTI_MANIPULATION → prioriza Liquidity Grab algorithms
+- ✅ COMPLETADO: Console logs muestran coherencia mode-algorithm selection
+
+---
+
+## 2025-09-20 — DL-101 · useAuthState localStorage Implementation
+
+**Contexto:** Sistema de autenticación dividido entre AuthContext (funcional) y useAuthState (incompleto), causando fallas en componentes que usan useAuthDL008.
+**Problema:** useAuthState no cargaba token desde localStorage, resultando en authenticatedFetch con token null.
+**Objetivo:** Completar useAuthState con funcionalidad localStorage para reparar bot creation y otros componentes.
+**SPEC_REF:** GUARDRAILS.md#P1-P9 + src/features/auth/hooks/useAuthState.js
+
+**Decisión:** Implementar localStorage loading + persistencia completa en useAuthState.
+- ✅ Agregado useEffect para cargar token/user desde localStorage al inicializar
+- ✅ Agregadas funciones saveAuthState() y clearAuthState() para persistencia
+- ✅ Mantenido useAuthDL008 sin cambios (usa useAuthState internamente)
+- ✅ Componentes AuthContext existentes sin afectación
+
+**Impacto:**
+- Repara: EnhancedBotCreationModal (bot creation), BotsAdvanced, SmartScalperMetricsComplete
+- Sin afectación: Header, ExchangeManagement, Dashboard (siguen usando AuthContext)
+- Arquitectura: Preparado para migración futura de AuthContext → useAuthState
+
+**Rollback:**
+```bash
+cp src/features/auth/hooks/useAuthState.js.backup_dl101 src/features/auth/hooks/useAuthState.js
+```
+
+**Testing Required:**
+- ✅ COMPLETADO: Bot creation funciona correctamente
+- ✅ COMPLETADO: BotsAdvanced operacional sin errores 401
+- ✅ COMPLETADO: Sistema autenticación estable
+
+---
+
+## 2025-09-20 — DL-102 · Strategy → Algorithm Selection Connection
+
+**Contexto:** Bot strategy configurado por usuario (Smart Scalper, Trend Hunter, etc.) completamente ignorado por AdvancedAlgorithmSelector, causando desconexión crítica entre parámetros usuario y análisis institucional.
+**Problema:** Sistema siempre ejecuta misma lógica algoritmica independiente de strategy seleccionada por usuario.
+**Objetivo:** Conectar BotConfig.strategy con priorización dinámica de algoritmos institucionales.
+**SPEC_REF:** BACKLOG.md#DL-102 + GUARDRAILS.md#P1-P9
+
+**Decisión:** Implementar strategy-based algorithm priority boosting en AdvancedAlgorithmSelector.
+- ✅ Agregado parámetro bot_config a select_optimal_algorithm()
+- ✅ Creado _apply_strategy_algorithm_boost() con mapping dinámico
+- ✅ **CORREGIDO:** Mapping alineado con especificaciones oficiales:
+  - Smart Scalper: WYCKOFF_SPRING (1.3x), ORDER_BLOCK_RETEST (1.25x), LIQUIDITY_GRAB_FADE (1.2x), STOP_HUNT_REVERSAL (1.15x), FAIR_VALUE_GAP (1.1x), VOLUME_BREAKOUT (1.05x)
+  - Trend Hunter: MA_ALIGNMENT (1.3x), WYCKOFF_SPRING (1.25x), VOLUME_BREAKOUT (1.2x), ORDER_BLOCK_RETEST (1.15x), FAIR_VALUE_GAP (1.1x)
+- ✅ Conectado routes/bots.py para pasar bot_config a algorithm selection
+- ✅ **SPEC_REF:** SCALPING_MODE_SPEC.md + SMART_SCALPER_ALGO_REFINEMENTS.md + TREND_FOLLOWING_MODE_SPEC.md + TREND_HUNTER_ALGO_REFINEMENTS.md
+
+**Impacto:**
+- Resuelve: Desconexión STRATEGY → ALGORITHM SELECTION (1/7 desconexiones ETAPA 2)
+- Bot usuario con strategy específica ahora influye selección algoritmo
+- Mantiene compatibilidad: bot_config opcional, fallback neutral (1.0x boost)
+- Sin breaking changes: funcionamiento existente preservado
+
+**Rollback:**
+```bash
+git checkout HEAD~1 -- backend/services/advanced_algorithm_selector.py backend/routes/bots.py
+```
+
+**Testing Required:**
+- ✅ VALIDADO: Syntax check passed (compileall + import)
+- 🔄 PENDIENTE: Functional test con strategy específica
+- 🔄 PENDIENTE: Verificar algorithm boost logs en Smart Scalper modal
+- 🔄 PENDIENTE: Confirmar diferentes algorithms según strategy usuario
+
+---
+
 ## 2025-09-17 — DL-093 · Alineación DL-001 de Especificaciones Institucionales
 
 **Contexto:** Las especificaciones de los 12 algoritmos y modos operativos estaban desfasadas respecto al diseño institucional actual (ParamProviders, payloads, confluencias, selector de modo).

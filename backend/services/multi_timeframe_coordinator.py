@@ -4,19 +4,25 @@
 SPEC_REF: SMART_SCALPER_STRATEGY.md#multi-timeframe-coordination
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
+from datetime import datetime
 
 class TimeframeAlignment(Enum):
-    BULLISH = "bullish"
-    BEARISH = "bearish"
-    NEUTRAL = "neutral"
+    FULLY_ALIGNED_BULLISH = "FULLY_ALIGNED_BULLISH"
+    PARTIALLY_ALIGNED_BULLISH = "PARTIALLY_ALIGNED_BULLISH"
+    FULLY_ALIGNED_BEARISH = "FULLY_ALIGNED_BEARISH"
+    PARTIALLY_ALIGNED_BEARISH = "PARTIALLY_ALIGNED_BEARISH"
+    NEUTRAL = "NEUTRAL"
+    CONFLICTED = "CONFLICTED"
 
 class TrendStrength(Enum):
+    SIDEWAYS = "sideways"
     WEAK = "weak"
     MODERATE = "moderate"
     STRONG = "strong"
+    VERY_STRONG = "very_strong"
 
 @dataclass
 class TimeframeData:
@@ -43,10 +49,13 @@ class TimeframeData:
 
 @dataclass
 class MultiTimeframeSignal:
+    symbol: str
+    timestamp: str
     signal: str
     confidence: float
     alignment: TimeframeAlignment
     trend_strength: TrendStrength
+    timeframe_consensus: float
 
 class MultiTimeframeCoordinator:
     def analyze_multi_timeframe_signal(self, symbol: str, 
@@ -54,7 +63,7 @@ class MultiTimeframeCoordinator:
         """Análisis real de múltiples timeframes usando datos de Binance"""
         
         # Analizar alineación de tendencias
-        alignment = self._analyze_trend_alignment(timeframe_data)
+        alignment, consensus = self._analyze_trend_alignment(timeframe_data)
         
         # Calcular fortaleza general
         strength = self._calculate_trend_strength(timeframe_data)
@@ -63,34 +72,39 @@ class MultiTimeframeCoordinator:
         signal, confidence = self._generate_combined_signal(timeframe_data, alignment)
         
         return MultiTimeframeSignal(
+            symbol=symbol,
+            timestamp=datetime.utcnow().isoformat(),
             signal=signal,
             confidence=confidence,
             alignment=alignment,
-            trend_strength=strength
+            trend_strength=strength,
+            timeframe_consensus=consensus
         )
     
-    def _analyze_trend_alignment(self, timeframe_data: Dict[str, TimeframeData]) -> TimeframeAlignment:
+    def _analyze_trend_alignment(self, timeframe_data: Dict[str, TimeframeData]) -> Tuple[TimeframeAlignment, float]:
         """Analizar alineación de tendencias entre timeframes"""
         if not timeframe_data:
-            return TimeframeAlignment.NEUTRAL
-            
-        bullish_count = 0
-        bearish_count = 0
-        
-        for tf, data in timeframe_data.items():
-            if data.trend_direction == "BULLISH":
-                bullish_count += 1
-            elif data.trend_direction == "BEARISH":
-                bearish_count += 1
-        
+            return TimeframeAlignment.NEUTRAL, 0.0
+
+        bullish_count = sum(1 for data in timeframe_data.values() if data.trend_direction == "BULLISH")
+        bearish_count = sum(1 for data in timeframe_data.values() if data.trend_direction == "BEARISH")
         total_tf = len(timeframe_data)
-        
-        if bullish_count >= total_tf * 0.7:
-            return TimeframeAlignment.BULLISH
-        elif bearish_count >= total_tf * 0.7:
-            return TimeframeAlignment.BEARISH
+        consensus = max(bullish_count, bearish_count) / total_tf if total_tf else 0.0
+
+        if bullish_count == total_tf:
+            alignment = TimeframeAlignment.FULLY_ALIGNED_BULLISH
+        elif bearish_count == total_tf:
+            alignment = TimeframeAlignment.FULLY_ALIGNED_BEARISH
+        elif bullish_count >= max(1, int(total_tf * 0.6)):
+            alignment = TimeframeAlignment.PARTIALLY_ALIGNED_BULLISH
+        elif bearish_count >= max(1, int(total_tf * 0.6)):
+            alignment = TimeframeAlignment.PARTIALLY_ALIGNED_BEARISH
+        elif bullish_count > 0 and bearish_count > 0:
+            alignment = TimeframeAlignment.CONFLICTED
         else:
-            return TimeframeAlignment.NEUTRAL
+            alignment = TimeframeAlignment.NEUTRAL
+
+        return alignment, consensus
     
     def _calculate_trend_strength(self, timeframe_data: Dict[str, TimeframeData]) -> TrendStrength:
         """Calcular fortaleza de tendencia usando datos reales"""
@@ -106,12 +120,15 @@ class MultiTimeframeCoordinator:
         
         avg_strength = total_strength / count if count > 0 else 0
         
-        if avg_strength >= 0.7:
+        if avg_strength >= 0.8:
+            return TrendStrength.VERY_STRONG
+        if avg_strength >= 0.6:
             return TrendStrength.STRONG
-        elif avg_strength >= 0.4:
+        if avg_strength >= 0.4:
             return TrendStrength.MODERATE
-        else:
+        if avg_strength >= 0.2:
             return TrendStrength.WEAK
+        return TrendStrength.SIDEWAYS
     
     def _generate_combined_signal(self, timeframe_data: Dict[str, TimeframeData], 
                                 alignment: TimeframeAlignment) -> tuple:
@@ -154,5 +171,12 @@ class MultiTimeframeCoordinator:
         else:
             signal = "HOLD"
             confidence = 0.5
-        
+
+        if alignment in (TimeframeAlignment.FULLY_ALIGNED_BULLISH, TimeframeAlignment.FULLY_ALIGNED_BEARISH):
+            confidence = min(0.99, confidence + 0.15)
+        elif alignment in (TimeframeAlignment.PARTIALLY_ALIGNED_BULLISH, TimeframeAlignment.PARTIALLY_ALIGNED_BEARISH):
+            confidence = min(0.95, confidence + 0.05)
+        elif alignment == TimeframeAlignment.CONFLICTED:
+            confidence = max(0.3, confidence * 0.7)
+
         return signal, confidence

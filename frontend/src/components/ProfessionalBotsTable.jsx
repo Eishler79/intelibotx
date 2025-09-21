@@ -109,12 +109,12 @@ export default function ProfessionalBotsTable({
   return (
     <div className="bg-gray-900/50 border border-gray-700/50 rounded-xl backdrop-blur-sm overflow-hidden">
       {/* Table Header */}
-      <div className="bg-gray-800/50 px-6 py-4 border-b border-gray-700/50">
-        <h3 className="text-lg font-semibold text-white">Bots Activos ({bots.length})</h3>
+      <div className="bg-gray-800/50 px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-700/50">
+        <h3 className="text-sm sm:text-lg font-semibold text-white">Bots Activos ({bots.length})</h3>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* Desktop Table - Hidden on mobile */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-800/30 border-b border-gray-700/50">
             <tr>
@@ -395,6 +395,92 @@ export default function ProfessionalBotsTable({
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Cards - Visible on mobile only */}
+      <div className="md:hidden">
+        {sortedBots.map((bot) => {
+          if (!bot || !bot.id) return null;
+
+          const pnlInfo = formatPnL(bot);
+
+          return (
+            <div key={bot.id} className="border-b border-gray-700/50 p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="outline" className="text-xs">
+                      {bot.symbol || 'N/A'}
+                    </Badge>
+                    <Badge className={getStatusColor(bot.status)}>
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(bot.status)}
+                        <span className="text-xs">{bot.status || 'STOPPED'}</span>
+                      </div>
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-300">{bot.strategy || 'Smart Scalper'}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-400">Capital</p>
+                  <p className="text-sm font-semibold text-white">${bot.stake || 0}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-3 text-xs">
+                <div>
+                  <p className="text-gray-400">PnL</p>
+                  <p className={`font-semibold ${pnlInfo.color}`}>{pnlInfo.formatted}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Win Rate</p>
+                  <p className="font-semibold text-white">{bot.metrics?.winRate || '0.0'}%</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Trades</p>
+                  <p className="font-semibold text-white">{bot.metrics?.totalTrades || 0}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Sharpe</p>
+                  <p className="font-semibold text-white">{bot.metrics?.sharpeRatio || '0.00'}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="flex-1 text-green-400 hover:text-green-300 hover:bg-gray-700 text-xs"
+                  onClick={() => onToggleBotStatus && onToggleBotStatus(bot.id, 'RUNNING')}
+                  title="Iniciar Bot"
+                >
+                  <Play size={12} className="mr-1" />
+                  Start
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="flex-1 text-blue-400 hover:text-blue-300 hover:bg-gray-700 text-xs"
+                  onClick={() => onViewDetails && onViewDetails(bot)}
+                  title="Ver Detalles"
+                >
+                  <Eye size={12} className="mr-1" />
+                  Ver
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="flex-1 text-purple-400 hover:text-purple-300 hover:bg-gray-700 text-xs"
+                  onClick={() => onControlBot && onControlBot(bot)}
+                  title="Configurar"
+                >
+                  <Settings size={12} className="mr-1" />
+                  Config
+                </Button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Empty State */}

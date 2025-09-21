@@ -395,7 +395,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <Card className="bg-gray-900 border-gray-700 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <Card className="bg-gray-900 border-gray-700 w-full max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-6xl max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
@@ -428,7 +428,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
               <Settings className="text-blue-400" size={20} />
               Configuración Básica
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Nombre del Bot</Label>
                 <input
@@ -561,7 +561,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 <DollarSign size={16} />
                 Configuración de Mercado Actual
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs text-gray-400">Exchange</Label>
                   <p className="text-white font-medium">
@@ -599,7 +599,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
               <Activity className="text-green-400" size={20} />
               Estado del Bot - Tiempo Real
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               <div className="bg-gray-800/50 p-3 rounded-lg text-center">
                 <Activity className="mx-auto mb-2 text-green-400" size={20} />
                 <p className="text-xs text-gray-400">Estado</p>
@@ -676,7 +676,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                 Los valores se calculan dinámicamente sobre tu capital actual.
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <SliderInput
                   label="Take Profit"
@@ -755,7 +755,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
               <Target className="text-orange-400" size={20} />
               Gestión de Órdenes
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Tipo de Orden Entrada</Label>
                 <select
@@ -865,7 +865,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
           {/* Controles Operacionales */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Controles Operacionales</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <SliderInput
                   label="Max Posiciones Abiertas"

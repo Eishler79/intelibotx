@@ -180,13 +180,12 @@ const Dashboard = () => {
       {/* 📊 Header con controles */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold text-white">Panel de Control</h1>
           {/* 🏛️ Exchange Status Indicators - DL-001 Compliance */}
           {hasExchanges && userExchanges.length > 0 && (
             <div className="flex items-center gap-2">
               {userExchanges.slice(0, 3).map((exchange) => (
-                <div 
-                  key={exchange.id} 
+                <div
+                  key={exchange.id}
                   className="exchange-status flex items-center gap-2 bg-white/5 backdrop-blur-lg px-3 py-1.5 rounded-lg border border-white/10"
                   title={`${exchange.exchange_name.toUpperCase()} - ${exchange.connection_name}`}
                 >
@@ -199,8 +198,8 @@ const Dashboard = () => {
                     {exchange.exchange_name.toUpperCase()}
                   </span>
                   <div className={`exchange-status-dot w-2 h-2 rounded-full ${
-                    exchange.status === 'active' 
-                      ? 'bg-green-400 shadow-sm shadow-green-400/50' 
+                    exchange.status === 'active'
+                      ? 'bg-green-400 shadow-sm shadow-green-400/50'
                       : exchange.status === 'error'
                       ? 'bg-red-400 shadow-sm shadow-red-400/50'
                       : 'bg-yellow-400 shadow-sm shadow-yellow-400/50'
@@ -230,7 +229,7 @@ const Dashboard = () => {
               </Button>
             ))}
           </div>
-          
+
           {/* Botón refresh */}
           <Button size="sm" variant="outline" onClick={refetch}>
             <RefreshCw className={`w-4 h-4 ${summaryLoading ? 'animate-spin' : ''}`} />

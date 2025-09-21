@@ -24,10 +24,10 @@ import { TrendingUp, TrendingDown, Activity, BarChart3 } from "lucide-react";
  */
 export default function DashboardMetrics({ dynamicMetrics }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6">
       {/* Total PnL Card */}
       <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
-        <CardContent className="p-6">
+        <CardContent className="p-3 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-intelibot-text-muted text-sm">Total PnL</p>
@@ -42,11 +42,11 @@ export default function DashboardMetrics({ dynamicMetrics }) {
       
       {/* Active Bots Card */}
       <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
-        <CardContent className="p-6">
+        <CardContent className="p-3 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-intelibot-text-muted text-sm">Bots Activos</p>
-              <p className="text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.activeBots}</p>
+              <p className="text-lg sm:text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.activeBots}</p>
             </div>
             <Activity className="text-intelibot-accent-gold" size={24} />
           </div>
@@ -55,11 +55,11 @@ export default function DashboardMetrics({ dynamicMetrics }) {
 
       {/* Average Sharpe Card */}
       <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
-        <CardContent className="p-6">
+        <CardContent className="p-3 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-intelibot-text-muted text-sm">Sharpe Promedio</p>
-              <p className="text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.avgSharpe}</p>
+              <p className="text-lg sm:text-2xl font-bold text-intelibot-accent-gold">{dynamicMetrics.avgSharpe}</p>
             </div>
             <BarChart3 className="text-intelibot-accent-gold" size={24} />
           </div>
@@ -68,11 +68,11 @@ export default function DashboardMetrics({ dynamicMetrics }) {
 
       {/* Win Rate Card */}
       <Card className="bg-intelibot-bg-secondary border-intelibot-border-primary backdrop-blur-sm shadow-intelibot-card">
-        <CardContent className="p-6">
+        <CardContent className="p-3 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-intelibot-text-muted text-sm">Win Rate</p>
-              <p className="text-2xl font-bold text-intelibot-success-green">{dynamicMetrics.avgWinRate}%</p>
+              <p className="text-lg sm:text-2xl font-bold text-intelibot-success-green">{dynamicMetrics.avgWinRate}%</p>
             </div>
             <TrendingUp className="text-intelibot-success-green" size={24} />
           </div>
