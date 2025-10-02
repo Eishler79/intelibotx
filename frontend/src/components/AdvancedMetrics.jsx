@@ -86,18 +86,26 @@ export default function AdvancedMetrics({ bot, equityData, tradeHistory }) {
   const [metrics, setMetrics] = useState({});
   const [loading, setLoading] = useState(true);
 
+  // Helper function to calculate current streak
+  const calculateCurrentStreak = (trades) => {
+    if (!trades || trades.length === 0) return 0;
+    let streak = 0;
+    for (let i = trades.length - 1; i >= 0; i--) {
+      if ((trades[i] > 0 && streak >= 0) || (trades[i] < 0 && streak <= 0)) {
+        streak = trades[i] > 0 ? streak + 1 : streak - 1;
+      } else break;
+    }
+    return Math.abs(streak);
+  };
+
   useEffect(() => {
     const calculateMetrics = () => {
       if (!bot) return;
 
-      // Generar datos simulados si no hay datos reales
-      const mockReturns = Array.from({length: 30}, () => (Math.random() - 0.5) * 0.05);
-      const mockEquity = Array.from({length: 30}, (_, i) => 1000 + (Math.random() - 0.4) * 100 + i * 5);
-      const mockTrades = Array.from({length: 50}, () => (Math.random() - 0.45) * 100);
-
-      const returns = equityData?.returns || mockReturns;
-      const equity = equityData?.curve || mockEquity;
-      const trades = tradeHistory || mockTrades;
+      // Use only real data, no fallbacks
+      const returns = equityData?.returns || [];
+      const equity = equityData?.curve || equityData || [];
+      const trades = tradeHistory || [];
 
       const sharpeRatio = calculateSharpeRatio(returns);
       const sortinoRatio = calculateSortinoRatio(returns);
@@ -127,7 +135,7 @@ export default function AdvancedMetrics({ bot, equityData, tradeHistory }) {
         avgLoss: Number(Math.abs(avgLoss) || 0).toFixed(2),
         bestTrade: Number(bestTrade || 0).toFixed(2),
         worstTrade: Number(Math.abs(worstTrade) || 0).toFixed(2),
-        currentStreak: Math.floor(Math.random() * 10) + 1,
+        currentStreak: calculateCurrentStreak(trades),
         recoveryFactor: Number((Math.abs(totalReturn) / (maxDrawdown || 1))).toFixed(2)
       });
       
@@ -163,6 +171,17 @@ export default function AdvancedMetrics({ bot, equityData, tradeHistory }) {
     return (
       <div className="flex items-center justify-center h-32">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Show message when no trades data available
+  if (!tradeHistory || tradeHistory.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <Shield className="mx-auto text-gray-500 mb-4" size={48} />
+        <p className="text-gray-400 text-lg">No hay operaciones registradas</p>
+        <p className="text-gray-500 text-sm mt-2">Las métricas se mostrarán cuando el bot complete operaciones</p>
       </div>
     );
   }

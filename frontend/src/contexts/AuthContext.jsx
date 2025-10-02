@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }) => {
         user,
         sessionExpired
       }, notifications);
-      
+
       console.log('🔒 HTTP Interceptor initialized with AuthContext and notifications');
     }
   }, [loading, token, user, sessionExpired, notifications]);

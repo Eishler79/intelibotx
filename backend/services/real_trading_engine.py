@@ -159,9 +159,9 @@ class RealTradingEngine:
             return 0.0
 
     async def execute_market_order(
-        self, 
-        symbol: str, 
-        side: str, 
+        self,
+        symbol: str,
+        side: str,
         quantity: float,
         bot_id: int,
         strategy: str = "Manual"

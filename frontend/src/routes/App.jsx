@@ -18,10 +18,14 @@ import SmartTrade from "../pages/SmartTrade";
 import SmartIntelligence from "../pages/SmartIntelligence";
 import Portfolio from "../pages/Portfolio";
 import BotsAdvanced from "../pages/BotsAdvanced";
+import BotsModular from "../pages/BotsModular";
 import BotsEnhanced from "../pages/BotsEnhanced";
 import ExchangeManagement from "../pages/ExchangeManagement";
 import Layout from "../components/Layout";
 import BacktestViewer from "../pages/BacktestViewer";
+
+// Modular Architecture
+// BotManagementProvider eliminado - usando hooks directos
 
 const App = () => {
   return (
@@ -45,7 +49,9 @@ const App = () => {
             <Route path="/smart-trade" element={<SmartTrade />} /> {/* PLACEHOLDER - Temporarily disabled */}
             <Route path="/intelligence" element={<SmartIntelligence />} /> {/* PLACEHOLDER - Temporarily disabled */}
             <Route path="/portfolio" element={<Portfolio />} />
-            <Route path="/bots" element={<BotsAdvanced />} />
+            {/* Ruta nueva modular - ACTIVADA */}
+            <Route path="/bots" element={<BotsModular />} />
+            {/* Ruta legacy - mantener por si necesitas rollback */}
             <Route path="/bots-advanced" element={<BotsAdvanced />} />
             <Route path="/bots-enhanced" element={<BotsEnhanced />} />
             <Route path="/exchanges" element={<ExchangeManagement />} />

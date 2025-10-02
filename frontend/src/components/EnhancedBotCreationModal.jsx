@@ -127,9 +127,9 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     }
   }, [selectedExchange]);
 
-  // Cargar datos reales cuando cambia símbolo
+  // Cargar datos reales cuando cambia símbolo (solo si hay exchange seleccionado)
   useEffect(() => {
-    if (formData.symbol) {
+    if (formData.symbol && selectedExchange) {
       loadRealTimeData();
     }
   }, [formData.symbol]);
@@ -528,11 +528,11 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
       
       // ✅ Use DL-019 professional failover system
       const currentPrice = await getRealPriceWithFailover(formData.symbol);
-      let balance = 1000.00; // Default balance
-      
-      // Intentar obtener balance del exchange si es posible
-      try {
-        if (selectedExchange) {
+      let balance = null; // ✅ DL-001: NO hardcode - will be loaded from API or stay null
+
+      // ✅ DL-001: Load REAL balance from exchange API ONLY if exchange is selected
+      if (selectedExchange) {
+        try {
           const balanceResponse = await fetch(
             `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/user/exchanges/${selectedExchange.id}/balance`,
             {
@@ -542,20 +542,40 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
               }
             }
           );
-          
+
           if (balanceResponse.ok) {
             const balanceData = await balanceResponse.json();
+            console.log('🔍 BALANCE API RESPONSE:', balanceData);
+
             if (balanceData.success && balanceData.balances) {
               const usdtBalance = balanceData.balances.find(b => b.asset === 'USDT');
+              console.log('🔍 USDT Balance object:', usdtBalance);
+
               if (usdtBalance) {
-                balance = parseFloat(usdtBalance.free) || 1000.00;
-                console.log(`✅ Real balance loaded: ${balance} USDT`);
+                balance = parseFloat(usdtBalance.free);
+                console.log('🔍 Parsed balance:', balance);
+
+                if (!isNaN(balance) && balance !== null && balance !== undefined) {
+                  console.log(`✅ Real balance loaded: ${balance} USDT`);
+                } else {
+                  console.warn('⚠️ Invalid balance value, keeping null');
+                  balance = null;
+                }
+              } else {
+                console.warn('⚠️ USDT balance not found in response');
               }
+            } else {
+              console.warn('⚠️ Balance API returned unsuccessful response');
             }
+          } else {
+            console.warn('⚠️ Balance API request failed:', balanceResponse.status);
           }
+        } catch (balanceErr) {
+          console.warn('⚠️ Could not load real balance:', balanceErr);
+          // ✅ DL-001: Keep balance as null, do NOT use hardcoded fallback
         }
-      } catch (balanceErr) {
-        console.warn('Could not load real balance, using default:', balanceErr);
+      } else {
+        console.log('ℹ️ No exchange selected yet - balance will be null');
       }
       
       setRealTimeData({
@@ -697,8 +717,10 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
     setError('');
 
     try {
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://intelibotx-production.up.railway.app';
-      
+      // ✅ P1 FIX: Use relative URL to leverage Vite proxy (vite.config.js:14-17)
+      // Absolute URL causes CORS issues → empty request body → backend error 500
+      // SPEC_REF: useBotCrud.js:34 (proven working pattern)
+
       // DEBUG: Log data being sent to backend
       console.log('📤 Datos enviados al backend:', {
         name: formData.name,
@@ -706,9 +728,9 @@ const EnhancedBotCreationModal = ({ isOpen, onClose, onBotCreated, selectedTempl
         market_type: formData.market_type,
         formDataCompleto: formData
       });
-      
-      // ✅ DL-008: Using centralized authentication pattern
-      const response = await authenticatedFetch(`${BASE_URL}/api/create-bot`, {
+
+      // ✅ DL-008: Using centralized authentication pattern with relative URL
+      const response = await authenticatedFetch('/api/create-bot', {
         method: 'POST',
         body: JSON.stringify(formData)
       });

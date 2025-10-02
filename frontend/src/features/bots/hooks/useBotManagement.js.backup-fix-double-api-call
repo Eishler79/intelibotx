@@ -1,0 +1,179 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useBotState } from './useBotState';
+import { useBotCrud } from './useBotCrud';
+import { useBotStatus } from './useBotStatus';
+import { useBotOperations } from './useBotOperations';
+import { useBotMetrics } from './useBotMetrics';
+import { useBotMarketData } from './useBotMarketData';
+
+/**
+ * useBotManagement - Hook consolidado para toda la lógica
+ * SUCCESS CRITERIA: Centraliza toda la lógica de BotsModular
+ */
+export const useBotManagement = () => {
+  // Estado local
+  const botState = useBotState();
+  const { bots, setBots, loading, setLoading, error, setError,
+    showCreateModal, setShowCreateModal, controlPanelBot, setControlPanelBot,
+    showTemplates, setShowTemplates, selectedTemplate, setSelectedTemplate,
+    activeTab, setActiveTab, selectedBotId, setSelectedBotId,
+    successMessage, setSuccessMessage } = botState;
+
+  // Hooks de operaciones
+  const { fetchBots, createBot, updateBot, deleteBotOperation } = useBotCrud();
+  const { toggleBotStatus } = useBotStatus();
+  const { startBotTrading, stopBotTrading } = useBotOperations();
+  const { loadRealBotMetrics, getRealBotMetrics } = useBotMetrics();
+  const { fetchMarketData } = useBotMarketData();
+
+  // Estado adicional
+  const [dynamicMetrics, setDynamicMetrics] = useState({
+    totalPnL: 0, activeBots: 0, avgSharpe: 0, avgWinRate: 0
+  });
+  const [realTimeData, setRealTimeData] = useState({});
+  const [selectedBot, setSelectedBot] = useState(null);
+
+  // Update selectedBot with metrics when selected
+  const handleSelectBot = useCallback(async (bot) => {
+    setSelectedBot(bot);
+    if (bot && bot.id) {
+      const metrics = await getRealBotMetrics(bot);
+      setSelectedBot(prev => ({...prev, metrics}));
+    }
+  }, [getRealBotMetrics]);
+
+  // Cargar bots al montar - ✅ DL-008: Verify auth before fetching
+  useEffect(() => {
+    const loadBots = async () => {
+      setLoading(true);
+      try {
+        // ✅ P1: VERIFICATION - Check if user is authenticated before API call
+        const token = localStorage.getItem('intelibotx_token');
+        if (!token) {
+          console.warn('⚠️ No authentication token found - skipping bot fetch');
+          setBots([]);
+          setLoading(false);
+          return;
+        }
+
+        const data = await fetchBots();
+        setBots(data);
+      } catch (err) {
+        console.error('❌ Error loading bots:', err);
+        setError(err.message);
+        // ✅ P3: ERROR HANDLING - Don't crash, just show empty state
+        setBots([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadBots();
+  }, []);
+
+  // Calcular métricas dinámicas
+  useEffect(() => {
+    if (bots.length > 0) {
+      const runningBots = bots.filter(b => b.status === 'RUNNING');
+      const allActiveBots = bots.filter(b => b.metrics?.totalTrades > 0 || b.status === 'RUNNING');
+      const totalPnL = allActiveBots.reduce((sum, bot) => sum + Number(bot.metrics?.realizedPnL || 0), 0);
+      const avgWinRate = allActiveBots.length > 0
+        ? allActiveBots.reduce((sum, bot) => sum + Number(bot.metrics?.winRate || 0), 0) / allActiveBots.length : 0;
+      const avgSharpe = allActiveBots.length > 0
+        ? allActiveBots.reduce((sum, bot) => sum + Number(bot.metrics?.sharpeRatio || 0), 0) / allActiveBots.length : 0;
+
+      setDynamicMetrics({
+        totalPnL: totalPnL.toFixed(2),
+        activeBots: runningBots.length,
+        avgSharpe: avgSharpe.toFixed(2),
+        avgWinRate: avgWinRate.toFixed(1)
+      });
+    }
+  }, [bots]);
+
+  // Cargar market data
+  useEffect(() => {
+    if (selectedBot) {
+      const loadMarketData = async () => {
+        try {
+          const data = await fetchMarketData(selectedBot.symbol, '15m', 100, selectedBot.market_type);
+          setRealTimeData(prev => ({ ...prev, [selectedBot.symbol]: data }));
+        } catch (error) {
+          console.error('Error loading market data:', error);
+        }
+      };
+      loadMarketData();
+    }
+  }, [selectedBot, fetchMarketData]);
+
+  // Handlers
+  const handleDeleteBot = async (id) => {
+    try {
+      await deleteBotOperation(id, bots);
+      setBots(prev => prev.filter(b => b.id !== id));
+      setSuccessMessage('Bot eliminado exitosamente');
+    } catch (err) {
+      console.error('Error deleting bot:', err);
+      setError(err.message);
+    }
+  };
+
+  const handleToggleBotStatus = async (id, status) => {
+    try {
+      const result = await toggleBotStatus(id, status, bots);
+      if (result.success) {
+        setBots(prev => prev.map(b => b.id === id ? {...b, status: result.newStatus} : b));
+        if (result.newStatus === 'RUNNING') {
+          const bot = bots.find(b => b.id === id);
+          startBotTrading(id, bot);
+        } else {
+          stopBotTrading(id);
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling bot status:', err);
+      setError(err.message);
+    }
+  };
+
+  const handleUpdateBot = async (id, updates) => {
+    try {
+      const updated = await updateBot(id, updates);
+      setBots(prev => prev.map(b => b.id === id ? updated : b));
+      setSuccessMessage('Bot actualizado exitosamente');
+    } catch (err) {
+      console.error('Error updating bot:', err);
+      setError(err.message);
+    }
+  };
+
+  const handleCreateBot = async (botData) => {
+    try {
+      const newBot = await createBot(botData);
+      setBots(prev => [...prev, newBot]);
+      setShowCreateModal(false);
+      setSuccessMessage('Bot creado exitosamente');
+    } catch (err) {
+      console.error('Error creating bot:', err);
+      setError(err.message);
+    }
+  };
+
+  return {
+    // Estado
+    bots, loading, error, successMessage, activeTab, selectedBotId, selectedBot,
+    showCreateModal, controlPanelBot, showTemplates, selectedTemplate,
+    dynamicMetrics, realTimeData,
+
+    // Setters
+    setActiveTab, setSelectedBotId, setSelectedBot: handleSelectBot, setShowCreateModal,
+    setControlPanelBot, setShowTemplates, setSelectedTemplate, setSuccessMessage,
+
+    // Handlers
+    handleDeleteBot, handleToggleBotStatus, handleUpdateBot, handleCreateBot,
+
+    // Métodos
+    getRealBotMetrics
+  };
+};
+
+export default useBotManagement;

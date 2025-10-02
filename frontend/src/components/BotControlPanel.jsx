@@ -199,6 +199,8 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
       console.log('🔄 Sending backend params:', backendParams);
       await onUpdateBot(bot.id, backendParams);
       console.log("✅ Parámetros actualizados exitosamente");
+      // ✅ FIX: Cerrar modal después de actualización exitosa (SPEC_REF: BotsAdvanced.jsx:925)
+      onClose();
     } catch (error) {
       console.error("❌ Error actualizando parámetros:", error);
     } finally {
@@ -689,7 +691,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   icon={TrendingUp}
                 />
                 <p className="text-xs text-green-400">
-                  ≈ +${(((parameters.stake || 0) * (parameters.leverage || 1)) * (parameters.takeProfit || 0) / 100).toFixed(2)} {parameters.base_currency || 'USDT'} por operación
+                  ≈ +${(((parameters.stake || 0) * (parameters.leverage || 1)) * (parameters.takeProfit || 0) / 100).toFixed(2)} {parameters.base_currency} por operación
                   {(parameters.leverage || 1) > 1 && (
                     <span className="text-yellow-400 ml-1">({parameters.leverage}x leverage aplicado)</span>
                   )}
@@ -708,7 +710,7 @@ export default function BotControlPanel({ bot, onUpdateBot, onClose }) {
                   icon={AlertTriangle}
                 />
                 <p className="text-xs text-red-400">
-                  ≈ -${(((parameters.stake || 0) * (parameters.leverage || 1)) * (parameters.stopLoss || 0) / 100).toFixed(2)} {parameters.base_currency || 'USDT'} por operación
+                  ≈ -${(((parameters.stake || 0) * (parameters.leverage || 1)) * (parameters.stopLoss || 0) / 100).toFixed(2)} {parameters.base_currency} por operación
                   {(parameters.leverage || 1) > 1 && (
                     <span className="text-yellow-400 ml-1">({parameters.leverage}x leverage aplicado)</span>
                   )}

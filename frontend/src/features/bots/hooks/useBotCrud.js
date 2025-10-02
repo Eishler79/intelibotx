@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useAuthDL008 } from "../../shared/hooks/useAuthDL008";
+import { useAuthDL008 } from "../../../shared/hooks/useAuthDL008";
 import { deleteBot } from '../../../services/api';
 
 /**
@@ -25,10 +25,16 @@ export const useBotCrud = () => {
       console.log('📝 Token available:', !!localStorage.getItem('intelibotx_token'));
 
       // ✅ DL-001: Real API endpoint, no hardcode
-      const response = await authenticatedFetch('/api/bots', {
+      // Agregar campo dca_levels que espera el backend
+      const botDataWithDefaults = {
+        ...botData,
+        dca_levels: botData.dca_levels || 0
+      };
+
+      const response = await authenticatedFetch('/api/create-bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(botData)
+        body: JSON.stringify(botDataWithDefaults)
       });
 
       if (!response.ok) {
@@ -85,6 +91,7 @@ export const useBotCrud = () => {
   }, [authenticatedFetch]);
 
   // ✅ DL-008 COMPLIANT: Delete bot with authentication
+  // ✅ SPEC_REF: BotsAdvanced.jsx.backup-dl122:389 - No validate result.success, backend only returns {message, bot_id}
   const deleteBotOperation = useCallback(async (botId, bots = []) => {
     try {
       const bot = bots.find(b => b.id === botId);
@@ -93,23 +100,63 @@ export const useBotCrud = () => {
       }
 
       // ✅ DL-017 COMPLIANT: Use deleteBot() function with authentication
+      // Backend returns: {message: "🗑️ Bot X eliminado exitosamente", bot_id: N}
+      // If no error thrown, deletion was successful (Status 200 OK)
       const result = await deleteBot(botId.toString());
-      
-      if (result.success) {
-        console.log(`✅ Bot ${bot.name} (${bot.symbol}) deleted successfully`);
-        return { success: true, botId, message: `Bot ${bot.name} deleted` };
-      } else {
-        throw new Error(result.message || 'Failed to delete bot');
-      }
+      console.log(`✅ Bot ${bot.name} (${bot.symbol}) deleted successfully:`, result.message);
+
+      return { success: true, botId, message: result.message };
     } catch (error) {
       console.error('❌ Error deleting bot:', error);
       throw error;
     }
   }, []);
 
+  // ✅ DL-001 COMPLIANT: Fetch all bots with authentication
+  const fetchBots = useCallback(async () => {
+    try {
+      const response = await authenticatedFetch('/api/bots');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch bots');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('❌ Error fetching bots:', error);
+      throw error;
+    }
+  }, [authenticatedFetch]);
+
+  // ✅ DL-001 COMPLIANT: Update bot with authentication
+  const updateBot = useCallback(async (botId, updates) => {
+    try {
+      const response = await authenticatedFetch(`/api/bots/${botId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Error updating bot');
+      }
+
+      const updatedBot = await response.json();
+      console.log(`✅ Bot ${updatedBot.name} updated successfully`);
+      return updatedBot;
+    } catch (error) {
+      console.error('❌ Error updating bot:', error);
+      throw error;
+    }
+  }, [authenticatedFetch]);
+
   return {
     createBot,
-    deleteBotOperation
+    deleteBotOperation,
+    fetchBots,
+    updateBot
   };
 };
 

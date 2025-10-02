@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-09-27T10:30:00Z",
+  "baseline_before_stake_fix": {
+    "frontend": {
+      "build_status": "SUCCESS",
+      "build_time": "4.16s",
+      "bundle_size": "1641.19 kB",
+      "current_quantity_value": "0.001"
+    },
+    "backend": {
+      "syntax_check": "VALID",
+      "api_health": "OK",
+      "current_behavior": {
+        "receives_quantity": "0.001",
+        "uses_stake": false,
+        "stake_field_exists": true,
+        "stake_field_used": false
+      }
+    },
+    "test_results": {
+      "authentication": "WORKING",
+      "api_response": "NORMAL",
+      "order_execution": "USES_QUANTITY_NOT_STAKE"
+    },
+    "expected_changes": {
+      "frontend": "Remove hardcoded quantity",
+      "backend": "Calculate quantity from stake",
+      "formula": "quantity = stake / current_price"
+    }
+  }
+}

@@ -111,7 +111,7 @@ export const useBotDataLoader = () => {
           leverage: Number(bot.leverage) || 1,
           take_profit: Number(bot.take_profit) || 2,
           stop_loss: Number(bot.stop_loss) || 1,
-          status: getBotStatus(bot),
+          status: bot.status,
           enhanced_metrics: hasEnhancedMetrics ? bot.performance_metrics : null
         };
         

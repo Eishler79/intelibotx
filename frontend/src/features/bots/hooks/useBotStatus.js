@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useAuthDL008 } from "../../shared/hooks/useAuthDL008";
+import { useAuthDL008 } from "../../../shared/hooks/useAuthDL008";
 
 /**
  * useBotStatus Hook - Bot Status Management
@@ -58,7 +58,7 @@ export const useBotStatus = () => {
   const getBotStatusInfo = useCallback((bot) => {
     if (!bot) return { status: 'UNKNOWN', color: 'gray' };
 
-    const status = bot.status || 'PAUSED';
+    const status = bot.status; // Trust BD as source of truth
     
     const statusInfo = {
       'RUNNING': { status: 'RUNNING', color: 'green', icon: '🟢' },

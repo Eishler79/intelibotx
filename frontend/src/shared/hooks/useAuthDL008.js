@@ -12,25 +12,27 @@
  */
 
 import { useCallback } from 'react';
-// BRIDGE: Use direct hooks instead of useAuth context
-import useAuthState from '../../features/auth/hooks/useAuthState';
-import useLogout from '../../features/auth/hooks/useLogout';
+// ✅ P4 ROOT CAUSE FIX: Use AuthContext (same as BotsAdvanced) to prevent state sync issues
+import { useAuth } from '../../contexts/AuthContext';
 
 /**
  * Hook centralizado que implementa DL-008 Authentication Pattern
- * BRIDGE SOLUTION: Direct hooks internally, same interface externally
+ * ✅ P4 ROOT CAUSE FIX: Uses AuthContext directly to prevent timing issues with useAuthState
+ *
+ * PROBLEM IDENTIFIED:
+ * - useAuthState reads from localStorage in useEffect (async)
+ * - authenticatedFetch runs BEFORE useAuthState.useEffect completes
+ * - getAuthHeaders sees isAuthenticated=false → returns empty headers
+ * - Request goes WITHOUT Authorization token → 401 → logout()
+ *
+ * SOLUTION:
+ * - Use AuthContext (single source of truth, same as ProtectedRoute)
+ * - AuthContext has token in memory immediately after login
+ * - No timing issues, no state duplication
  */
 export const useAuthDL008 = () => {
-  // BRIDGE: Use direct hooks instead of context
-  const authState = useAuthState();
-  const { logout } = useLogout(authState);
-  
-  const { 
-    token, 
-    user, 
-    isAuthenticated, 
-    sessionExpired 
-  } = authState || {};
+  // ✅ P4: Use AuthContext directly (same as BotsAdvanced, same as ProtectedRoute)
+  const { token, user, isAuthenticated, sessionExpired, logout } = useAuth();
 
   /**
    * Get authentication headers siguiendo DL-008 pattern
@@ -49,11 +51,12 @@ export const useAuthDL008 = () => {
 
   /**
    * Authenticated fetch siguiendo DL-008 pattern
+   * ✅ P3: ERROR HANDLING - Solo logout en 401 confirmado, NO en errores de red
    */
   const authenticatedFetch = useCallback(async (url, options = {}) => {
     try {
       const authHeaders = getAuthHeaders();
-      
+
       const requestOptions = {
         ...options,
         headers: {
@@ -61,33 +64,38 @@ export const useAuthDL008 = () => {
           ...options.headers
         }
       };
-      
+
       console.log('🔐 DL-008: Making authenticated request to:', url);
-      
+
       const response = await fetch(url, requestOptions);
-      
+
+      // ✅ P3: CRITICAL FIX - Solo logout si el servidor responde 401 explícitamente
       if (response.status === 401) {
-        console.error('🔐 DL-008: Authentication failed (401)');
+        console.error('🔐 DL-008: Authentication failed (401) - Invalid/expired token');
         if (logout) {
           logout();
         }
         throw new Error('Authentication required');
       }
-      
+
       if (response.status === 403) {
         console.error('🔐 DL-008: Authorization failed (403)');
         throw new Error('Access forbidden');
       }
-      
+
       return response;
-      
+
     } catch (error) {
       console.error('🔐 DL-008: Authenticated fetch error:', error);
-      
-      if (error.message.includes('Authentication') && logout) {
+
+      // ✅ P3: CRITICAL FIX - NO hacer logout en errores de red/CORS
+      // Solo logout si el error es explícitamente de autenticación (401)
+      // Los errores de red (Load failed, CORS) NO deben causar logout
+      if (error.message === 'Authentication required' && logout) {
+        // Ya se hizo logout arriba en el if (401), esto es redundante pero seguro
         logout();
       }
-      
+
       throw error;
     }
   }, [getAuthHeaders, logout]);

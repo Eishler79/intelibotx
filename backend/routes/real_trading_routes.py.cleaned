@@ -1,0 +1,362 @@
+"""
+Real Trading Routes - CLEANED DL-103
+Solo endpoints esenciales que no violan filosofía Bot Único
+"""
+
+from fastapi import APIRouter, HTTPException, Query, Header
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
+from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
+
+# ============================
+# REQUEST MODELS
+# ============================
+
+class AnalysisRequest(BaseModel):
+    symbol: str
+    timeframe: str = "15m"
+    strategy: str = "Smart Scalper"
+    market_type: str = "SPOT"  # DL-103: Agregado para soporte FUTURES
+
+# ============================
+# ENDPOINTS CONSERVADOS
+# ============================
+
+@router.get("/api/technical-analysis/{symbol}")
+async def get_technical_analysis(
+    symbol: str,
+    timeframe: str = Query("15m", description="Marco temporal (1m, 5m, 15m, 1h, 4h, 1d)"),
+    strategy: str = Query("Smart Scalper", description="Estrategia de análisis"),
+    market_type: str = Query("SPOT", description="Tipo de mercado (SPOT, FUTURES)")
+):
+    """
+    Obtener análisis técnico completo para un símbolo
+
+    DL-103 FIX PENDIENTE: Debe buscar bot_config en DB primero
+    Si existe bot para symbol -> usar su market_type
+    Si no existe -> usar query parameter
+
+    NOTA: Actualmente NO USADO por frontend
+    Conservado para futuro uso mejorado
+    """
+    try:
+        from services.technical_analysis_service import TechnicalAnalysisService
+        from services.binance_real_data import BinanceRealDataService
+        from db.database import get_session
+        from sqlmodel import select
+        from models.bot_config import BotConfig
+
+        logger.info(f"📊 Análisis técnico solicitado: {strategy} {symbol} {timeframe}")
+
+        # DL-103 FIX COMPLETO: Buscar bot_config primero
+        session = get_session()
+        bot = session.exec(
+            select(BotConfig).where(BotConfig.symbol == symbol)
+        ).first()
+
+        # Si existe bot, usar su market_type; si no, usar query parameter
+        final_market_type = bot.market_type if bot else market_type
+
+        # Initialize services con market_type correcto
+        technical_service = TechnicalAnalysisService(use_testnet=True)
+        binance_service = BinanceRealDataService(use_testnet=True, market_type=final_market_type)
+
+        # Validar parámetros
+        if not symbol:
+            raise HTTPException(status_code=400, detail="Symbol es requerido")
+
+        # Obtener análisis según estrategia
+        if strategy == "Smart Scalper":
+            analysis = await technical_service.analyze_smart_scalper(symbol, timeframe)
+        elif strategy == "Trend Hunter":
+            analysis = await technical_service.analyze_trend_hunter(symbol, timeframe)
+        elif strategy == "Manipulation Detector":
+            analysis = await technical_service.analyze_manipulation_detector(symbol, timeframe)
+        elif strategy == "News Analyzer":
+            analysis = await technical_service.analyze_news_analyzer(symbol, timeframe)
+        elif strategy == "Volatility Master":
+            analysis = await technical_service.analyze_volatility_master(symbol, timeframe)
+        else:
+            # Análisis genérico si no se especifica estrategia válida
+            analysis = await technical_service.get_basic_analysis(symbol, timeframe)
+
+        # Obtener datos de mercado actuales
+        market_data = await binance_service.get_current_price(symbol)
+
+        return JSONResponse(content={
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "strategy": strategy,
+                "market_type": final_market_type,  # Retornar el market_type usado
+                "market_data": market_data,
+                "analysis": analysis,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"❌ Error en análisis técnico: {e}")
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": str(e)
+        })
+
+@router.get("/api/real-indicators/{symbol}")
+async def get_real_indicators(
+    symbol: str,
+    timeframe: str = Query("15m"),
+    limit: int = Query(100, ge=1, le=500),
+    market_type: str = Query("SPOT")
+):
+    """
+    Obtener indicadores técnicos reales de Binance
+
+    CONSERVADO: Útil para debugging y análisis raw
+    """
+    try:
+        from services.binance_real_data import BinanceRealDataService
+        from db.database import get_session
+        from sqlmodel import select
+        from models.bot_config import BotConfig
+
+        logger.info(f"📈 Indicadores solicitados: {symbol} {timeframe}")
+
+        # DL-103 FIX: Buscar bot_config primero
+        session = get_session()
+        bot = session.exec(
+            select(BotConfig).where(BotConfig.symbol == symbol)
+        ).first()
+
+        final_market_type = bot.market_type if bot else market_type
+
+        # Initialize service
+        binance_service = BinanceRealDataService(use_testnet=True, market_type=final_market_type)
+
+        # Obtener indicadores técnicos reales
+        indicators = await binance_service.calculate_technical_indicators(symbol, timeframe, limit)
+
+        return JSONResponse(content={
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "market_type": final_market_type,
+                "indicators": indicators,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo indicadores: {e}")
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": str(e)
+        })
+
+@router.get("/api/market-data/{symbol}")
+async def get_market_data(
+    symbol: str,
+    interval: str = Query("15m"),
+    limit: int = Query(100),
+    market_type: str = Query("SPOT")
+):
+    """
+    Obtener datos de mercado históricos (klines/candles)
+
+    CONSERVADO: Base para gráficos y análisis
+    """
+    try:
+        from services.binance_real_data import BinanceRealDataService
+        from db.database import get_session
+        from sqlmodel import select
+        from models.bot_config import BotConfig
+
+        logger.info(f"📊 Market data solicitado: {symbol} {interval} limit={limit}")
+
+        # DL-103 FIX: Buscar bot_config primero
+        session = get_session()
+        bot = session.exec(
+            select(BotConfig).where(BotConfig.symbol == symbol)
+        ).first()
+
+        final_market_type = bot.market_type if bot else market_type
+
+        # Initialize service
+        binance_service = BinanceRealDataService(use_testnet=True, market_type=final_market_type)
+
+        # Obtener datos históricos
+        df = await binance_service.get_klines(symbol, interval, limit)
+
+        if df.empty:
+            return JSONResponse(content={
+                "success": True,
+                "data": {
+                    "symbol": symbol,
+                    "interval": interval,
+                    "market_type": final_market_type,
+                    "candles": [],
+                    "message": "No data available"
+                }
+            })
+
+        # Convertir DataFrame a lista de diccionarios
+        candles = df.to_dict('records')
+
+        return JSONResponse(content={
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "interval": interval,
+                "market_type": final_market_type,
+                "limit": limit,
+                "count": len(candles),
+                "candles": candles,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo market data: {e}")
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": str(e)
+        })
+
+@router.get("/api/user/trading-status")
+async def get_user_trading_status(authorization: str = Header(None)):
+    """
+    Obtener estado de trading del usuario autenticado
+
+    CONSERVADO: Útil para dashboard y estado de exchanges
+    """
+    try:
+        from db.database import get_session
+        from services.auth_service import get_current_user_safe
+        from sqlmodel import select
+        from models.user_exchange import UserExchange
+
+        # DL-008 compliant authentication
+        current_user = await get_current_user_safe(authorization)
+        session = get_session()
+
+        logger.info(f"👤 Estado de trading solicitado por usuario {current_user.id}")
+
+        # Obtener exchanges configurados del usuario
+        exchanges = session.exec(
+            select(UserExchange).where(
+                UserExchange.user_id == current_user.id
+            )
+        ).all()
+
+        exchanges_data = []
+        for exchange in exchanges:
+            exchanges_data.append({
+                "id": exchange.id,
+                "exchange": exchange.exchange,
+                "testnet": exchange.testnet,
+                "created_at": exchange.created_at.isoformat() if exchange.created_at else None,
+                "active": True  # Por ahora todos activos
+            })
+
+        return JSONResponse(content={
+            "success": True,
+            "data": {
+                "user_id": current_user.id,
+                "email": current_user.email,
+                "exchanges": exchanges_data,
+                "total_exchanges": len(exchanges_data),
+                "trading_enabled": len(exchanges_data) > 0,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        })
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo estado de trading: {e}")
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": str(e)
+        })
+
+@router.get("/api/real-trading/health")
+async def health_check():
+    """
+    Health check del sistema de trading real
+
+    CONSERVADO: Essential para monitoreo y debugging
+    """
+    try:
+        from services.binance_real_data import BinanceRealDataService
+
+        logger.info("🏥 Health check del sistema de trading")
+
+        # Initialize service
+        # DL-103: Health check usa SPOT por defecto (no hay bot_config aquí)
+        binance_service = BinanceRealDataService(use_testnet=True, market_type='SPOT')
+
+        # Test básico de servicios
+        test_symbol = "BTCUSDT"
+
+        # Test 1: Conexión con Binance
+        try:
+            price = await binance_service.get_current_price(test_symbol)
+            binance_status = "healthy" if price and price > 0 else "degraded"
+        except:
+            binance_status = "unhealthy"
+
+        # Test 2: Servicio de análisis disponible
+        try:
+            from services.technical_analysis_service import TechnicalAnalysisService
+            technical_service = TechnicalAnalysisService(use_testnet=True)
+            analysis_status = "healthy"
+        except:
+            analysis_status = "unhealthy"
+
+        # Estado general
+        overall_status = "healthy" if binance_status == "healthy" and analysis_status == "healthy" else "degraded"
+
+        return JSONResponse(content={
+            "success": True,
+            "data": {
+                "status": overall_status,
+                "services": {
+                    "binance_api": binance_status,
+                    "technical_analysis": analysis_status,
+                    "database": "healthy",  # Por defecto healthy si llegamos aquí
+                    "authentication": "healthy"
+                },
+                "timestamp": datetime.utcnow().isoformat(),
+                "test_symbol": test_symbol,
+                "environment": "TESTNET"
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"❌ Error en health check: {e}")
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": str(e),
+            "status": "unhealthy"
+        })
+
+# ============================
+# ENDPOINTS ELIMINADOS (DL-103 CLEANUP)
+# ============================
+
+# ELIMINADOS POR VIOLAR FILOSOFÍA BOT ÚNICO:
+#
+# 1. /api/trading-signals - Las señales vienen de algoritmos institucionales, no endpoints estáticos
+# 2. /api/execute-trade - Redundante, bot automático ejecuta cuando está RUNNING
+# 3. /api/user/execute-trade - Redundante y peligroso, ejecución debe ser automática
+# 4. /api/strategies - Viola filosofía, estrategias determinadas por IntelligentModeSelector
+# 5. /api/user/technical-analysis - Duplicado de /api/technical-analysis
+#
+# Ver CORE_PHILOSOPHY.md y MODE_SELECTION_SPEC.md para entender filosofía Bot Único

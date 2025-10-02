@@ -37,6 +37,7 @@ export const useLogout = (authState) => {
     }
 
     // Limpiar estado local siempre
+    console.trace('🔑 LOGOUT EJECUTADO - Stack trace completo:');
     setToken(null);
     setUser(null);
     setAuthProvider(null);
@@ -45,7 +46,7 @@ export const useLogout = (authState) => {
     localStorage.removeItem('intelibotx_token');
     localStorage.removeItem('intelibotx_user');
     localStorage.removeItem('intelibotx_auth_provider');
-    
+
     console.log('🔑 Logout completed - user state cleared');
   }, [API_BASE_URL, setToken, setUser, setAuthProvider, setUserExchanges, setSessionExpired]);
 

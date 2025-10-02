@@ -16,6 +16,20 @@ router = APIRouter()
 # 🤖 Estado global de bots (en producción sería Redis o base de datos)
 bot_states = {}
 
+# DL-113 GAP #3: Dynamic candle requirements per timeframe
+def calculate_required_candles(interval: str) -> int:
+    """Calculate required candles based on timeframe for Wyckoff analysis"""
+    candles_map = {
+        '1m': 2000,  # ~33 hours
+        '5m': 500,   # ~41 hours
+        '15m': 200,  # ~50 hours
+        '30m': 150,  # ~75 hours
+        '1h': 120,   # 5 days
+        '4h': 90,    # 15 days
+        '1d': 60     # 2 months
+    }
+    return candles_map.get(interval, 100)
+
 
 # 🧠 Smart Scalper Engine - Análisis profesional con datos reales
 async def execute_smart_scalper_analysis(
@@ -39,21 +53,26 @@ async def execute_smart_scalper_analysis(
     try:
         # Smart Scalper algorithm imports
         import pandas as pd
-        from services.binance_real_data import BinanceRealDataService
-        from services.advanced_algorithm_selector import AdvancedAlgorithmSelector
-        from services.market_microstructure_analyzer import MarketMicrostructureAnalyzer
-        from services.institutional_detector import InstitutionalDetector, ManipulationType, MarketPhase
-        from services.multi_timeframe_coordinator import MultiTimeframeCoordinator, TimeframeData
-        from services.signal_quality_assessor import SignalQualityAssessor  # 🆕 ETAPA 1 COMPLETAR
+        from services.service_factory import ServiceFactory  # DL-110 FASE 2: Singleton pattern
+        from services.intelligent_mode_selector import IntelligentModeSelector  # DL-109: Mode selection
+        from services.institutional_detector import ManipulationType, MarketPhase
+        from services.multi_timeframe_coordinator import TimeframeData
         from services.ta_alternative import calculate_rsi, calculate_ema, calculate_sma, calculate_atr
-        
-        # 🔗 Inicializar servicios Smart Scalper disponibles
-        binance_service = BinanceRealDataService()
-        selector = AdvancedAlgorithmSelector()
-        microstructure_analyzer = MarketMicrostructureAnalyzer()
-        institutional_detector = InstitutionalDetector()
-        multi_tf_coordinator = MultiTimeframeCoordinator()
-        signal_quality_assessor = SignalQualityAssessor()  # 🆕 ETAPA 1 COMPLETAR
+
+        # 🔗 DL-110 FASE 2: Usar ServiceFactory con bot_id para aislamiento
+        # Obtener bot_id de bot_config si existe
+        bot_id = getattr(bot_config, 'id', None) if bot_config else None
+
+        # Inicializar servicios con singleton pattern
+        # DL-103 FIX: Pasar bot_config completo en lugar de solo bot_id para incluir market_type
+        binance_service = ServiceFactory.get_binance_service(bot_config)  # Ahora con market_type support
+        # DL-103 FIX: Pasar bot_config completo a todos los servicios
+        selector = ServiceFactory.get_algorithm_selector(bot_config)  # Por bot (tiene history)
+        mode_selector = IntelligentModeSelector()  # DL-109: Mode selection service
+        microstructure_analyzer = ServiceFactory.get_microstructure_analyzer(bot_config)
+        institutional_detector = ServiceFactory.get_institutional_detector(bot_config)
+        multi_tf_coordinator = ServiceFactory.get_multi_tf_coordinator(bot_config)
+        signal_quality_assessor = ServiceFactory.get_signal_quality_assessor(bot_config)
         
         # 📊 Obtener datos reales multi-timeframe
         timeframes = ["1m", "5m", "15m", "1h"]
@@ -69,15 +88,19 @@ async def execute_smart_scalper_analysis(
                 )
                 if not df.empty:
                     opens = df['open'].tolist()
-                    highs = df['high'].tolist() 
+                    highs = df['high'].tolist()
                     lows = df['low'].tolist()
                     closes = df['close'].tolist()
                     volumes = df['volume'].tolist()
-                    
+
+                    logger.info(f"Processing {tf}: {len(closes)} data points")
+
                     # Crear TimeframeData con indicadores técnicos
                     timeframe_data[tf] = create_timeframe_data(
                         symbol, opens, highs, lows, closes, volumes, tf
                     )
+
+                    logger.info(f"Successfully created timeframe data for {tf}")
                     all_data[tf] = {
                         'opens': opens, 'highs': highs, 'lows': lows,
                         'closes': closes, 'volumes': volumes
@@ -86,11 +109,13 @@ async def execute_smart_scalper_analysis(
             except asyncio.TimeoutError:
                 continue
             except Exception as e:
+                logger.error(f"Error creating timeframe data for {tf}: {e}")
                 continue
         
         if not timeframe_data:
+            logger.error(f"All timeframes failed for {symbol}. Timeframes attempted: {timeframes}, all_data keys: {list(all_data.keys())}")
             raise HTTPException(
-                status_code=500, 
+                status_code=500,
                 detail=f"No se pudieron obtener datos de mercado para {symbol}. Timeframes intentados: {timeframes}"
             )
         
@@ -110,25 +135,47 @@ async def execute_smart_scalper_analysis(
             symbol=symbol,
             timeframe="1m",
             opens=main_data['opens'],
-            highs=main_data['highs'], 
+            highs=main_data['highs'],
             lows=main_data['lows'],
             closes=main_data['closes'],
             volumes=main_data['volumes']
         )
-        
+
+        # 🔍 BACKLOG#480 - Verificación fair_value_gaps AttributeError fix
+        logger.info(f"✅ BACKLOG#480 - InstitutionalAnalysis.fair_value_gaps: {len(institutional.fair_value_gaps)} gaps detectados para {symbol}")
+
         # ⏰ Coordinación multi-timeframe
         multi_tf = multi_tf_coordinator.analyze_multi_timeframe_signal(
             symbol=symbol,
             timeframe_data=timeframe_data
         )
-        
-        # 🤖 Selección inteligente de algoritmo
+
+        # 🎯 DL-109: Mode Selection FIRST
+        mode_selected = mode_selector.select_optimal_mode(
+            microstructure=microstructure,
+            institutional=institutional,
+            multi_tf=multi_tf,
+            timeframe_data=timeframe_data,
+            symbol=symbol
+        )
+
+        print(f"🎯 DL-109 DEBUG: mode_selected = {mode_selected}")
+        print(f"🎯 DL-109 DEBUG: mode_selected type = {type(mode_selected)}")
+
+        # Convertir string a dict para compatibilidad con algorithm selector
+        mode_decision = {
+            'selected_mode': mode_selected,
+            'confidence': 0.8  # Default confidence por ahora
+        }
+
+        # 🤖 Selección inteligente de algoritmo (con mode_decision)
         algorithm_selection = selector.select_optimal_algorithm(
             symbol=symbol,
             microstructure=microstructure,
             institutional=institutional,
             multi_tf=multi_tf,
-            timeframe_data=timeframe_data
+            timeframe_data=timeframe_data,
+            mode_decision=mode_decision  # DL-109: Pass mode decision
         )
         
         # 💰 Precio actual
@@ -160,9 +207,45 @@ async def execute_smart_scalper_analysis(
             volume_data=main_data['volumes'],
             indicators={},  # IGNORADO - solo algoritmos institucionales (DL-002)
             market_structure=institutional_market_structure,
-            timeframe="15m"
+            timeframe="15m",
+            timeframe_data=timeframe_data  # GAP #4: Pass multi-timeframe data for MTF confirmation
         )
-        
+
+        # 🚦 DL-110 FASE 3: EXECUTION GATE - Validar criterios antes de continuar
+        # Contar algoritmos con alta confianza (para consenso 3/6)
+        high_confidence_algorithms = [
+            algo for name, algo in institutional_quality.institutional_confirmations.items()
+            if hasattr(algo, 'score') and algo.score >= 70
+        ]
+        high_confidence_count = len(high_confidence_algorithms)
+
+        # Verificar criterios de ejecución
+        if institutional_quality.overall_score < 60:
+            # No cumple calidad mínima institucional
+            return {
+                "execution_blocked": True,
+                "reason": "Institutional quality below threshold",
+                "score": institutional_quality.overall_score,
+                "threshold": 60,
+                "symbol": symbol,
+                "recommendation": "WAIT",
+                "message": "Market conditions not favorable for institutional trading",
+                "mode_decision": mode_selected  # DL-109: Include mode even when blocked
+            }
+
+        if high_confidence_count < 3:
+            # No cumple consenso mínimo 3/6
+            return {
+                "execution_blocked": True,
+                "reason": "Insufficient algorithm confirmations",
+                "confirmations": high_confidence_count,
+                "required": 3,
+                "symbol": symbol,
+                "recommendation": "WAIT",
+                "message": f"Only {high_confidence_count}/6 algorithms confirm signal",
+                "mode_decision": mode_selected  # DL-109: Include mode even when blocked
+            }
+
         # 🎯 Determinar señal de trading con calidad integrada
         signal = "HOLD"
         confidence = algorithm_selection.selection_confidence
@@ -192,17 +275,30 @@ async def execute_smart_scalper_analysis(
             except Exception as e:
                 order_result = {"error": f"Error ejecutando orden: {str(e)}"}
         
+        # P9: DL-110 ADDENDUM - Validar estructura risk_assessment antes de usar
+        if not isinstance(algorithm_selection.risk_assessment, dict):
+            logger.error(f"risk_assessment invalid type: {type(algorithm_selection.risk_assessment)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Invalid risk_assessment structure: expected dict, got {type(algorithm_selection.risk_assessment).__name__}"
+            )
+
         # 📊 Respuesta completa
         return {
             "message": f"🤖 Smart Scalper análisis completado para {symbol}",
             "symbol": symbol,
             "mode": "smart_scalper_pro",
             "current_price": current_price,
+            "quantity": quantity,  # GUARDRAILS: Incluir quantity calculado desde stake
+            "stake": bot_config.stake if bot_config else None,  # GUARDRAILS: Incluir stake del bot
+            "base_currency": bot_config.base_currency if bot_config else None,  # GUARDRAILS: Incluir base_currency
+            "quote_currency": bot_config.quote_currency if bot_config else None,  # GUARDRAILS: Incluir quote_currency
             "analysis": {
                 "algorithm_selected": algorithm_selection.selected_algorithm.value,
                 "selection_confidence": f"{confidence:.1%}",
                 "market_regime": algorithm_selection.market_regime.value,
                 "regime_confidence": f"{algorithm_selection.regime_confidence:.1%}",
+                "mode_decision": mode_selected,  # DL-109: Include mode decision
                 "manipulation_events": len(institutional.manipulation_events),
                 "wyckoff_phase": institutional.market_phase.value,
                 "timeframe_alignment": multi_tf.alignment.value,
@@ -232,13 +328,16 @@ async def execute_smart_scalper_analysis(
                 "order_block_confirmed": len(institutional.order_blocks) > 0,
                 "smart_money_flow_detected": institutional.market_phase in [MarketPhase.ACCUMULATION, MarketPhase.DISTRIBUTION],
                 # 🏛️ ETAPA 1: INSTITUCIONAL confirmations (DL-002)
-                "institutional_confirmations": {
-                    name: {
-                        "score": confirmation.score,
-                        "bias": confirmation.bias,
-                        "name": confirmation.name
-                    } for name, confirmation in institutional_quality.institutional_confirmations.items()
-                } if institutional_quality.institutional_confirmations else {},
+                # P9: DL-110 ADDENDUM - Validar tipo antes de procesar
+                "institutional_confirmations": (
+                    {
+                        name: {
+                            "score": getattr(confirmation, 'score', 0),
+                            "bias": getattr(confirmation, 'bias', 'UNKNOWN'),
+                            "name": getattr(confirmation, 'name', name)
+                        } for name, confirmation in institutional_quality.institutional_confirmations.items()
+                    } if institutional_quality.institutional_confirmations and isinstance(institutional_quality.institutional_confirmations, dict) else {}
+                ),
                 "manipulation_alerts": institutional_quality.manipulation_alerts
             },
             "order_execution": order_result,
@@ -253,6 +352,10 @@ async def execute_smart_scalper_analysis(
         }
         
     except Exception as e:
+        import traceback
+        logger.error(f"DL-110 DEBUG - Error type: {type(e).__name__}")
+        logger.error(f"DL-110 DEBUG - Error message: {str(e)}")
+        logger.error(f"DL-110 DEBUG - Traceback:\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail=f"Error en Smart Scalper: {str(e)}"
@@ -288,10 +391,15 @@ async def execute_trend_hunter_analysis(
         # Initialize TrendHunter services
         trend_analyzer = TrendHunterAnalyzer()
         trend_provider = TrendModeProvider()
-        binance_service = BinanceRealDataService()
+        # DL-103 FIX: Pasar market_type a BinanceRealDataService
+        market_type = getattr(bot_config, 'market_type', 'SPOT') if bot_config else 'SPOT'
+        binance_service = BinanceRealDataService(market_type=market_type)
+
+        # DL-113 GAP #3: Dynamic candle calculation based on timeframe
+        limit = calculate_required_candles(bot_config.interval)
 
         # Get real market data
-        df = await binance_service.get_klines(symbol=symbol, interval=bot_config.interval, limit=100)
+        df = await binance_service.get_klines(symbol=symbol, interval=bot_config.interval, limit=limit)
 
         if df.empty:
             raise HTTPException(
@@ -343,11 +451,15 @@ async def execute_trend_hunter_analysis(
 
 def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe):
     """Crear TimeframeData con indicadores técnicos calculados"""
-    
+
     # Technical analysis imports
     from services.ta_alternative import calculate_rsi, calculate_ema, calculate_sma, calculate_atr
     from services.multi_timeframe_coordinator import TimeframeData
-    
+
+    # Input validation
+    if not closes or len(closes) < 10:
+        raise ValueError(f"Insufficient data for {timeframe}: {len(closes)} data points")
+
     # Calcular indicadores técnicos
     data_length = min(50, len(closes))
     recent_closes = closes[-data_length:]
@@ -371,16 +483,18 @@ def create_timeframe_data(symbol, opens, highs, lows, closes, volumes, timeframe
     key_support = min(recent_lows)
     key_resistance = max(recent_highs)
     
-    # Trend direction
-    if ema_9 > ema_21 > ema_50:
+    # DL-002 COMPLIANCE: Basic trend for timeframe data creation
+    # Institutional-based trend will be applied later in the analysis
+    price_change_10 = (recent_closes[-1] - recent_closes[-10]) / recent_closes[-10] if len(recent_closes) >= 10 else 0
+    if price_change_10 > 0.01:  # 1% threshold
         trend_direction = "BULLISH"
-        trend_strength = 0.8
-    elif ema_9 < ema_21 < ema_50:
+        trend_strength = min(0.8, abs(price_change_10) * 10)
+    elif price_change_10 < -0.01:
         trend_direction = "BEARISH"
-        trend_strength = 0.8
+        trend_strength = min(0.8, abs(price_change_10) * 10)
     else:
         trend_direction = "NEUTRAL"
-        trend_strength = 0.4
+        trend_strength = 0.3
     
     # Momentum
     price_change = (recent_closes[-1] - recent_closes[-10]) / recent_closes[-10] if len(recent_closes) >= 10 else 0
@@ -439,7 +553,6 @@ async def run_smart_trade(
     symbol: str,
     scalper_mode: bool = False,
     trend_hunter_mode: bool = False,  # DL-102: Trend Hunter discriminator parameter
-    quantity: float = 0.001,
     execute_real: bool = False,
     authorization: str = Header(None)
 ):
@@ -491,6 +604,36 @@ async def run_smart_trade(
         # 🔍 Extraer los parámetros requeridos
         interval = result.interval
         strategy = result.strategy
+
+        # 💰 STAKE-BASED QUANTITY CALCULATION (NO FALLBACKS, NO HARDCODE)
+        from services.service_factory import ServiceFactory
+        binance_service = ServiceFactory.get_binance_service(result)
+        df = await binance_service.get_klines(symbol=normalized_symbol, interval="1m", limit=1)
+
+        if df.empty:
+            raise HTTPException(
+                status_code=503,
+                detail=f"No se pudo obtener precio actual para {normalized_symbol}"
+            )
+
+        current_price = df['close'].iloc[-1]
+        quantity = result.stake / current_price
+
+        # CONVENCIÓN DEL SISTEMA: base_currency = moneda del stake (USDT en BTCUSDT)
+        # Esto es consistente con frontend y create_bot
+        # Usar los valores de la BD directamente
+        stake_currency = result.base_currency    # USDT (moneda del stake)
+        traded_currency = result.quote_currency  # BTC (lo que se compra/vende)
+
+        # Validar contra mínimo del exchange
+        min_notional = 10.0  # Mínimo notional en Binance
+        if result.stake < min_notional:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Stake {result.stake} {stake_currency} es menor al mínimo requerido {min_notional} {stake_currency}"
+            )
+
+        logger.info(f"💰 STAKE CALCULATION: stake={result.stake} {stake_currency}, price={current_price}, quantity={quantity} {traded_currency}")
 
         # 🏛️ DL-102: Unified endpoint discriminator (TREND_HUNTER_MODE_ARCHITECTURE.md)
         if trend_hunter_mode:
@@ -916,11 +1059,24 @@ async def start_bot(bot_id: int, authorization: str = Header(None)):
             detail="Bot not found or access denied"
         )
     
-    return {
-        "message": f"✅ Bot {bot_id} iniciado",
-        "status": "RUNNING",
-        "bot_id": bot_id
-    }
+    # ✅ DL-098 FIX: Persist status change using BotStatus enum
+    try:
+        from models.bot_config import BotStatus
+        bot.status = BotStatus.RUNNING
+        session.add(bot)
+        session.commit()
+        session.refresh(bot)
+
+        return {
+            "message": f"✅ Bot {bot_id} iniciado",
+            "status": BotStatus.RUNNING,
+            "bot_id": bot_id
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error actualizando estado bot: {str(e)}"
+        )
 
 
 @router.post("/api/bots/{bot_id}/pause")
@@ -950,11 +1106,24 @@ async def pause_bot(bot_id: int, authorization: str = Header(None)):
             detail="Bot not found or access denied"
         )
     
-    return {
-        "message": f"⏸️ Bot {bot_id} pausado",
-        "status": "PAUSED",
-        "bot_id": bot_id
-    }
+    # ✅ DL-098 FIX: Persist status change using BotStatus enum
+    try:
+        from models.bot_config import BotStatus
+        bot.status = BotStatus.PAUSED
+        session.add(bot)
+        session.commit()
+        session.refresh(bot)
+
+        return {
+            "message": f"⏸️ Bot {bot_id} pausado",
+            "status": BotStatus.PAUSED,
+            "bot_id": bot_id
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error actualizando estado bot: {str(e)}"
+        )
 
 
 @router.post("/api/bots/{bot_id}/stop")
@@ -984,11 +1153,24 @@ async def stop_bot(bot_id: int, authorization: str = Header(None)):
             detail="Bot not found or access denied"
         )
     
-    return {
-        "message": f"⏹️ Bot {bot_id} detenido",
-        "status": "STOPPED",
-        "bot_id": bot_id
-    }
+    # ✅ DL-098 FIX: Persist status change using BotStatus enum
+    try:
+        from models.bot_config import BotStatus
+        bot.status = BotStatus.STOPPED
+        session.add(bot)
+        session.commit()
+        session.refresh(bot)
+
+        return {
+            "message": f"⏹️ Bot {bot_id} detenido",
+            "status": BotStatus.STOPPED,
+            "bot_id": bot_id
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error actualizando estado bot: {str(e)}"
+        )
 
 
 # ✅ DL-001 COMPLIANCE: Endpoints fallback/debug eliminados

@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { useAuthDL008 } from "../../shared/hooks/useAuthDL008";
+import { useAuthDL008 } from "../../../shared/hooks/useAuthDL008";
 import { 
   createTradingOperation, 
   getBotTradingOperations,
@@ -32,65 +32,120 @@ export const useBotOperations = () => {
   // Start bot trading with Smart Scalper AI
   const startBotTrading = useCallback(async (botId, bot) => {
     if (!bot) return;
-    
+
     console.log(`🤖 Iniciando Smart Scalper Pro para ${bot.symbol} - ${bot.strategy}`);
-    
-    const strategies = {
-      'Smart Scalper Pro': { frequency: 60000, confidence: 0.75 },
-      'Smart Scalper': { frequency: 30000, confidence: 0.70 },
-      'Conservative': { frequency: 120000, confidence: 0.80 },
-      'Aggressive': { frequency: 15000, confidence: 0.65 }
+
+    // Conversión directa de bot.interval a milliseconds - sin fallbacks
+    const intervalToMs = {
+      '1m': 60000,
+      '5m': 300000,
+      '15m': 900000,
+      '30m': 1800000,
+      '1h': 3600000,
+      '4h': 14400000,
+      '1d': 86400000
     };
 
-    const strategyConfig = strategies[bot.strategy] || strategies['Smart Scalper'];
+    const frequency = intervalToMs[bot.interval];
+
+    if (!frequency) {
+      console.error(`❌ ERROR: Invalid bot interval: ${bot.interval}`);
+      throw new Error(`Bot interval '${bot.interval}' is not supported`);
+      // NO continuar, NO crear interval
+      return;
+    }
+
+    // Determine scalperMode based on strategy (same as BotsAdvanced)
+    const scalperModeMap = {
+      'Smart Scalper': true,
+      'Trend Hunter': false,
+      'Manipulation Detector': true,
+      'News Sentiment': false,
+      'Volatility Master': true
+    };
+
+    const strategyConfig = {
+      frequency: frequency,
+      scalperMode: scalperModeMap[bot.strategy] !== undefined ? scalperModeMap[bot.strategy] : true,
+      confidence: 0.70 // Default confidence level
+    };
     
     // Clear any existing interval
     if (botIntervals.current[botId]) {
       clearInterval(botIntervals.current[botId]);
     }
-    
-    // Start trading interval with AI analysis
-    const interval = setInterval(async () => {
+
+    // Extract trade analysis logic to reusable function (DRY principle)
+    const executeTradeAnalysis = async () => {
       try {
-        const tradeSignal = await runSmartTrade(bot.symbol, bot.strategy, {
-          stake: bot.stake,
-          riskPercentage: bot.risk_percentage || 1.0,
-          takeProfit: bot.take_profit,
-          stopLoss: bot.stop_loss,
-          leverage: bot.leverage || 1,
-          marketType: bot.market_type
-        });
-        
-        if (tradeSignal?.signal && tradeSignal.signal !== 'HOLD') {
-          console.log(`🎯 ${tradeSignal.signal} signal generated:`, tradeSignal);
-          
+        const analysisResult = await runSmartTrade(bot.symbol, strategyConfig.scalperMode);
+
+        // ✅ SPEC_REF: backend/routes/bots.py:225-234 - Handle execution_blocked response
+        if (analysisResult?.execution_blocked) {
+          console.log(`⏸️ Trade execution blocked for ${bot.symbol}:`, {
+            reason: analysisResult.reason,
+            score: analysisResult.score,
+            threshold: analysisResult.threshold,
+            recommendation: analysisResult.recommendation,
+            message: analysisResult.message
+          });
+          return; // Skip trade creation when institutional quality < threshold
+        }
+
+        // ✅ SPEC_REF: backend/routes/bots.py:320-322 - Access signal from signals object
+        const signal = analysisResult?.signals?.signal;
+
+        if (signal && signal !== 'HOLD') {
+          console.log(`🎯 ${signal} signal generated:`, analysisResult);
+
           // Create persistent trading operation in database
           try {
+            // ✅ DL-001: Validate required fields from backend, NO hardcode fallbacks
+            if (!analysisResult.quantity) {
+              throw new Error('Backend did not provide quantity');
+            }
+            if (!analysisResult.current_price) {
+              throw new Error('Backend did not provide current_price');
+            }
+            if (!analysisResult.signals?.confidence) {
+              throw new Error('Backend did not provide confidence');
+            }
+
             const tradingOp = await createTradingOperation({
               bot_id: bot.id,
               symbol: bot.symbol,
-              side: tradeSignal.signal,
-              quantity: tradeSignal.quantity || bot.stake,
-              price: tradeSignal.entry_price || tradeSignal.current_price,
-              take_profit: tradeSignal.take_profit,
-              stop_loss: tradeSignal.stop_loss,
+              side: signal,
+              quantity: analysisResult.quantity,
+              price: analysisResult.current_price,
+              take_profit: bot.take_profit,
+              stop_loss: bot.stop_loss,
               strategy: bot.strategy,
-              confidence: tradeSignal.confidence,
-              analysis_data: tradeSignal.analysis || {}
+              confidence: analysisResult.signals.confidence,
+              analysis_data: analysisResult.analysis || {}
             });
-            
+
             console.log('💾 Trading operation persisted:', tradingOp);
-            
+
           } catch (error) {
             console.error('❌ Error creating persistent operation:', error);
           }
+        } else {
+          console.log(`⏸️ HOLD signal for ${bot.symbol} - no action taken`);
         }
-        
+
       } catch (error) {
         console.error('❌ Error in Smart Scalper analysis:', error);
       }
-    }, strategyConfig.frequency);
-    
+    };
+
+    // 1. Execute immediately on RUNNING status (user requirement)
+    console.log(`⚡ Ejecutando análisis inmediato para ${bot.symbol}`);
+    await executeTradeAnalysis();
+
+    // 2. Then execute at regular intervals based on bot.interval from backend
+    console.log(`⏰ Programando análisis cada ${bot.interval} (${strategyConfig.frequency}ms)`);
+    const interval = setInterval(executeTradeAnalysis, strategyConfig.frequency);
+
     botIntervals.current[botId] = interval;
     window.botIntervals = window.botIntervals || {};
     window.botIntervals[botId] = interval;

@@ -245,7 +245,7 @@ export default function ProfessionalBotsTable({
                   {/* Capital */}
                   <td className="px-4 py-4 text-right">
                     <div className="font-semibold text-white">${bot.stake?.toLocaleString() || '0'}</div>
-                    <div className="text-xs text-gray-400">USDT</div>
+                    <div className="text-xs text-gray-400">{bot.base_currency}</div>
                   </td>
 
                   {/* PnL */}

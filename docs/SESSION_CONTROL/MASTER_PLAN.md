@@ -1,7 +1,7 @@
 # MASTER_PLAN.md - Status Dinámico Proyecto InteliBotX
 
-> **TRACKER:** Estado actual + progreso + métricas dinámicas  
-> **ACTUALIZADO:** 2025-09-18  
+> **TRACKER:** Estado actual + progreso + métricas dinámicas
+> **ACTUALIZADO:** 2025-09-25  
 
 ---
 
@@ -17,13 +17,15 @@
 - **Authentication:** 90% complete - DL-008 centralizado (43 endpoints)
 - **Database:** PostgreSQL Railway deployment ✅ 
 - **Security:** ENCRYPTION_MASTER_KEY pendiente - CRÍTICO
-- **Algoritmos operativos en código:** ✅ **12/12** (se integran VSA, Market Profile, SMC, Order Flow, A/D, Composite Man)
+- **Algoritmos operativos en código:** ✅ **1/12** (Wyckoff 100% implementado DL-113)
 - **Especificaciones DL-001 actualizadas:** 12/12 algoritmos + modos documentados con ParamProviders
 - **Parametrización runtime:** SignalQualityAssessor consume BotConfig y expone detalles institucionales completos ✅
 
 ### **📈 ALGORITMOS INSTITUCIONALES:**
 - **Especificación técnica:** ✅ 12/12 con catálogos DL-001 y payloads definidos
-- **Implementación en código:** ✅ 12/12 integrados en SignalQualityAssessor y endpoints
+- **Implementación en código:** ✅ **1/12 COMPLETADO** (Wyckoff 100% - DL-113)
+- **Arquitecturas detalladas:** ✅ 6/12 documentadas (Wyckoff, Order Blocks, Liquidity Grabs, Stop Hunting, Fair Value Gaps, Market Microstructure)
+- **Pendientes implementación:** ❌ **11/12** (Order Blocks, Liquidity Grabs, Stop Hunting, FVG, Market Microstructure, VSA, Market Profile, SMC, Order Flow, A/D, Composite Man)
 
 ---
 
@@ -46,11 +48,11 @@
 - `/api/run-smart-trade/{symbol}` expone `institutional_confirmations_breakdown` + bias/recommendations por algoritmo
 - Validación manual + `python -m compileall backend/routes/bots.py` sin errores
 
-### ✅ **FASE 2 (Implementación Algoritmos 07–12) CONCLUIDA:**
-- Evaluadores institucionales para VSA, Market Profile, Order Flow, Accumulation/Distribution, SMC y Composite Man operativos
-- DefaultInstitutionalParamProvider extendido con parámetros adaptativos DL-001 para algoritmos 07–12
-- Respuesta `/api/run-smart-trade/{symbol}` incluye confirmaciones ampliadas (`volume_spread_analysis`, `market_profile`, `institutional_order_flow`, `accumulation_distribution`, `smart_money_concepts`, `composite_man`)
-- Validación: `python -m compileall backend/services/institutional_params.py backend/services/signal_quality_assessor.py backend/routes/bots.py`
+### ❌ **FASE 2 (Implementación Algoritmos 07–12) PENDIENTE:**
+- **ESTADO REAL:** Solo Wyckoff (01/12) completado 100% con DL-113
+- **PENDIENTES:** VSA, Market Profile, Order Flow, Accumulation/Distribution, SMC y Composite Man NO implementados
+- **NOTA:** DefaultInstitutionalParamProvider puede tener stubs pero algoritmos NO están operativos
+- **SIGUIENTE:** Implementar Order Blocks (02/12) siguiendo metodología DL-113
 
 ### ✅ **FASE 3 (ModeParamProvider + Selector) CONCLUIDA:**
 - `DefaultModeParamProvider` derivado de BotConfig + estadísticas recientes
@@ -64,47 +66,190 @@
 - Repositorio `configs/mode_defaults.json` documenta parámetros congelados para empaquetado/testnet
 - Validación: `python -m compileall backend/services/mode_params.py backend/routes/bots.py` + inspección UI
 
+### ✅ **FASE 4.5 (Arquitecturas Institucionales 01-06) CONCLUIDA:**
+- **Completadas:** 6 arquitecturas detalladas con mapeo completo especificación → implementación
+- **Documentos creados (2025-09-24):**
+  - `01_WYCKOFF_ARCHITECTURE.md` - 872 líneas - Detección fases + Spring + UTAD + Cause&Effect
+  - `02_ORDER_BLOCKS_ARCHITECTURE.md` - 1,287 líneas - UX dashboard + 14 hardcodes identificados
+  - `03_LIQUIDITY_GRABS_ARCHITECTURE.md` - Completo - 26 hardcodes + dashboard interactivo
+  - `04_STOP_HUNTING_ARCHITECTURE.md` - Completo - Safe zones + 8 hardcodes identificados
+  - `05_FAIR_VALUE_GAPS_ARCHITECTURE.md` - 1,193 líneas - ML predictor + tracking fills
+  - `06_MARKET_MICROSTRUCTURE_ARCHITECTURE.md` - 1,146 líneas - ParamProvider system + POC/VAH/VAL
+- **Características clave:** 100% DL-001 compliant, UX dashboards, React hooks, gap analysis detallado
+- **Total hardcodes identificados:** 75+ violaciones DL-001 documentadas para corrección
+
+### ✅ **FASE 4.6 (DL-113 Wyckoff Implementation) 100% COMPLETADA (2025-09-26):**
+- **GAP #1 - Spring/UTAD:** ✅ COMPLETADO - Detección false breakouts con reversal
+- **GAP #2 - ATR Normalization:** ✅ COMPLETADO - ATR dinámico sin hardcodes
+- **GAP #3 - 18 Señales Wyckoff:** ✅ COMPLETADO - Arquitectura modular 4 fases
+  - `services/wyckoff/` con 584 líneas total
+  - 27 campos configuración en bot_config.py
+  - Cálculo dinámico velas por timeframe
+  - Sin hardcodes, wrappers o fallbacks
+- **GAP #4 - Multi-timeframe:** ✅ COMPLETADO - Confirmación multi-temporal líneas 1126-1227
+- **BASE DE DATOS:** ✅ 27 columnas Wyckoff creadas en intelibotx.db
+- **TESTS E2E:** ✅ 100% tests pasados (5/5) - Backend, Integration, MTF validation
+- **Metodología:** GUARDRAILS P1-P9 aplicado completamente
+- **Documentación:** DECISION_LOG.md#DL-113 completo + DL-114 futuro panel admin
+
 ### 🚀 **FASE 5 ACTUAL: EXPERIENCIA USUARIO COHERENTE**
 **REORGANIZADA:** Según flujo lógico cronológico del usuario real
 
 #### **🚪 ETAPA 1: ACCESO FUNCIONAL (P0 - SISTEMA USABLE)**
-- **Estado:** ✅ RESUELTO - DL-101 useAuthState localStorage implementation
+- **Estado:** ⚠️ PARCIAL - Dashboard con issues
 - **Meta:** Usuario login → dashboard funcional → puede crear bots
-- **Completado:** Bot creation, BotsAdvanced, SmartScalperMetricsComplete funcionales
+- **Completado:** Bot creation, BotsModular (ACTIVO), SmartScalperMetricsComplete funcionales
+- **2025-09-29:** ✅ MIGRACIÓN - BotsAdvanced → BotsModular (149 líneas, 6 hooks especializados)
+- **2025-09-23:** ✅ RESUELTO - Smart Scalper Modal institutional_confirmations data flow
 
 #### **🤖 ETAPA 2: CONFIGURACIÓN BOT COHERENTE (P0 - PARÁMETROS CONECTADOS)**
-- **Estado:** 🔴 CRÍTICO - Análisis completado: 7 desconexiones arquitecturales identificadas
-- **Meta:** Usuario crea bot → parámetros trasladan automáticamente a algoritmos
-- **Progreso:** Timeframe dinámico ✅, **7 DESCONEXIONES CRÍTICAS DETECTADAS:**
-  1. **STRATEGY → ANÁLISIS:** Strategy usuario ignorada, algoritmos siempre misma lógica
-  2. **RISK_PROFILE → MODES:** Mode Selection ignora CONSERVATIVE/AGGRESSIVE usuario
-  3. **MARKET_TYPE → FEEDS:** FUTURES_USDT recibe datos SPOT incorrectos
-  4. **TP/SL → SIGNALS:** Algoritmos ignoran tolerancia riesgo usuario configurada
-  5. **COOLDOWN → FREQUENCY:** Sistema genera señales más rápido que cooldown usuario
-  6. **LEVERAGE → ANALYSIS:** Análisis institucional no considera apalancamiento
-  7. **ORDER_TYPES → EXECUTION:** Hardcoded MARKET orders, ignora LIMIT configurado
-- **Evidencia:** Análisis completo con GUARDRAILS P1-P9, sin especulación
-- **Impacto:** Desconexión arquitectural profunda - parámetros usuario totalmente ignorados
+- **Estado:** 🔴 CRÍTICO - Múltiples issues pendientes
+- **Issues Críticos:**
+
+  **🔥 SMART SCALPER MODAL ROTO (P0 - SISTEMA INOPERATIVO):**
+  - **ERROR:** API 500 - `mode_decision` parameter no existe en AdvancedAlgorithmSelector
+  - **Causa:** DL-109 implementación fallida - parameter agregado sin implementar método
+  - **Impacto:** Smart Scalper completamente inutilizable
+  - **Archivo:** `/backend/routes/bots.py:139-146`
+
+  **⏸️ DL-103: MARKET_TYPE → DATA FEEDS (STAND BY - 2025-09-25):**
+  - **ESTADO:** ⏸️ STAND BY - Parcialmente implementado
+  - **COMPLETADO:**
+    - ✅ run-smart-trade usa market_type correcto
+    - ✅ ServiceFactory recibe bot_config
+  - **PENDIENTE:** 3 endpoints frontend (market-data, real-indicators, user/technical-analysis)
+  - **DECISIÓN:** STAND BY hasta refactorización DL-113 (unificación fuente datos)
+  - **IMPACTO:** Solo visual - gráficos podrían mostrar SPOT cuando bot es FUTURES
+
+  **DL-093: Background Bot Execution ✅ RESUELTO (2025-09-24):**
+  - ✅ **PROBLEMA ORIGINAL:** Bot solo analizaba cuando modal estaba abierto
+  - ✅ **SOLUCIÓN:** Ya funciona correctamente - ejecuta run-smart-trade cuando RUNNING
+  - ✅ **VERIFICADO:** APIs correctamente asignadas (background vs modal)
+  - ✅ **RESULTADO:** Bot analiza automáticamente sin necesidad de modal abierto
+
+  **DL-109: Mode → Algorithm Integration ✅ RESUELTO (2025-09-24):**
+  - ✅ Solución documentada en DECISION_LOG.md#DL-109
+  - ✅ mode_decision retorna valor correcto (SCALPING default)
+  - ✅ Eliminadas EMAs - compliance con DL-002
+
+  **DL-110: API Calls Multiple Execution Control ✅ RESUELTO (2025-09-23):**
+  - ✅ **PROBLEMA ORIGINAL:** APIs ejecutándose sin control - 4-6 llamadas innecesarias por modal
+  - ✅ **Root Cause:** useEffect con 6 dependencias + falta control interval único
+  - ✅ **SOLUCIÓN:** useRef control + validación RUNNING + cooldown + Execution Gate 60%
+  - ✅ **RESULTADO:** Reducido a 1-2 llamadas + protección institucional activa
+
+  **DL-111: Network Tab Visibility ✅ RESUELTO (2025-09-24):**
+  - ✅ APIs ahora visibles en DevTools Network tab
+  - ✅ Native fetch correctamente almacenado antes de intercepción
+
+  **🚨 DL-112: Database Connection Pool Exhaustion (NUEVO 2025-09-24):**
+  - **PROBLEMA:** SQLite pool agotado causando timeout en login/logout
+  - **SÍNTOMAS:** "QueuePool limit of size 20 overflow 20 reached, timeout 45.00"
+  - **CAUSA:** SQLite no es para multi-usuario + conexiones no se cierran (falta context manager)
+  - **IMPACTO:** Sistema colapsa con múltiples bots ejecutando simultáneamente
+  - **SOLUCIÓN LOCAL:** Implementar context manager en db/database.py
+  - **SOLUCIÓN PRODUCCIÓN:** PostgreSQL en Railway (necesario para escalar)
+
+- **Servicios sin bot_config:**
+  ```python
+  # routes/bots.py:51-56 - BROKEN INITIALIZATION
+  binance_service = BinanceRealDataService()           # Sin market_type
+  selector = AdvancedAlgorithmSelector()               # Sin risk_profile
+  mode_selector = IntelligentModeSelector()            # Sin parámetros
+  ```
+- **Issues técnicos detectados:**
+  1. **ATTRIBUTE ERRORS:** fair_value_gaps ✅ RESUELTO 2025-09-23
+  2. **ALGORITHM SCOPE:** Solo 3/8 algorithms aparecen
+  3. **RUNTIME WARNINGS:** Mean of empty slice en signal analysis
+  4. **CONSENSO 3/6:** Algorithm confirmation no implementado
 
 #### **📊 ETAPA 3: TABLA PROFESIONAL INFORMATIVA (P0 - UX CRÍTICO)**
-- **Estado:** 🔴 CRÍTICO - Sin señal visible, estado no persiste
-- **Meta:** Usuario ve: Estado, Señal Actual, Algoritmo Activo, Estrategia
-- **Acciones:** Columna señal BUY/SELL/HOLD, persistencia RUNNING/PAUSED
+- **Estado:** 🔴 CRÍTICO - Múltiples pendientes
+- **Issues:**
+
+  **DL-094: Señal Definitiva en Tabla:**
+  - Falta columna "Señal Actual": BUY/SELL/HOLD + confidence
+  - Falta columna "Algoritmo Activo" y "Modo IA"
+  - Sin colores visuales para señales
+
+  **✅ DL-098 + DL-093: Status Persistence + Background Execution - INTEGRADOS (2025-09-24)**
+  - **PROBLEMA:** Función aleatoria + bots no ejecutaban en background
+  - **SOLUCIÓN:** Eliminada `getBotStatus()` + reinicio automático de bots RUNNING
+  - **VERIFICADO:** Estados persisten Y ejecutan análisis automático
+  - **SIN CONFLICTOS:** Ambos fixes funcionando correctamente juntos
+
+- **Meta:** Usuario ve: Estado, Señal, Algoritmo, Modo IA
+- **Acciones:** Columnas informativas + colores + persistencia
 
 #### **⚡ ETAPA 4: BOT AUTOMÁTICO REAL (P0 - FUNCIONALIDAD PRINCIPAL)**
 - **Estado:** 🔴 CRÍTICO - Solo funciona con modal abierto
-- **Meta:** RUNNING → análisis automático → operaciones reales
-- **Acciones:** Scheduler background, separar análisis/visualización
+- **Issues:**
+
+  **DL-093: Background Bot Execution:**
+  - Bot solo analiza cuando modal abierto
+  - Necesita scheduler automático cada X minutos
+
+  **DL-097: Live Trading Feed:**
+  - `/api/trading-feed/live` retorna vacío
+  - Operaciones no visibles en tiempo real
+
+- **Meta:** RUNNING → análisis automático → operaciones visibles
+- **Acciones:** Scheduler background + feed operaciones
 
 #### **🎯 ETAPA 5: VISTA ALGORITMOS LÓGICA (P0 - UX FUNDAMENTAL)**
-- **Estado:** 🔴 CRÍTICO - Información incoherente, sin narrativa
-- **Meta:** Parámetros → Análisis → Decisión → Señal → Acción (secuencia lógica)
-- **Acciones:** Modal coherente, overlays funcionales, mensajes comprensibles
+- **Estado:** 🔴 CRÍTICO - Modal no carga datos
+- **Issues:**
+
+  **✅ Field Name Mismatch (2025-09-23):** RESUELTO
+  - APIs ahora aparecen en Network tab correctamente
+  - httpInterceptor usa fetch nativo global almacenado
+  - Modal ejecuta APIs y muestra datos correctamente
+
+  **✅ DL-109 (2025-09-24):** RESUELTO - mode_decision correcto
+  - Eliminados EMAs (violaban DL-002)
+  - SCALPING como default cuando confidence < 60%
+  - Mode selection → Algorithm integration flow correcto
+
+  **✅ Network Tab Visibility (2025-09-24):** RESUELTO
+  - httpInterceptor almacena fetch nativo ANTES de cualquier intercepción
+  - Usa window.__NATIVE_FETCH__ para ejecutar peticiones
+  - APIs visibles en DevTools Network tab
+
+  **DL-096: Smart Scalper Modal Coherente:**
+  - Información fragmentada y confusa
+  - Falta secuencia lógica institucional
+
+  **DL-101: Panel 12 Algoritmos:**
+  - Solo 3/6 overlays funcionando
+  - Falta FVG, Market Microstructure, Wyckoff overlays
+
+  **DL-102: Narrativa UX Explicativa:**
+  - Features técnicas sin traducción comprensible
+  - Alerts sin contexto útil
+
+- **Meta:** Secuencia lógica completa con narrativa clara
+- **Acciones:** Modal coherente + overlays + mensajes comprensibles
 
 #### **📈 ETAPA 6: PERFORMANCE VISIBLE (P1 - FUNCIONALIDAD PERDIDA)**
 - **Estado:** 🟡 PENDIENTE - Componentes eliminados
-- **Meta:** Performance Overview + Execution Quality restaurados
-- **Acciones:** Reintegrar métricas rendimiento, historial operaciones
+- **Issues:**
+
+  **DL-099: Performance Metrics Restoration:**
+  - Performance Overview perdido (win rate, PnL, trades)
+  - Execution Quality perdido (latencia, slippage)
+  - Sin histórico de performance trends
+
+  **DL-121: LatencyMonitor Critical Component:** ⏳ **PENDIENTE P1**
+  - **Estado:** Componente desconectado pero ecosistema completo existe
+  - **Problema:** LatencyMonitor importado pero nunca renderizado, usa Math.random()
+  - **Impacto:** Scalping sin métricas latencia críticas (<50ms requisito)
+  - **Solución:** Reintegrar después migración BotsAdvanced + 6 algoritmos
+  - **Backend:** `/api/bots/{bot_id}/execution-summary` endpoints existentes
+  - **Frontend:** 11+ archivos ecosistema (hooks, UI, services) disponibles
+  - **Prioridad:** P1 post-migración actual
+
+- **Meta:** Métricas completas de rendimiento visibles + latencia crítica monitoreada
+- **Acciones:** Reintegrar components + gráficos evolución + LatencyMonitor
 
 #### **📊 ETAPA 7: DATASETS LIMPIOS (P2 - TELEMETRÍA)**
 - **Estado:** 🟢 FUNCIONAL - Needs cleanup
@@ -116,7 +261,18 @@
 - **Meta:** Flujo completo end-to-end funcional
 - **Acciones:** Testing integral, backtests, deployment Railway/Vercel
 
-### 🚀 **FASE 6 FUTURA: UNIFICACIÓN SISTEMA AUTENTICACIÓN**
+### 🚀 **FASE 6: FRONTEND ARCHITECTURE COMPONENT PARITY**
+**OBJETIVO:** Cada estrategia con su propia arquitectura frontend especializada
+
+#### **📋 COMPONENTES STRATEGY-SPECIFIC:**
+- ✅ **TrendHunterMetrics:** Completado 2025-09-20
+- ❌ **ManipulationDetectorMetrics:** Pendiente
+- ❌ **NewsAnalyzerMetrics:** Pendiente
+- ❌ **VolatilityAdaptiveMetrics:** Pendiente
+- **Estado:** En desarrollo - TrendHunter completado como modelo
+- **Prioridad:** P1 - Architecture consistency
+
+### 🚀 **FASE 7 FUTURA: UNIFICACIÓN SISTEMA AUTENTICACIÓN**
 **OBJETIVO:** Eliminar duplicación AuthContext monolítico vs useAuthState refactorizado
 
 #### **🔄 ETAPA 1: MIGRAR COMPONENTES SIMPLES (P2 - UNIFICACIÓN)**
@@ -171,16 +327,39 @@
 
 - ✅ **FASE 0 Baseline cerrada:** InstitutionalChart/SmartScalperMetrics sin datos simulados; payload real verificado
 - ✅ **FASE 1 Runtime closure:** BotConfig inyectado en SignalQualityAssessor + `institutional_confirmations_breakdown` servidos vía API
-- ✅ **FASE 2 Institutional Algorithms 07–12:** VSA, Market Profile, Order Flow, Acc/Dist, SMC y Composite Man implementados en backend
+- ❌ **FASE 2 Institutional Algorithms 07–12:** PENDIENTE - Solo Wyckoff (01/12) completado
 - ✅ **FASE 3 Mode Selection:** ModeParamProvider + IntelligentModeSelector integrados; `mode_decision` disponible en API
 - ✅ **FASE 4 UI/Telemetría:** Modo activo visible en SmartScalperMetrics + telemetría histórica y configuración empaquetada
 - 🧪 **Validación:** `python -m compileall backend/services/institutional_params.py backend/services/signal_quality_assessor.py backend/services/mode_params.py backend/routes/bots.py` + revisión manual de payload/UI
 
+### **2025-09-24:**
+- ✅ **ARQUITECTURAS INSTITUCIONALES COMPLETADAS:** 6 algoritmos con documentación exhaustiva
+  - Wyckoff Method Architecture: 872 líneas con detección Spring/UTAD/SOS
+  - Order Blocks Architecture: 1,287 líneas con UX dashboard completo
+  - Liquidity Grabs, Stop Hunting, Fair Value Gaps, Market Microstructure
+- ✅ **75+ HARDCODES IDENTIFICADOS:** Análisis exhaustivo de violaciones DL-001
+- ✅ **UX DASHBOARDS DISEÑADOS:** Componentes React + hooks para cada algoritmo
+- ✅ **DL-114 a DL-119 DOCUMENTADOS:** Nuevas decisiones arquitectónicas
+
+### **2025-09-23:**
+- ✅ **FAIR_VALUE_GAPS ISSUE RESUELTO:** Mapeo frontend corregido para institutional_confirmations
+- 🔥 **SMART SCALPER MODAL ROTO DETECTADO:** API 500 por mode_decision parameter no implementado
+- ⚠️ **AUDITORÍA REALIZADA:** DL-109 confirmado como falso completado - requiere reimplementación
+- 📋 **BACKLOG ACTUALIZADO:** Separación clara entre tareas pendientes y status proyecto
+
+### **2025-09-22:**
+- 🔍 **AUDITORÍA E2E SMART SCALPER:** Múltiples issues críticos detectados
+- ❌ **DL-109 FALSO COMPLETADO:** Mode → Algorithm integration no funcional
+- ⚠️ **SERVICIOS DESCONECTADOS:** Bot_config no llega a servicios institucionales
+
+### **2025-09-20:**
+- ✅ **TRENDHUNTERMETRICS COMPONENT:** Arquitectura frontend para Trend Hunter strategy
+- ⚠️ **DL-109 INTENTO FALLIDO:** Implementación incorrecta causó API 500 error
+
 ### **2025-09-17:**
-- ✅ **DL-001 SPEC ALIGNMENT COMPLETED:** Documentación actualizada para los 12 algoritmos y modos (Smart Scalper, Trend Hunter, Anti-Manipulation)
+- ✅ **DL-001 SPEC ALIGNMENT COMPLETED:** Documentación actualizada para los 12 algoritmos y modos
 - ✅ **MODE_SELECTION_SPEC alineado con providers parametrizables**
 - ✅ **Plan de implementación por fases (F0–F5) documentado para transición a MVP institucional**
-- 📌 **Pendientes clave:** Implementar ParamProviders en código, limpiar UI de datos simulados, construir selector de modos
 
 ### **2025-09-14:**
 - ✅ **DL-090 INTEGRAL MARKET DATA UNIFICATION:** Eliminado overlay loading cada 5s + precio azul duplicado + market_type unificado
@@ -259,4 +438,7 @@
 
 ---
 
-*Actualizado: 2025-09-18 - Fases 0 y 1 completadas; iniciar implementación de algoritmos institucionales Fase 2*
+*Actualizado: 2025-09-23 - DL-110 ADDENDUM problema crítico liquidity_zones*
+*Estado Crítico: API 500 por atributo inexistente + fallback mal formado*
+*Pendientes P0: liquidity_zones fix, risk_assessment validación, DL-103*
+*Resueltos: DL-098+DL-093 (status persistence + background execution integrados), DL-109 (mode_decision), DL-110 (API calls)*

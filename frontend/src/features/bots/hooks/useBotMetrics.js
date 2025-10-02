@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { getBotTradingOperations } from '../../services/api';
+import { getBotTradingOperations } from '../../../services/api';
 
 export const useBotMetrics = () => {
 
@@ -105,7 +105,15 @@ export const useBotMetrics = () => {
           avgWin: trades.length > 0 ? (trades.filter(t => t.realized_pnl > 0).reduce((sum, t) => sum + t.realized_pnl, 0) / trades.filter(t => t.realized_pnl > 0).length || 1).toFixed(2) : '0.00',
           avgLoss: trades.length > 0 ? Math.abs(trades.filter(t => t.realized_pnl < 0).reduce((sum, t) => sum + t.realized_pnl, 0) / trades.filter(t => t.realized_pnl < 0).length || 1).toFixed(2) : '0.00',
           realizedPnL: realizedPnL.toFixed(2),
-          equity: trades.map((trade, index) => ({ day: index + 1, value: Number(bot.stake) + trades.slice(0, index + 1).reduce((sum, t) => sum + (t.realized_pnl || 0), 0) }))
+          equity: trades.map((trade, index) =>
+            Number(bot.stake) + trades.slice(0, index + 1).reduce((sum, t) => sum + (t.realized_pnl || 0), 0)
+          ),
+          // Add fields needed by AdvancedMetrics
+          trades: trades.map(t => t.realized_pnl || 0),  // Array of PnLs
+          returns: trades.map(trade => {
+            const stake = Number(bot.stake) || 1000;
+            return stake > 0 ? (trade.realized_pnl || 0) / stake : 0;
+          })  // Array of percentage returns
         };
       }
     } catch (error) {

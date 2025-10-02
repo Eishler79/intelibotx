@@ -10,7 +10,7 @@
  */
 
 import { useCallback } from 'react';
-import httpInterceptor from '../../../shared/services/httpInterceptor';
+import httpInterceptor from '../../../services/httpInterceptor';
 import { useNotifications } from '../../../components/notifications/NotificationSystem';
 
 /**

@@ -38,7 +38,8 @@ class SignalQualityAssessor:
     6. Market Microstructure Validation
     """
     
-    def __init__(self):
+    def __init__(self, bot_config=None):
+        self.bot_config = bot_config  # GAP #4: Bot configuration for personalized thresholds
         self.min_institutional_confirmations = 3  # Mínimo 3/6 confirmaciones institucionales
         self.institutional_thresholds = {
             "INSTITUTIONAL": 85,  # Solo para algoritmos Smart Money
@@ -48,12 +49,13 @@ class SignalQualityAssessor:
         }
         
     def assess_signal_quality(
-        self, 
+        self,
         price_data: pd.DataFrame,
         volume_data: List[float],
         indicators: Dict[str, float],  # Ignorado - solo institucionales
         market_structure: Dict[str, Any],
-        timeframe: str = "15m"
+        timeframe: str = "15m",
+        timeframe_data: Dict[str, Any] = None  # GAP #4: Multi-timeframe confirmation data
     ) -> InstitutionalSignalQuality:
         """
         🏛️ INSTITUCIONAL: Evaluar calidad usando SOLO Smart Money algorithms
@@ -71,7 +73,7 @@ class SignalQualityAssessor:
         try:
             # 1. 🏛️ WYCKOFF METHOD ANALYSIS
             wyckoff_confirmation = self._evaluate_wyckoff_analysis(
-                price_data, volume_data, market_structure
+                price_data, volume_data, market_structure, timeframe_data  # GAP #4: Pass MTF data
             )
             
             # 2. 📦 ORDER BLOCKS CONFIRMATION  
@@ -136,30 +138,110 @@ class SignalQualityAssessor:
             )
     
     def _evaluate_wyckoff_analysis(
-        self, 
+        self,
         price_data: pd.DataFrame,
-        volume_data: List[float], 
-        market_structure: Dict[str, Any]
+        volume_data: List[float],
+        market_structure: Dict[str, Any],
+        timeframe_data: Dict[str, Any] = None  # GAP #4: Multi-timeframe data
     ) -> InstitutionalConfirmation:
-        """🏛️ Evaluar Wyckoff Method - Accumulation/Distribution phases"""
+        """🏛️ Evaluar Wyckoff Method - Accumulation/Distribution phases con Spring/UTAD detection"""
         try:
+            from services.ta_alternative import calculate_atr
+
             score = 0
             details = {}
-            
-            if len(price_data) < 50:
+
+            if len(price_data) < 60:  # Necesitamos más datos para análisis robusto
                 return InstitutionalConfirmation(
                     name="Wyckoff Analysis",
-                    score=20,
+                    score=15,
                     bias="INSTITUTIONAL_NEUTRAL",
-                    details={"error": "Insufficient data for Wyckoff analysis"}
+                    details={"error": "Insufficient data for Wyckoff enhanced analysis"}
                 )
-            
-            closes = price_data['close'].values
-            volumes = np.array(volume_data[-len(closes):]) if len(volume_data) >= len(closes) else np.array(volume_data)
+
+            # Extraer OHLCV data
+            opens = price_data['open'].values
             highs = price_data['high'].values
             lows = price_data['low'].values
-            
-            # Wyckoff Phase Detection
+            closes = price_data['close'].values
+            volumes = np.array(volume_data[-len(closes):]) if len(volume_data) >= len(closes) else np.array(volume_data)
+
+            # GAP #2: ATR Normalization Implementation
+            # Calculate real ATR for dynamic thresholds
+            atr = calculate_atr(
+                highs.tolist(),
+                lows.tolist(),
+                closes.tolist(),
+                period=14
+            ) or 1e-9
+
+            # Calcular rango de consolidación
+            lookback = min(120, len(closes))
+            window_closes = closes[-lookback:]
+            range_low = window_closes.min()
+            range_high = window_closes.max()
+            range_height = range_high - range_low
+
+            # Range height normalized by ATR (institutional standard)
+            range_height_atr = range_height / atr
+
+            # Detectar volumen ultra alto (señal institucional)
+            ultra_vol = volumes[-1] > 2.0 * (volumes[-20:].mean() if len(volumes) >= 20 else volumes.mean())
+
+            # Stopping action detection (institutional footprint)
+            stopping_action = ultra_vol and range_height_atr > 2.0
+
+            # GAP #1: Spring/UTAD Detection según SMART_SCALPER_ALGO_REFINEMENTS.md líneas 91-94
+            wick_down = highs[-1] - max(opens[-1], closes[-1])
+            wick_up = min(opens[-1], closes[-1]) - lows[-1]
+
+            # Spring: Ruptura bajista falsa con reversión
+            is_spring = (lows[-1] < range_low * 0.999 and
+                        closes[-1] > range_low and
+                        (wick_up/atr) > 0.6 and
+                        ultra_vol)
+
+            # UTAD: Ruptura alcista falsa con reversión
+            is_utad = (highs[-1] > range_high * 1.001 and
+                      closes[-1] < range_high and
+                      (wick_down/atr) > 0.6 and
+                      ultra_vol)
+
+            # Actualizar details con información Spring/UTAD
+            details['spring_utad_detection'] = {
+                'is_spring': bool(is_spring),
+                'is_utad': bool(is_utad)
+            }
+
+            # Scoring mejorado con Spring/UTAD
+            if is_spring:
+                score += 30  # Spring es señal muy bullish
+                details['spring_signal'] = "STRONG_BUY"
+            if is_utad:
+                score += 25  # UTAD es señal muy bearish
+                details['utad_signal'] = "STRONG_SELL"
+
+            # GAP #4: Multi-timeframe confirmation
+            mtf_score = 0
+            if timeframe_data:
+                mtf_score = self._validate_mtf_confirmation(
+                    is_spring, is_utad, timeframe_data
+                )
+                score += mtf_score  # Agregar al score total
+
+                # Documentar en details
+                details['mtf_confirmation'] = {
+                    'score': mtf_score,
+                    'confirmations': {
+                        'spring_mtf': is_spring and mtf_score > 0,
+                        'utad_mtf': is_utad and mtf_score > 0
+                    },
+                    'strength': 'Strong' if mtf_score >= 20 else
+                               'Moderate' if mtf_score >= 10 else
+                               'Weak' if mtf_score >= 5 else 'None'
+                }
+
+            # Wyckoff Phase Detection (mantener compatibilidad)
             wyckoff_phase = market_structure.get('wyckoff_phase', 'UNKNOWN')
             
             # Phase-specific scoring
@@ -219,14 +301,67 @@ class SignalQualityAssessor:
                 'bias': divergence_bias
             }
             
+            # GAP #3: Integrate 18 Wyckoff signals
+            from services.wyckoff.accumulation import detect_accumulation_signals
+            from services.wyckoff.markup import detect_markup_signals
+            from services.wyckoff.distribution import detect_distribution_signals
+            from services.wyckoff.markdown import detect_markdown_signals
+
+            # Arrays already extracted at lines 160-164, no need to redefine
+
+            # Get all signals from 4 phases
+            accumulation_signals = detect_accumulation_signals(
+                opens, highs, lows, closes, volumes,
+                atr, range_low, range_high, self.bot_config
+            )
+
+            markup_signals = detect_markup_signals(
+                opens, highs, lows, closes, volumes,
+                atr, range_low, range_high, self.bot_config
+            )
+
+            distribution_signals = detect_distribution_signals(
+                opens, highs, lows, closes, volumes,
+                atr, range_low, range_high, self.bot_config
+            )
+
+            markdown_signals = detect_markdown_signals(
+                opens, highs, lows, closes, volumes,
+                atr, range_low, range_high, self.bot_config
+            )
+
+            # Combine all signals
+            wyckoff_signals = {}
+            wyckoff_signals.update(accumulation_signals)
+            wyckoff_signals.update(markup_signals)
+            wyckoff_signals.update(distribution_signals)
+            wyckoff_signals.update(markdown_signals)
+
+            details['wyckoff_signals'] = wyckoff_signals
+
+            # Count detected signals for score adjustment
+            detected_signals = sum(1 for s in wyckoff_signals.values() if s.get('detected', False))
+            signal_score = min(detected_signals * 5, 40)  # Max 40 points from 18 signals
+            score += signal_score
+
+            # DEBUG: Log what signals were detected
+            import logging
+            debug_logger = logging.getLogger(__name__)
+            debug_logger.info(f"🔍 WYCKOFF SIGNALS DEBUG:")
+            debug_logger.info(f"  Total signals in dict: {len(wyckoff_signals)}")
+            debug_logger.info(f"  Signals detected: {detected_signals}")
+            debug_logger.info(f"  Signal score added: {signal_score}")
+            debug_logger.info(f"  Score before signals: {score - signal_score}")
+            debug_logger.info(f"  Score after signals: {score}")
+
             # Determine overall Wyckoff bias
-            if score >= 50:
+            if score >= 70:
                 bias = "SMART_MONEY"
-            elif score >= 30:
-                bias = "INSTITUTIONAL_NEUTRAL" 
+            elif score >= 40:
+                bias = "INSTITUTIONAL_NEUTRAL"
             else:
                 bias = "RETAIL_TRAP"
-                
+
             return InstitutionalConfirmation(
                 name="Wyckoff Analysis",
                 score=min(score, 100),
@@ -926,11 +1061,11 @@ class SignalQualityAssessor:
             )
     
     def _calculate_institutional_quality(
-        self, 
+        self,
         confirmations: Dict[str, InstitutionalConfirmation]
     ) -> tuple[float, str, str]:
         """Calcular calidad institucional y recomendación Smart Money"""
-        
+
         # Weights for institutional confirmations
         weights = {
             "wyckoff_method": 0.25,          # Highest weight - core institutional
@@ -940,15 +1075,28 @@ class SignalQualityAssessor:
             "stop_hunting": 0.10,           # Hunt patterns
             "fair_value_gaps": 0.10         # Gap analysis
         }
-        
+
         total_score = 0
         smart_money_signals = 0
         retail_trap_signals = 0
         neutral_signals = 0
-        
+
+        # DEBUG LOGGING DEL CÁLCULO EXACTO
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info("=" * 60)
+        logger.info("🔍 CÁLCULO DETALLADO DEL SCORE INSTITUCIONAL")
+
         for name, confirmation in confirmations.items():
             weight = weights.get(name, 0.15)
-            total_score += confirmation.score * weight
+            contribution = confirmation.score * weight
+            total_score += contribution
+
+            logger.info(f"{name.upper()}:")
+            logger.info(f"  - Score: {confirmation.score:.4f}")
+            logger.info(f"  - Weight: {weight:.2%}")
+            logger.info(f"  - Contribution: {confirmation.score:.4f} × {weight} = {contribution:.4f}")
+            logger.info(f"  - Bias: {confirmation.bias}")
             
             if confirmation.bias == "SMART_MONEY":
                 smart_money_signals += 1
@@ -957,6 +1105,10 @@ class SignalQualityAssessor:
             else:
                 neutral_signals += 1
         
+        logger.info("=" * 60)
+        logger.info(f"🎯 TOTAL SCORE CALCULADO: {total_score:.10f}")
+        logger.info("=" * 60)
+
         # Determine institutional confidence level
         if total_score >= self.institutional_thresholds["INSTITUTIONAL"]:
             confidence_level = "INSTITUTIONAL"
@@ -981,6 +1133,109 @@ class SignalQualityAssessor:
         
         return total_score, confidence_level, recommendation
     
+    def _validate_mtf_confirmation(self, is_spring, is_utad, timeframe_data):
+        """
+        GAP #4: Multi-timeframe 1m/5m/15m/1h synchronized confirmation
+        Basado en SMART_SCALPER_MODE_ARCHITECTURE.md líneas 202-204
+        """
+        if not timeframe_data:
+            return 0  # Sin data MTF, no hay bonus de score
+
+        confirmations = 0
+
+        # Validar Spring en múltiples timeframes
+        if is_spring:
+            if '5m' in timeframe_data:
+                tf_5m = timeframe_data['5m']
+                # TimeframeData tiene atributos, no métodos get()
+                if hasattr(tf_5m, 'lows') and len(tf_5m.lows) > 0:
+                    # Calcular range_low para este timeframe
+                    range_low_5m = min(tf_5m.lows) if len(tf_5m.lows) >= 20 else tf_5m.lows[0]
+
+                    # Verificar patrón Spring
+                    if tf_5m.lows[-1] < range_low_5m * 0.999:
+                        # Verificar recuperación
+                        if hasattr(tf_5m, 'closes') and len(tf_5m.closes) > 0:
+                            if tf_5m.closes[-1] > range_low_5m:
+                                confirmations += 1
+
+            if '15m' in timeframe_data:
+                tf_15m = timeframe_data['15m']
+                if hasattr(tf_15m, 'lows') and len(tf_15m.lows) > 0:
+                    # Calcular range_low para este timeframe
+                    range_low_15m = min(tf_15m.lows) if len(tf_15m.lows) >= 20 else tf_15m.lows[0]
+
+                    # Verificar patrón Spring
+                    if tf_15m.lows[-1] < range_low_15m * 0.999:
+                        # Verificar recuperación
+                        if hasattr(tf_15m, 'closes') and len(tf_15m.closes) > 0:
+                            if tf_15m.closes[-1] > range_low_15m:
+                                confirmations += 1
+
+            if '1h' in timeframe_data:
+                tf_1h = timeframe_data['1h']
+                if hasattr(tf_1h, 'lows') and len(tf_1h.lows) > 0:
+                    # Calcular range_low para este timeframe
+                    range_low_1h = min(tf_1h.lows) if len(tf_1h.lows) >= 20 else tf_1h.lows[0]
+
+                    # Verificar patrón Spring
+                    if tf_1h.lows[-1] < range_low_1h * 0.999:
+                        # Verificar recuperación
+                        if hasattr(tf_1h, 'closes') and len(tf_1h.closes) > 0:
+                            if tf_1h.closes[-1] > range_low_1h:
+                                confirmations += 1
+
+        # Validar UTAD en múltiples timeframes
+        if is_utad:
+            if '5m' in timeframe_data:
+                tf_5m = timeframe_data['5m']
+                if hasattr(tf_5m, 'highs') and len(tf_5m.highs) > 0:
+                    # Calcular range_high para este timeframe
+                    range_high_5m = max(tf_5m.highs) if len(tf_5m.highs) >= 20 else tf_5m.highs[0]
+
+                    # Verificar patrón UTAD
+                    if tf_5m.highs[-1] > range_high_5m * 1.001:
+                        # Verificar fallo
+                        if hasattr(tf_5m, 'closes') and len(tf_5m.closes) > 0:
+                            if tf_5m.closes[-1] < range_high_5m:
+                                confirmations += 1
+
+            if '15m' in timeframe_data:
+                tf_15m = timeframe_data['15m']
+                if hasattr(tf_15m, 'highs') and len(tf_15m.highs) > 0:
+                    # Calcular range_high para este timeframe
+                    range_high_15m = max(tf_15m.highs) if len(tf_15m.highs) >= 20 else tf_15m.highs[0]
+
+                    # Verificar patrón UTAD
+                    if tf_15m.highs[-1] > range_high_15m * 1.001:
+                        # Verificar fallo
+                        if hasattr(tf_15m, 'closes') and len(tf_15m.closes) > 0:
+                            if tf_15m.closes[-1] < range_high_15m:
+                                confirmations += 1
+
+            if '1h' in timeframe_data:
+                tf_1h = timeframe_data['1h']
+                if hasattr(tf_1h, 'highs') and len(tf_1h.highs) > 0:
+                    # Calcular range_high para este timeframe
+                    range_high_1h = max(tf_1h.highs) if len(tf_1h.highs) >= 20 else tf_1h.highs[0]
+
+                    # Verificar patrón UTAD
+                    if tf_1h.highs[-1] > range_high_1h * 1.001:
+                        # Verificar fallo
+                        if hasattr(tf_1h, 'closes') and len(tf_1h.closes) > 0:
+                            if tf_1h.closes[-1] < range_high_1h:
+                                confirmations += 1
+
+        # Score basado en número de confirmaciones (EXACTO COMO EL PLAN)
+        if confirmations >= 3:
+            return 20  # Confluencia fuerte
+        elif confirmations >= 2:
+            return 10  # Confluencia moderada
+        elif confirmations >= 1:
+            return 5   # Confluencia débil
+        else:
+            return 0   # Sin confluencia
+
     def _identify_manipulation_alerts(
         self, 
         confirmations: Dict[str, InstitutionalConfirmation]

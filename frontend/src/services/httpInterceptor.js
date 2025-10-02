@@ -1,15 +1,24 @@
 /**
  * 🔒 HTTP Interceptor - Token Expiration & Security Handler
  * Conecta con sistema de seguridad backend (Rate Limiting + Custom Exceptions)
- * 
+ *
  * INTEGRACIÓN BACKEND:
  * - Rate Limiting: Maneja 429 responses del backend slowapi
  * - Custom Exceptions: Procesa AuthenticationError, ValidationError, etc.
  * - Token Expiration: Auto-logout cuando JWT expire
  * - Security Headers: Valida respuestas con headers de seguridad
- * 
+ *
  * Eduard Guzmán - InteliBotX
  */
+
+// 🔍 CRITICAL: Store native fetch BEFORE any code can intercept it
+if (!window.__NATIVE_FETCH__) {
+  window.__NATIVE_FETCH__ = window.fetch;
+  console.log('🔍 CRITICAL: Storing NATIVE fetch at module load:', {
+    isNative: window.fetch.name === 'fetch',
+    timestamp: new Date().toISOString()
+  });
+}
 
 class HttpInterceptor {
   constructor() {
@@ -18,6 +27,14 @@ class HttpInterceptor {
     this.isRefreshing = false;
     this.failedQueue = [];
     this.isLoggingOut = false; // Prevent multiple simultaneous logouts
+
+    // 🔍 DIAGNOSTIC: Store original fetch IMMEDIATELY on construction
+    this.originalFetch = window.fetch;
+    console.log('🔍 HTTP_INTERCEPTOR constructor - Storing original fetch:', {
+      isNativeFetch: this.originalFetch.name === 'fetch',
+      fetchName: this.originalFetch.name,
+      timestamp: new Date().toISOString()
+    });
     
     // Backend error codes mapping
     this.ERROR_CODES = {
@@ -37,12 +54,21 @@ class HttpInterceptor {
    * Initialize interceptor with AuthContext and notification system
    */
   init(authContext, notificationSystem = null) {
+    // Update context and notification system
     this.authContext = authContext;
     this.notificationSystem = notificationSystem;
-    
-    // Override fetch globally
+
+    // 🔍 DIAGNOSTIC: Prevent double initialization of fetch interceptor
+    if (this.isInitialized) {
+      console.log('⚠️ HTTP Interceptor already initialized, updating context only');
+      return;
+    }
+
+    this.isInitialized = true;
+
+    // Override fetch globally - ONLY ONCE
     this.setupFetchInterceptor();
-    
+
     console.log('🔒 HTTP Interceptor initialized with backend security integration');
   }
 
@@ -50,11 +76,41 @@ class HttpInterceptor {
    * Setup global fetch interceptor
    */
   setupFetchInterceptor() {
-    const originalFetch = window.fetch;
-    
+    // 🔍 DIAGNOSTIC: Check if fetch is already intercepted
+    console.log('🔍 HTTP_INTERCEPTOR setupFetchInterceptor called:', {
+      isOriginalFetch: window.fetch.name === 'fetch',
+      currentFetchName: window.fetch.name,
+      hasBeenIntercepted: window.fetch.toString().includes('interceptor'),
+      usingGlobalNativeFetch: !!window.__NATIVE_FETCH__,
+      globalFetchIsNative: window.__NATIVE_FETCH__ ? window.__NATIVE_FETCH__.name === 'fetch' : 'N/A',
+      timestamp: new Date().toISOString()
+    });
+
+    // 🔍 FIX: Store native fetch OUTSIDE the interceptor function scope
+    const nativeFetch = window.__NATIVE_FETCH__ || this.originalFetch;
+
+    if (!nativeFetch || nativeFetch.name !== 'fetch') {
+      console.error('🚨 CRITICAL: No native fetch available for interception!');
+      return;
+    }
+
     window.fetch = async (...args) => {
       const [url, options = {}] = args;
       const isDashboardRequest = typeof url === 'string' && url.includes('/api/dashboard/');
+
+      // 🔍 DIAGNOSTIC: Track Smart Scalper API calls specifically
+      const isSmartScalperRequest = typeof url === 'string' &&
+        (url.includes('/api/run-smart-trade/') || url.includes('/api/market-data/'));
+
+      if (isSmartScalperRequest) {
+        console.log('🎯 INTERCEPTOR: Smart Scalper API call detected:', {
+          url,
+          method: options?.method || 'GET',
+          hasAuth: options?.headers?.Authorization ? 'YES' : 'NO',
+          willCallOriginalFetch: true,
+          timestamp: new Date().toISOString()
+        });
+      }
 
       if (isDashboardRequest) {
         const method = options?.method || 'GET';
@@ -76,10 +132,27 @@ class HttpInterceptor {
       try {
         // Pre-request validation
         await this.preRequestValidation(args);
-        
-        // Execute request
-        const response = await originalFetch(...args);
-        
+
+        // Execute request using NATIVE fetch
+        console.log('🔍 CRITICAL DEBUG: About to call nativeFetch:', {
+          nativeFetchName: nativeFetch?.name,
+          isNative: nativeFetch?.name === 'fetch',
+          nativeFetchEquals__NATIVE_FETCH__: nativeFetch === window.__NATIVE_FETCH__,
+          url: args[0]
+        });
+        const response = await nativeFetch(...args);
+
+        // 🔍 DIAGNOSTIC: Track Smart Scalper response
+        if (isSmartScalperRequest) {
+          console.log('🎯 INTERCEPTOR: Smart Scalper API response received:', {
+            url,
+            status: response.status,
+            statusText: response.statusText,
+            originalFetchExecuted: true,
+            timestamp: new Date().toISOString()
+          });
+        }
+
         if (isDashboardRequest) {
           const cloned = response.clone();
           let payload = null;
@@ -95,8 +168,8 @@ class HttpInterceptor {
           });
         }
         
-        // Post-response processing
-        return await this.postResponseProcessing(response, args);
+        // Post-response processing (pass nativeFetch for retry scenarios)
+        return await this.postResponseProcessing(response, args, nativeFetch);
         
       } catch (error) {
         if (isDashboardRequest) {
@@ -112,31 +185,37 @@ class HttpInterceptor {
 
   /**
    * Pre-request validation and token refresh
+   * ✅ P3: CRITICAL FIX - NO bloquear requests sin token, solo validar si existe
    */
   async preRequestValidation(args) {
     const [url, options = {}] = args;
-    
+
     // Skip validation for auth endpoints
     if (this.isAuthEndpoint(url)) {
       return;
     }
-    
-    // Check if token is available and not expired
+
+    // ✅ P3: ONLY validate token expiration if token exists
+    // Do NOT throw errors if no token - let the backend handle 401
     if (this.authContext && this.authContext.token) {
       const isExpired = this.isTokenExpired(this.authContext.token);
-      
+
       if (isExpired) {
-        console.warn('🔑 Token expired, triggering auto-logout');
-        await this.handleTokenExpiration();
-        throw new Error('TOKEN_EXPIRED');
+        console.warn('🔑 Token expired detected - will let backend return 401');
+        // ✅ P3: Do NOT throw here - let the request proceed and backend will respond 401
+        // The 401 handler will trigger logout properly
+        // This prevents blocking ALL requests when token expires
       }
     }
+
+    // ✅ P3: If no authContext or no token - let request proceed
+    // Public endpoints or endpoints that handle auth themselves will work
   }
 
   /**
    * Post-response processing with backend error handling
    */
-  async postResponseProcessing(response, originalArgs) {
+  async postResponseProcessing(response, originalArgs, nativeFetch = null) {
     const [url, options = {}] = originalArgs;
     
     // Handle different HTTP status codes
@@ -153,7 +232,7 @@ class HttpInterceptor {
         return this.handle403Forbidden(response);
         
       case 429:
-        return await this.handle429RateLimited(response, originalArgs);
+        return await this.handle429RateLimited(response, originalArgs, nativeFetch);
         
       case 422:
         return this.handle422ValidationError(response);
@@ -235,7 +314,7 @@ class HttpInterceptor {
   /**
    * Handle 429 Rate Limited - Backend slowapi integration
    */
-  async handle429RateLimited(response, originalArgs) {
+  async handle429RateLimited(response, originalArgs, nativeFetch = null) {
     console.warn('🚦 429 Rate Limited - Backend rate limiter triggered');
     
     // Parse rate limit headers from backend
@@ -255,9 +334,9 @@ class HttpInterceptor {
       try {
         await this.sleep(parseInt(retryAfter) * 1000);
         
-        // Retry the original request
+        // Retry the original request using NATIVE fetch
         const [url, options] = originalArgs;
-        const retryResponse = await fetch(url, options);
+        const retryResponse = await (nativeFetch || window.__NATIVE_FETCH__ || window.fetch)(url, options);
         
         this.isRefreshing = false;
         return retryResponse;

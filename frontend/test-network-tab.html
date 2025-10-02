@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Network Tab Visibility</title>
+</head>
+<body>
+    <h1>Test Network Tab - Fetch Visibility</h1>
+    <button id="test1">Test 1: Native Fetch</button>
+    <button id="test2">Test 2: Intercepted Fetch</button>
+    <button id="test3">Test 3: Test with __NATIVE_FETCH__</button>
+    <button id="test4">Test 4: Real API Call</button>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const API_URL = 'http://localhost:8000';
+
+        function log(message) {
+            console.log(message);
+            resultsDiv.innerHTML += `<p>${JSON.stringify(message)}</p>`;
+        }
+
+        // Store original fetch before any interception
+        const originalFetch = window.fetch;
+        log({test: 'Initial', fetchName: window.fetch.name, isNative: window.fetch.name === 'fetch'});
+
+        // Test 1: Native fetch (should appear in Network tab)
+        document.getElementById('test1').onclick = async () => {
+            log({test: 'Test1 Starting', using: 'originalFetch'});
+            try {
+                const response = await originalFetch(`${API_URL}/api/market-data/BTCUSDT?simple=true`);
+                log({test: 'Test1 Complete', status: response.status, appeared: 'CHECK NETWORK TAB'});
+            } catch (error) {
+                log({test: 'Test1 Error', error: error.message});
+            }
+        };
+
+        // Test 2: Intercept and test
+        document.getElementById('test2').onclick = async () => {
+            // Create interceptor
+            const nativeFetch = originalFetch;
+            window.fetch = async (...args) => {
+                log({interceptor: 'Called', url: args[0]});
+                return nativeFetch(...args);
+            };
+
+            log({test: 'Test2 Starting', fetchIntercepted: window.fetch !== originalFetch});
+            try {
+                const response = await fetch(`${API_URL}/api/market-data/ETHUSDT?simple=true`);
+                log({test: 'Test2 Complete', status: response.status, appeared: 'CHECK NETWORK TAB'});
+            } catch (error) {
+                log({test: 'Test2 Error', error: error.message});
+            }
+
+            // Restore
+            window.fetch = originalFetch;
+        };
+
+        // Test 3: Test with __NATIVE_FETCH__
+        document.getElementById('test3').onclick = async () => {
+            window.__NATIVE_FETCH__ = originalFetch;
+
+            // Simulate the interceptor
+            window.fetch = async (...args) => {
+                log({interceptor: 'Using __NATIVE_FETCH__', url: args[0]});
+                return window.__NATIVE_FETCH__(...args);
+            };
+
+            log({test: 'Test3 Starting', using: '__NATIVE_FETCH__'});
+            try {
+                const response = await fetch(`${API_URL}/api/market-data/ADAUSDT?simple=true`);
+                log({test: 'Test3 Complete', status: response.status, appeared: 'CHECK NETWORK TAB'});
+            } catch (error) {
+                log({test: 'Test3 Error', error: error.message});
+            }
+
+            // Restore
+            window.fetch = originalFetch;
+        };
+
+        // Test 4: Real API call like the app does
+        document.getElementById('test4').onclick = async () => {
+            log({test: 'Test4 Starting', currentFetch: window.fetch.name});
+
+            // Import the actual interceptor
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.textContent = `
+                import httpInterceptor from './src/services/httpInterceptor.js';
+
+                // Initialize it
+                httpInterceptor.init({token: null, logout: () => {}}, null);
+
+                // Make a call
+                fetch('${API_URL}/api/market-data/BNBUSDT?simple=true')
+                    .then(response => {
+                        window.testResult = {status: response.status, ok: response.ok};
+                    })
+                    .catch(error => {
+                        window.testResult = {error: error.message};
+                    });
+            `;
+            document.body.appendChild(script);
+
+            // Wait and check result
+            setTimeout(() => {
+                log({test: 'Test4 Complete', result: window.testResult, appeared: 'CHECK NETWORK TAB'});
+            }, 2000);
+        };
+    </script>
+</body>
+</html>

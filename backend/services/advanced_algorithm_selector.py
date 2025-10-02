@@ -110,17 +110,19 @@ class AdvancedAlgorithmSelector:
                                 microstructure: Optional[MarketMicrostructure],
                                 institutional: Optional[InstitutionalAnalysis],
                                 multi_tf: Optional[MultiTimeframeSignal],
-                                timeframe_data: Dict[str, TimeframeData]) -> AlgorithmSelection:
+                                timeframe_data: Dict[str, TimeframeData],
+                                mode_decision: Optional[Dict[str, Any]] = None) -> AlgorithmSelection:
         """
         Seleccionar algoritmo óptimo basado en análisis completo
-        
+
         Args:
             symbol: Par de trading
             microstructure: Análisis de microestructura
             institutional: Análisis institucional
             multi_tf: Señal multi-temporal
             timeframe_data: Datos por timeframe
-            
+            mode_decision: Decisión de modo del IntelligentModeSelector (DL-109)
+
         Returns:
             AlgorithmSelection con algoritmo óptimo y reasoning
         """
@@ -135,9 +137,9 @@ class AdvancedAlgorithmSelector:
                 microstructure, institutional, multi_tf, timeframe_data
             )
             
-            # 3. Score todos los algoritmos
+            # 3. Score todos los algoritmos (DL-109: Include mode_decision)
             algorithm_scores = self._score_all_algorithms(
-                market_regime, market_features, symbol
+                market_regime, market_features, symbol, mode_decision
             )
             
             # 4. Seleccionar el mejor algoritmo
@@ -389,8 +391,8 @@ class AdvancedAlgorithmSelector:
         
         # Microstructure volatility
         if microstructure:
-            features["spread_impact"] = microstructure.bid_ask_spread_impact
-            features["price_divergence"] = microstructure.price_action_divergence
+            features["spread_impact"] = microstructure.liquidity_score
+            features["price_divergence"] = microstructure.order_flow_imbalance
         
         return features
 
@@ -402,7 +404,7 @@ class AdvancedAlgorithmSelector:
         if multi_tf:
             # Multi-timeframe trend features
             features["trend_strength_score"] = self._trend_strength_to_score(multi_tf.trend_strength)
-            features["timeframe_consensus"] = multi_tf.timeframe_consensus
+            features["timeframe_consensus"] = getattr(multi_tf, 'timeframe_consensus', multi_tf.confidence)
             features["alignment_score"] = self._alignment_to_score(multi_tf.alignment)
         
         if timeframe_data:
@@ -465,15 +467,25 @@ class AdvancedAlgorithmSelector:
         features = {}
         
         if institutional:
-            features["structure_break"] = 1.0 if institutional.market_structure_break else 0.0
-            features["change_of_character"] = 1.0 if institutional.change_of_character else 0.0
-            features["liquidity_sweep"] = 1.0 if institutional.liquidity_sweep_detected else 0.0
+            features["structure_break"] = 1.0 if hasattr(institutional, 'market_structure_break') and institutional.market_structure_break else 0.0
+            features["change_of_character"] = 1.0 if hasattr(institutional, 'change_of_character') and institutional.change_of_character else 0.0
+            features["liquidity_sweep"] = 1.0 if getattr(institutional, 'liquidity_sweep_detected', False) else 0.0
             features["order_blocks_count"] = len(institutional.order_blocks)
             features["fair_value_gaps_count"] = len(institutional.fair_value_gaps)
         
         if microstructure:
-            features["liquidity_zones_count"] = len(microstructure.liquidity_zones)
-            features["stop_clusters_count"] = len(microstructure.stop_clusters)
+            # P9: DL-110 ADDENDUM - Validación defensiva para atributos que pueden no existir
+            if hasattr(microstructure, 'liquidity_zones'):
+                features["liquidity_zones_count"] = len(microstructure.liquidity_zones)
+            else:
+                logger.warning("liquidity_zones not found in MarketMicrostructure")
+                features["liquidity_zones_count"] = 0
+
+            if hasattr(microstructure, 'stop_clusters'):
+                features["stop_clusters_count"] = len(microstructure.stop_clusters)
+            else:
+                logger.warning("stop_clusters not found in MarketMicrostructure")
+                features["stop_clusters_count"] = 0
         
         return features
 
@@ -486,7 +498,7 @@ class AdvancedAlgorithmSelector:
             features["manipulation_events_count"] = len(institutional.manipulation_events)
             features["active_manipulations_count"] = len(institutional.active_manipulations)
             features["manipulation_risk"] = institutional.manipulation_risk
-            features["institutional_activity"] = institutional.large_player_activity
+            features["institutional_activity"] = getattr(institutional, 'large_player_activity', 0.5)
         
         if microstructure:
             features["institutional_footprint"] = microstructure.institutional_footprint
@@ -494,22 +506,24 @@ class AdvancedAlgorithmSelector:
         
         return features
 
-    def _score_all_algorithms(self, market_regime: MarketRegime, 
+    def _score_all_algorithms(self, market_regime: MarketRegime,
                              market_features: Dict[str, Any],
-                             symbol: str) -> List[AlgorithmScore]:
+                             symbol: str,
+                             mode_decision: Optional[Dict[str, Any]] = None) -> List[AlgorithmScore]:
         """Score todos los algoritmos para las condiciones actuales"""
         
         algorithm_scores = []
         
         for algorithm in AlgorithmType:
-            score = self._score_algorithm(algorithm, market_regime, market_features)
+            score = self._score_algorithm(algorithm, market_regime, market_features, mode_decision)
             algorithm_scores.append(score)
         
         return algorithm_scores
 
-    def _score_algorithm(self, algorithm: AlgorithmType, 
+    def _score_algorithm(self, algorithm: AlgorithmType,
                         market_regime: MarketRegime,
-                        market_features: Dict[str, Any]) -> AlgorithmScore:
+                        market_features: Dict[str, Any],
+                        mode_decision: Optional[Dict[str, Any]] = None) -> AlgorithmScore:
         """Score un algoritmo específico"""
         
         characteristics = self.algorithm_characteristics.get(algorithm, {})
@@ -522,12 +536,15 @@ class AdvancedAlgorithmSelector:
         feature_adjustments = self._calculate_feature_adjustments(
             algorithm, characteristics, market_features
         )
+
+        # DL-109: Apply mode-based algorithm boosting
+        mode_adjustment = self._apply_mode_algorithm_boost(algorithm, mode_decision)
         
         # Historical performance adjustment (simplified)
         historical_adjustment = self._get_historical_performance_adjustment(algorithm)
         
-        # Final score calculation
-        final_score = base_score * feature_adjustments * historical_adjustment
+        # Final score calculation (DL-109: Include mode adjustment)
+        final_score = base_score * feature_adjustments * mode_adjustment * historical_adjustment
         final_score = max(0.0, min(1.0, final_score))
         
         # Calculate confidence
@@ -601,6 +618,72 @@ class AdvancedAlgorithmSelector:
                 adjustment *= 0.8
         
         return adjustment
+
+    def _apply_mode_algorithm_boost(self, algorithm: AlgorithmType,
+                                   mode_decision: Optional[Dict[str, Any]]) -> float:
+        """
+        Apply mode-specific algorithm weighting (DL-109 implementation)
+
+        Args:
+            algorithm: Algorithm to boost
+            mode_decision: Mode decision from IntelligentModeSelector
+
+        Returns:
+            Boost factor (0.5 - 1.5)
+        """
+        if not mode_decision or 'selected_mode' not in mode_decision:
+            return 1.0  # Neutral if no mode decision
+
+        selected_mode = mode_decision.get('selected_mode', '').upper()
+        mode_confidence = mode_decision.get('confidence', 0.5)
+
+        # Define mode-specific algorithm preferences
+        mode_algorithm_preferences = {
+            'SCALPING': {
+                AlgorithmType.LIQUIDITY_GRAB_FADE: 1.3,
+                AlgorithmType.ORDER_BLOCK_RETEST: 1.2,
+                AlgorithmType.VOLUME_BREAKOUT: 1.1,
+                AlgorithmType.MA_ALIGNMENT: 0.8,
+                AlgorithmType.HIGHER_HIGH_FORMATION: 0.7
+            },
+            'TREND_FOLLOWING': {
+                AlgorithmType.MA_ALIGNMENT: 1.4,
+                AlgorithmType.HIGHER_HIGH_FORMATION: 1.3,
+                AlgorithmType.WYCKOFF_SPRING: 1.2,
+                AlgorithmType.LIQUIDITY_GRAB_FADE: 0.7,
+                AlgorithmType.VOLUME_BREAKOUT: 0.8
+            },
+            'ANTI_MANIPULATION': {
+                AlgorithmType.STOP_HUNT_REVERSAL: 1.4,
+                AlgorithmType.LIQUIDITY_GRAB_FADE: 1.3,
+                AlgorithmType.WYCKOFF_SPRING: 1.2,
+                AlgorithmType.FAIR_VALUE_GAP: 1.1,
+                AlgorithmType.MA_ALIGNMENT: 0.6
+            },
+            'VOLATILITY_ADAPTIVE': {
+                AlgorithmType.VOLUME_BREAKOUT: 1.3,
+                AlgorithmType.FAIR_VALUE_GAP: 1.2,
+                AlgorithmType.ORDER_BLOCK_RETEST: 1.1,
+                AlgorithmType.WYCKOFF_SPRING: 0.9
+            },
+            'NEWS_SENTIMENT': {
+                AlgorithmType.VOLUME_BREAKOUT: 1.2,
+                AlgorithmType.LIQUIDITY_GRAB_FADE: 1.1,
+                AlgorithmType.MA_ALIGNMENT: 0.9,
+                AlgorithmType.HIGHER_HIGH_FORMATION: 0.8
+            }
+        }
+
+        # Get boost factor for selected mode
+        mode_preferences = mode_algorithm_preferences.get(selected_mode, {})
+        base_boost = mode_preferences.get(algorithm, 1.0)
+
+        # Apply confidence weighting
+        confidence_factor = 0.5 + (mode_confidence * 0.5)  # Range: 0.5-1.0
+        final_boost = 1.0 + ((base_boost - 1.0) * confidence_factor)
+
+        # Ensure boost stays within reasonable bounds
+        return max(0.5, min(1.5, final_boost))
 
     def _get_historical_performance_adjustment(self, algorithm: AlgorithmType) -> float:
         """Ajuste basado en performance histórica (simplified ML)"""
@@ -763,11 +846,9 @@ class AdvancedAlgorithmSelector:
     def _trend_strength_to_score(self, trend_strength: TrendStrength) -> float:
         """Convert trend strength enum to score"""
         mapping = {
-            TrendStrength.VERY_STRONG: 1.0,
-            TrendStrength.STRONG: 0.8,
+            TrendStrength.STRONG: 1.0,
             TrendStrength.MODERATE: 0.6,
-            TrendStrength.WEAK: 0.4,
-            TrendStrength.SIDEWAYS: 0.0
+            TrendStrength.WEAK: 0.4
         }
         return mapping.get(trend_strength, 0.5)
     
@@ -826,7 +907,12 @@ class AdvancedAlgorithmSelector:
             market_conditions={"fallback_mode": True, "symbol": symbol},
             
             expected_performance={"expected_win_rate": 0.6, "expected_risk_reward": 1.5},
-            risk_assessment={"overall_risk": base_confidence}
+            risk_assessment={
+                "overall_risk": min(1.0, base_confidence),
+                "volatility_risk": min(1.0, base_confidence * 0.7),
+                "manipulation_risk": min(1.0, base_confidence * 0.5),
+                "execution_risk": min(1.0, base_confidence * 0.6)
+            }
         )
 
 

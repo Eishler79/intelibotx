@@ -30,6 +30,7 @@ export const useSmartScalperAPI = () => {
       risk_score: analysis.risk_assessment?.overall_risk ?? null,
       wyckoff_phase: analysis.wyckoff_phase ?? null,
       conditions_met: Object.keys(signals.institutional_confirmations || {}),
+      institutional_confirmations: signals.institutional_confirmations || {},  // 🔍 BACKLOG#480: Pasar data completa con scores y bias
       expected_performance: {
         win_rate: analysis.institutional_quality_score ?? null,
         confidence_level: analysis.institutional_confidence_level ?? null
@@ -49,8 +50,16 @@ export const useSmartScalperAPI = () => {
     };
   };
 
-  // 🚀 DL-092: Bot-specific analysis reutilizando Smart Trade API
+  // 🚀 DL-092: Bot-specific analysis - MODAL ONLY SHOWS MARKET DATA
   const fetchBotSpecificAnalysis = useCallback(async (botId, botSymbol, bot = null) => {
+    console.log('🔍 fetchBotSpecificAnalysis LLAMADO (MODAL VIEW ONLY):', {
+      botId,
+      botSymbol,
+      bot_status: bot?.status,
+      bot_market_type: bot?.market_type,
+      BASE_URL
+    });
+
     if (!botId || !botSymbol) return null;
 
     setLoading(true);
@@ -58,25 +67,53 @@ export const useSmartScalperAPI = () => {
 
     try {
       const token = localStorage.getItem('intelibotx_token');
-      const executeReal = bot?.status === 'RUNNING' ? 'true' : 'false';
 
-      const response = await fetch(`${BASE_URL}/api/run-smart-trade/${botSymbol}?scalper_mode=true&quantity=0.001&execute_real=${executeReal}`, {
-        method: 'POST',
+      // 📊 MODAL FIX: Use market-data for viewing, NOT run-smart-trade
+      // run-smart-trade only executes in background when bot is RUNNING
+      // DL-103 FIX: Use path parameter, not query parameter
+      const url = `${BASE_URL}/api/market-data/${botSymbol}`;
+      console.log('🔍 Modal usando market-data (VIEW ONLY):', { url, hasToken: !!token });
+
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
       });
 
+      console.log('🔍 DESPUÉS de fetch - Respuesta:', {
+        status: response?.status,
+        ok: response?.ok,
+        statusText: response?.statusText,
+        headers: response?.headers
+      });
+
       if (response && response.ok) {
         const data = await response.json();
-        const mapped = mapSmartTradeResult(data, 'smart_trade_runtime');
-        if (mapped) {
-          return mapped;
-        }
+        console.log('🔍 MARKET DATA recibida (modal view only):', data);
+
+        // 📊 Process market-data response for modal visualization
+        // This is VIEW ONLY - no trading execution
+        return {
+          execution_blocked: false,
+          message: 'Market data for visualization',
+          algorithm_used: 'MARKET_VIEW',
+          market_condition: data.trend || 'NEUTRAL',
+          price: data.price || 0,
+          volume_24h: data.volume_24h || 0,
+          price_change_24h: data.price_change_24h || 0,
+          confidence: 0,
+          signal: 'VIEW_ONLY',
+          recommendation: 'Modal visualization mode',
+          mode_decision: 'VISUALIZATION',
+          klines: data.klines || [],
+          orderbook: data.orderbook || {},
+          recent_trades: data.recent_trades || []
+        };
       }
 
-      throw new Error('Smart trade API failed for bot-specific analysis');
+      throw new Error(`Smart trade API failed: ${response?.status} ${response?.statusText}`);
 
     } catch (err) {
       console.error('❌ Bot-specific analysis error:', err);
@@ -87,44 +124,6 @@ export const useSmartScalperAPI = () => {
     }
   }, [BASE_URL]);
 
-  // 🔄 BACKWARDS COMPATIBILITY: Keep existing generic function
-  const fetchSmartScalperAnalysis = useCallback(async (botSymbol, bot = null) => {
-    if (!botSymbol) return null;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const token = localStorage.getItem('intelibotx_token');
-      const executeReal = bot?.status === 'RUNNING' ? 'true' : 'false';
-
-      // Legacy: Generic Smart Scalper API call (for backward compatibility)
-      const response = await fetch(`${BASE_URL}/api/run-smart-trade/${botSymbol}?scalper_mode=true&quantity=0.001&execute_real=${executeReal}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-
-      if (response && response.ok) {
-        const data = await response.json();
-        const mapped = mapSmartTradeResult(data, 'backend_api_primary');
-        if (mapped) {
-          return mapped;
-        }
-      }
-      
-      throw new Error('Smart Scalper API failed');
-      
-    } catch (err) {
-      console.error('❌ Smart Scalper API Error:', err);
-      setError(err.message);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [BASE_URL]);
 
   const fetchTechnicalAnalysis = useCallback(async (botSymbol, timeframe = '15m') => {
     if (!botSymbol) return null;
@@ -200,7 +199,6 @@ export const useSmartScalperAPI = () => {
   };
 
   return {
-    fetchSmartScalperAnalysis,           // Legacy: Generic symbol-based analysis
     fetchBotSpecificAnalysis,            // Bot-specific analysis via Smart Trade endpoint
     fetchTechnicalAnalysis,
     loading,

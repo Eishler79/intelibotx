@@ -4,10 +4,11 @@
 
 ### **Core Sistema (Rompe aplicación)**
 - backend/main.py
-- backend/db/database.py  
+- backend/db/database.py
 - frontend/src/main.jsx
 - frontend/src/routes/App.jsx
-- frontend/src/pages/BotsAdvanced.jsx *(core bot management + trading operations)*
+- frontend/src/pages/BotsModular.jsx *(ACTIVO - core bot management + trading operations)*
+- frontend/src/pages/BotsAdvanced.jsx *(LEGACY - mantener para rollback)*
 
 ### **Autenticación y Seguridad**
 - backend/services/auth_service.py

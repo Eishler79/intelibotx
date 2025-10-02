@@ -1,0 +1,117 @@
+"""
+Service Factory Pattern - DL-110 FASE 2
+Singleton services con aislamiento por bot_id para preservar state independiente
+
+P5 AJUSTE: Cada bot tiene su propia instancia para evitar compartir performance_history
+"""
+
+from typing import Dict, Optional, Any
+from services.binance_real_data import BinanceRealDataService
+from services.advanced_algorithm_selector import AdvancedAlgorithmSelector
+from services.market_microstructure_analyzer import MarketMicrostructureAnalyzer
+from services.institutional_detector import InstitutionalDetector
+from services.multi_timeframe_coordinator import MultiTimeframeCoordinator
+from services.signal_quality_assessor import SignalQualityAssessor
+from services.intelligent_mode_selector import IntelligentModeSelector
+
+class ServiceFactory:
+    """
+    Factory pattern para gestionar instancias de servicios con aislamiento por bot
+    DL-110: Reducir overhead de inicialización manteniendo aislamiento entre bots
+    """
+
+    _instances: Dict[str, Any] = {}
+
+    @classmethod
+    def get_binance_service(cls, bot_id: Optional[int] = None) -> BinanceRealDataService:
+        """
+        BinanceRealDataService puede ser compartido (stateless para market data)
+        """
+        key = "binance_service"  # Compartido entre todos los bots
+        if key not in cls._instances:
+            cls._instances[key] = BinanceRealDataService()
+        return cls._instances[key]
+
+    @classmethod
+    def get_algorithm_selector(cls, bot_id: Optional[int] = None) -> AdvancedAlgorithmSelector:
+        """
+        AdvancedAlgorithmSelector DEBE ser por bot_id (tiene performance_history)
+        P5 AJUSTE: Instancia separada por bot para preservar aislamiento
+        """
+        key = f"algorithm_selector_{bot_id}" if bot_id else "algorithm_selector_default"
+        if key not in cls._instances:
+            cls._instances[key] = AdvancedAlgorithmSelector()
+        return cls._instances[key]
+
+    @classmethod
+    def get_microstructure_analyzer(cls, bot_id: Optional[int] = None) -> MarketMicrostructureAnalyzer:
+        """
+        MarketMicrostructureAnalyzer por bot_id si mantiene estado
+        """
+        key = f"microstructure_{bot_id}" if bot_id else "microstructure_default"
+        if key not in cls._instances:
+            cls._instances[key] = MarketMicrostructureAnalyzer()
+        return cls._instances[key]
+
+    @classmethod
+    def get_institutional_detector(cls, bot_id: Optional[int] = None) -> InstitutionalDetector:
+        """
+        InstitutionalDetector por bot_id para análisis independiente
+        """
+        key = f"institutional_{bot_id}" if bot_id else "institutional_default"
+        if key not in cls._instances:
+            cls._instances[key] = InstitutionalDetector()
+        return cls._instances[key]
+
+    @classmethod
+    def get_multi_tf_coordinator(cls, bot_id: Optional[int] = None) -> MultiTimeframeCoordinator:
+        """
+        MultiTimeframeCoordinator por bot_id para coordinación independiente
+        """
+        key = f"multi_tf_{bot_id}" if bot_id else "multi_tf_default"
+        if key not in cls._instances:
+            cls._instances[key] = MultiTimeframeCoordinator()
+        return cls._instances[key]
+
+    @classmethod
+    def get_signal_quality_assessor(cls, bot_id: Optional[int] = None) -> SignalQualityAssessor:
+        """
+        SignalQualityAssessor por bot_id para evaluación independiente
+        """
+        key = f"signal_quality_{bot_id}" if bot_id else "signal_quality_default"
+        if key not in cls._instances:
+            cls._instances[key] = SignalQualityAssessor()
+        return cls._instances[key]
+
+    @classmethod
+    def get_mode_selector(cls, bot_id: Optional[int] = None) -> IntelligentModeSelector:
+        """
+        IntelligentModeSelector por bot_id para decisiones independientes
+        """
+        key = f"mode_selector_{bot_id}" if bot_id else "mode_selector_default"
+        if key not in cls._instances:
+            cls._instances[key] = IntelligentModeSelector()
+        return cls._instances[key]
+
+    @classmethod
+    def clear_bot_instances(cls, bot_id: int):
+        """
+        Limpiar todas las instancias de un bot específico (útil para cleanup)
+        """
+        keys_to_remove = [k for k in cls._instances.keys() if f"_{bot_id}" in k]
+        for key in keys_to_remove:
+            del cls._instances[key]
+
+    @classmethod
+    def get_instance_count(cls) -> int:
+        """
+        Para debugging y monitoring
+        """
+        return len(cls._instances)
+
+    @classmethod
+    def get_instance_keys(cls) -> list:
+        """
+        Para debugging - ver qué instancias están en memoria
+        """
+        return list(cls._instances.keys())

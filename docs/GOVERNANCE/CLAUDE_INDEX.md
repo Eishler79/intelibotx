@@ -39,6 +39,7 @@
 
 ## Technical Specifications {#technical-specs}
 - docs/TECHNICAL_SPECS/FRONTEND_ARCHITECTURE.md {#frontend-architecture}
+- docs/TECHNICAL_SPECS/BOTSMODULAR_ARCHITECTURE.md {#botsmodular-architecture} ✅ NEW
 - docs/TECHNICAL_SPECS/BOT_ARCHITECTURE_SPEC.md {#bot-architecture}
 - docs/TECHNICAL_SPECS/ENDPOINTS_ANALYSIS.md {#endpoints-analysis}
 - docs/TECHNICAL_SPECS/BOTS_USUARIO_SPEC.md {#bots-usuario-spec}
@@ -53,7 +54,8 @@
 ## Frontend {#frontend}
 - frontend/src/services/api.ts — fuente de verdad de llamadas {#api-ts}
 - frontend/src/routes/App.jsx — routing principal {#app-routes}
-- frontend/src/pages/BotsAdvanced.jsx — controller principal de bots {#bots-advanced}
+- frontend/src/pages/BotsModular.jsx — controller principal bots ACTIVO {#bots-modular}
+- frontend/src/pages/BotsAdvanced.jsx — LEGACY (rollback safety) {#bots-advanced}
 
 ## Sesión (vivo) {#sesion}
 - CLAUDE.md — master entry point, premisas KK/KG/KO {#claude-master}
